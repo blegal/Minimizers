@@ -1,0 +1,513 @@
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <vector>
+#include <chrono>
+#include <algorithm>
+#include <iostream>
+#include <omp.h>
+#include <sstream>
+#include <getopt.h>
+
+#include "../../src/headers/additional_methods.hpp"
+
+#include "progress/progressbar.h"
+
+#include "front/fast_fasta_file.hpp"
+
+#include "sorting/std_2cores/std_2cores.hpp"
+#include "sorting/std_4cores/std_4cores.hpp"
+#include "sorting/crumsort_2cores/crumsort_2cores.hpp"
+
+#include "./tools/read_k_value.hpp"
+#include "front/count_lines.hpp"
+
+#include "./tools/fast_atoi.hpp"
+
+#include "back/SaveMiniToTxtFile.hpp"
+#include "back/SaveMiniToRawFile.hpp"
+
+void my_sort(std::vector<uint64_t>& test)
+{
+    const int size = test.size();
+    const int half = size / 2;
+
+    std::vector<uint64_t> v1( half );
+    std::vector<uint64_t> v2( half );
+
+    vec_copy(v1, test.data(),        half );
+    vec_copy(v2, test.data() + half, half );
+
+    std::sort( v1.begin(), v1.end() );
+    std::sort( v2.begin(), v2.end() );
+
+    int ptr_1 = 0;
+    int ptr_2 = 0;
+
+    int i;
+    for(i = 0; i < size; i += 1)
+    {
+        if( v1[ptr_1] < v2[ptr_2] )
+        {
+            test[i] = v1[ptr_1++];
+        } else {
+            test[i] = v2[ptr_2++];
+        }
+    }
+    if( ptr_1 == half )
+    {
+        for(; i < size; i += 1)
+            test[i] = v2[ptr_2++];
+    }else{
+        for(; i < size; i += 1)
+            test[i] = v2[ptr_1++];
+    }
+    v1.clear();
+    v2.clear();
+}
+
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+
+std::chrono::steady_clock::time_point begin;
+
+void VectorDeduplication(std::vector<uint64_t>& values)
+{
+    printf("(II)\n");
+    printf("(II) Launching the simplification step\n");
+    printf("(II) - Number of samples (start) = %ld\n", values.size());
+
+    double start_time = omp_get_wtime();
+    uint64_t* ptr_i = values.data() + 1;
+    uint64_t* ptr_o = values.data() + 1;
+    int64_t length  = values.size();
+
+    uint64_t value = values[0];
+    for(int64_t x = 1; x < length; x += 1)
+    {
+        if( value != *ptr_i )
+        {
+            value  = *ptr_i;
+            *ptr_o = value;
+            ptr_o += 1;
+        }
+        ptr_i += 1;
+    }
+    int64_t new_length  = ptr_o - values.data();
+    values.resize( new_length );
+    double end_time = omp_get_wtime();
+    printf("(II) - Number of samples (stop)  = %ld\n", values.size());
+    printf("(II) - Execution time    = %f\n", end_time - start_time);
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+inline uint64_t revcomp64 (const uint64_t v, size_t bitsize){
+    return (((uint64_t)rev_table[v & 0xff] << 56) |
+            ((uint64_t)rev_table[(v >>  8) & 0xff] << 48) |
+            ((uint64_t)rev_table[(v >> 16) & 0xff] << 40) |
+            ((uint64_t)rev_table[(v >> 24) & 0xff] << 32) |
+            ((uint64_t)rev_table[(v >> 32) & 0xff] << 24) |
+            ((uint64_t)rev_table[(v >> 40) & 0xff] << 16) |
+            ((uint64_t)rev_table[(v >> 48) & 0xff] << 8) |
+            ((uint64_t)rev_table[(v >> 56) & 0xff])) >> (64-bitsize);
+}
+
+inline uint64_t canonical(uint64_t smer, size_t size)
+{
+    uint64_t revcomp = revcomp64(smer, size);
+    if (revcomp < smer) { return revcomp; }
+    else { return smer; }
+}
+
+inline uint64_t mask_right(uint64_t numbits){
+    uint64_t mask = -(numbits >= MEM_UNIT) | ((1ULL << numbits) - 1ULL);
+    return mask;
+}
+
+
+bool vec_compare(std::vector<uint64_t> dst, std::vector<uint64_t> src)
+{
+    if(dst.size() != src.size())
+        return false;
+
+    const int length = src.size();
+    for(int x = 0; x < length; x += 1)
+        if( dst[x] != src[x] )
+            return false;
+    return true;
+}
+
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+
+int main(int argc, char* argv[])
+{
+
+    std::string i_file = "./AHX_ACXIOSF_6_1_23_all.txt";
+    std::string o_file = "./result";
+
+    int verbose_flag     = 0;
+    int file_save_loaded = 0;
+    int file_save_debug  = 0;
+    int file_save_output = 1;
+
+
+    //
+    //
+    //
+
+    std::string algo = "std::sort";
+
+    static struct option long_options[] =
+            {
+                    /* These options set a flag. */
+                    {"verbose",           no_argument, &verbose_flag,    1},
+                    {"brief",              no_argument, &verbose_flag,    0},
+                    {"save-loaded",        no_argument, &file_save_loaded,1},
+                    {"save-debug",         no_argument, &file_save_debug, 1},
+                    {"do-not-save-output", no_argument, &file_save_output, 0},
+                    /* These options don’t set a flag.
+                       We distinguish them by their indices. */
+                    {"sorter",      required_argument, 0, 's'},
+                    {"file",        required_argument, 0, 'i'},
+                    {"output",      required_argument, 0, 'o'},
+                    {0, 0, 0, 0}
+            };
+
+    /* getopt_long stores the option index here. */
+    int option_index = 0;
+    int c;
+    while( true )
+    {
+        c = getopt_long (argc, argv, "s:q:i:o:", long_options, &option_index);
+
+        /* Detect the end of the options. */
+        if (c == -1)
+            break;
+
+        switch ( c )
+        {
+            case 0:
+                /* If this option set a flag, do nothing else now. */
+                if (long_options[option_index].flag != 0)
+                    break;
+                printf ("option %s", long_options[option_index].name);
+                if (optarg)
+                    printf (" with arg %s", optarg);
+                printf ("\n");
+                break;
+
+                //
+                //
+                //
+            case 'i':
+                printf("parsing -file option\n");
+                i_file = optarg;
+//              o_file = i_file + ".ordered";
+                break;
+
+                //
+                //
+                //
+            case 'o':
+                printf("parsing -output option\n");
+                o_file = optarg;
+                break;
+
+                //
+                // Sorting algorithm
+                //
+            case 's':
+                algo = optarg;
+                break;
+
+            case '?':
+                /* getopt_long already printed an error message. */
+                break;
+
+            default:
+                abort ();
+        }
+    }
+
+    /*
+     * Print any remaining command line arguments (not options).
+     * */
+    if (optind < argc)
+    {
+        printf ("non-option ARGV-elements: ");
+        while (optind < argc)
+            printf ("%s ", argv[optind++]);
+        putchar ('\n');
+        putchar ('\n');
+        printf ("Usage :\n");
+        printf ("./kmer_sorter --file [kmer-file] [options]");
+        putchar ('\n');
+        printf ("Options :\n");
+        printf (" --file [string]      : the name of the file that contains k-mers\n");
+        printf (" --output             : the name of the file that sorted k-mers at the end\n");
+        printf (" --verbose            : display debug informations\n");
+        printf (" --save-loaded        : for debugging purpose\n");
+        printf (" --save-debug         : for debugging purpose\n");
+        printf (" --do-not-save-output : for debugging purpose\n");
+        printf (" --sorter             : the name of the sorting algorithm to apply\n");
+        printf (" --quotient           : the quotient size\n");
+        exit( EXIT_FAILURE );
+    }
+
+    /*
+     * Counting the number of SMER in the file (to allocate memory)
+     */
+    const int n_lines = count_lines_c( i_file );    //
+
+    /*
+     * Reading the K value from the first file line
+     */
+    const int seq = read_k_value( i_file );  //
+    const int kmer = 31;
+    const int mmer = 19;
+    const int z = kmer - mmer;
+
+    //
+    // Printing some information for the user
+    //
+    const uint64_t nb_kmer = (uint64_t)(seq  - kmer + 1) * (uint64_t)n_lines;
+    const uint64_t nb_mmer = (uint64_t)(kmer - mmer + 1) * (uint64_t)nb_kmer;
+    const uint64_t nb_mini = (uint64_t)nb_kmer / (uint64_t)(z);
+
+    const uint64_t MB = nb_mini * sizeof(uint64_t) / 1024 / 1024;
+
+    printf("(II)\n");
+    printf("(II) # of sequences : %d\n", n_lines);
+    printf("(II) sequ. length   : %d\n", seq);
+    printf("(II) k-mer length   : %d\n", kmer);
+    printf("(II) m-mer length   : %d\n", mmer);
+    printf("(II) # m-mer/k-mer  : %d\n", z);
+    printf("(II)\n");
+    printf("(II) # k-mer        : %llu\n", nb_kmer);
+    printf("(II) # m-mer        : %llu\n", nb_mmer);
+    printf("(II) # minimizers   : %llu\n", nb_mini);
+    printf("(II)\n");
+    printf("(II) memory occupancy = %6llu MB\n", MB );
+    printf("(II)\n");
+
+    //
+    // Creating buffers to speed up file parsing
+    //
+
+    char seq_value[4096]; bzero(seq_value, 4096);
+    char kmer_b   [  48]; bzero(kmer_b,      48);
+    char mmer_b   [  32]; bzero(mmer_b,      32);
+
+    //
+    // Allocating the object that performs fast file parsing
+    //
+
+    fast_fasta_file fasta_ifile(i_file);
+
+    progressbar *progress = progressbar_new("Loading k-mers",100);
+    const int prog_step = n_lines / 100;
+
+    //
+    // For all the lines in the file => load and convert
+    //
+
+    // Borne a calculer
+
+    std::vector<uint64_t> liste_mini( 2 * MB);
+
+    uint32_t kmer_cnt = 0;
+    uint32_t mmer_cnt = 0;
+
+    for(int l_number = 0; l_number < n_lines; l_number += 1)
+    {
+        bool not_oef = fasta_ifile.next_sequence(seq_value);
+        if( not_oef == false )
+            break;
+
+        const int s_length = strlen( seq_value );
+        if( verbose_flag )
+            printf("%s\n", seq_value);
+
+        //
+        // Pour tous les kmers d'une sequence
+        //
+        for(int k_pos = 0; k_pos < s_length - kmer + 1; k_pos += 1) // attention au <=
+        {
+            memcpy(kmer_b, seq_value + k_pos, kmer);
+
+            uint64_t minv = UINT64_MAX;
+
+            if( verbose_flag )
+            {
+                printf(" k: %s\n", kmer_b);
+            }
+
+            //
+            // On calcule le début du m-mer
+            //
+
+            for(int m_pos = 0; m_pos < kmer - mmer + 1; m_pos += 1) // attention au <=
+            {
+                memcpy(mmer_b, kmer_b + m_pos, mmer);
+
+                uint64_t current_mmer = 0;
+                for(int x = 0; x < mmer; x += 1)
+                {
+                    current_mmer <<= 2;
+                    current_mmer |= ((mmer_b[x] >> 1) & 0b11); // conversion ASCII => 2bits (Yoann)
+                }
+
+                const uint64_t canon  = canonical(current_mmer, 2 * 19);
+                const uint64_t mask = mask_right(2 * mmer); // on masque
+                const uint64_t s_hash = bfc_hash_64(canon, mask);
+                minv = (s_hash < minv) ? s_hash : minv;
+                mmer_cnt += 1;
+
+                if( verbose_flag )
+                {
+                    printf("   m: %s | %16.16llX | %16.16llX |\n", mmer_b, current_mmer, s_hash);
+                }
+            }
+
+            if( verbose_flag )
+            {
+                printf("        mini : | %16.16llX\n", minv);
+            }
+
+            if( liste_mini.size() == 0 )
+            {
+                liste_mini.push_back( minv );
+                if( verbose_flag )
+                    printf("(+)-  min = | %16.16llX |\n", minv);
+            }
+            else if( liste_mini[liste_mini.size()-1] != minv )
+            {
+                liste_mini.push_back( minv );
+                if( verbose_flag )
+                {
+                    if( k_pos == 0 )
+                        printf("(+)-  min = | %16.16llX |\n", minv);
+                    else
+                        printf("(+)   min = | %16.16llX |\n", minv);
+                }
+            }
+            else
+            {
+                if( verbose_flag )
+                    printf("(-)   min = | %16.16llX |\n", minv);
+            }
+            kmer_cnt += 1;
+
+        } // fin de boucle sur les k-mers
+
+        if( l_number%prog_step == 0)
+            progressbar_inc(progress);
+    }
+
+    progressbar_finish(progress);
+
+    printf("(II) Number of ADN sequences  : %d\n",     n_lines);
+    printf("(II) Number of k-mer          : %u\n",     kmer_cnt);
+    printf("(II) Number of m-mer          : %u\n",     mmer_cnt);
+    printf("(II) Number of minimizers     : %zu\n",    liste_mini.size());
+    printf("(II) memory occupancy         : %6lu MB\n", liste_mini.size() * sizeof(uint64_t) / 1024 / 1024 );
+
+    //
+    // On stoque à l'indentique les données que l'on vient lire. Cette étape est uniquement utile
+    // pour du debug
+    //
+    if( file_save_output )
+        SaveMiniToTxtFile(o_file + ".ref.non-sorted.txt", liste_mini);
+
+    printf("(II)\n");
+    printf("(II) Launching the sorting step\n");
+    printf("(II) - Sorting algorithm = %s\n",  algo.c_str());
+    printf("(II) - Number of samples = %ld\n", liste_mini.size());
+
+    double start_time = omp_get_wtime();
+    if( algo == "std::sort" ) {
+        std::sort( liste_mini.begin(), liste_mini.end() );
+    } else if( algo == "std_2cores" ) {
+        std_2cores( liste_mini );
+    } else if( algo == "std_4cores" ) {
+        std_4cores( liste_mini );
+    } else if( algo == "crumsort" ) {
+        crumsort_prim( liste_mini.data(), liste_mini.size(), 9 /*uint64*/ );
+    } else if( algo == "crumsort_2cores" ) {
+        crumsort_2cores( liste_mini );
+    } else {
+        printf("(EE) Sorting algorithm is invalid  (%s)\n", algo.c_str());
+        printf("(EE) Valid choices are the following:\n");
+        printf("(EE) - std::sort       :\n");
+        printf("(EE) - std_2cores      :\n");
+        printf("(EE) - std_4cores      :\n");
+        printf("(EE) - crumsort        :\n");
+        printf("(EE) - crumsort_2cores :\n");
+        exit( EXIT_FAILURE );
+    }
+    double end_time = omp_get_wtime();
+    printf("(II) - Execution time    = %f\n", end_time - start_time);
+
+    //
+    // En regle général on save le résultat sauf lorsque l'on fait du benchmarking
+    //
+
+    if( file_save_output )
+        SaveMiniToTxtFile(o_file + ".ref.sorted.txt", liste_mini);
+
+    //
+    // On stoque à l'indentique les données que l'on vient lire. Cette étape est uniquement utile
+    // pour du debug
+    //
+    if( file_save_debug )
+        SaveMiniToFileRAW(o_file + ".hash", liste_mini);
+
+    /////////////////////////////////////////////////////////////////////////////////////
+
+    VectorDeduplication( liste_mini );
+/*
+
+    printf("(II)\n");
+    printf("(II) Launching the simplification step\n");
+    printf("(II) - Number of samples (start) = %ld\n", liste_mini.size());
+
+    uint64_t* ptr_i = liste_mini.data() + 1;
+    uint64_t* ptr_o = liste_mini.data() + 1;
+    int64_t length  = liste_mini.size();
+
+    uint64_t value = liste_mini[0];
+    for(int64_t x = 1; x < length; x += 1)
+    {
+        if( value != *ptr_i )
+        {
+            value  = *ptr_i;
+            *ptr_o = value;
+            ptr_o += 1;
+        }
+        ptr_i += 1;
+    }
+    int64_t new_length  = ptr_o - liste_mini.data();
+    liste_mini.resize( new_length );
+    printf("(II) - Number of samples (stop)  = %ld\n", liste_mini.size());
+*/
+    if( file_save_output )
+        SaveMiniToTxtFile(o_file + ".ref.simplified.txt", liste_mini);
+
+    return 0;
+}
