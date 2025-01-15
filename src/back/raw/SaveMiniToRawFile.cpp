@@ -6,7 +6,7 @@
 #include <chrono>
 #include <algorithm>
 #include <omp.h>
-#include "../progress/progressbar.h"
+#include "../../progress/progressbar.h"
 
 //
 //

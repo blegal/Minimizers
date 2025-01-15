@@ -24,8 +24,8 @@
 
 #include "./tools/fast_atoi.hpp"
 
-#include "back/SaveMiniToTxtFile.hpp"
-#include "back/SaveMiniToRawFile.hpp"
+#include "back/txt/SaveMiniToTxtFile.hpp"
+#include "back/raw/SaveMiniToRawFile.hpp"
 
 void my_sort(std::vector<uint64_t>& test)
 {
