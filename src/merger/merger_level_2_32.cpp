@@ -51,16 +51,20 @@ void merge_level_2_32(std::string& ifile_1, std::string& ifile_2, std::string& o
                     dest[ndst++] = v1;
                     dest[ndst++] = colorDocA;
                 }else{
+                    printf("merge colorDoc1 (%16.16llX / %16.16llX)\n", dest[ndst-1], colorDocA);
                     dest[ndst-1] |= colorDocA;
+                    printf("                (%16.16llX)\n", dest[ndst-1]);
                 }
                 last_value = v1;
                 counterA  += 2;
             } else {
-                if (v1 != last_value){
+                if (v2 != last_value){
                     dest[ndst++] = v2;
                     dest[ndst++] = colorDocB;
                 }else{
+                    printf("merge colorDocB (%16.16llX / %16.16llX)\n", dest[ndst-1], colorDocB);
                     dest[ndst-1] |= colorDocB;
+                    printf("                (%16.16llX)\n", dest[ndst-1]);
                 }
                 last_value = v2;
                 counterB  += 2;
@@ -76,24 +80,58 @@ void merge_level_2_32(std::string& ifile_1, std::string& ifile_2, std::string& o
         }
     }
 
+    //
+    // Il faut absolument faire un check pour verifier qu'il n'y a pas de redondance dans le flux
+    // qui n'est pas encore vide sinon on aura un doublon lors du flush !
+    //
+    if (nElementsA == 0) {
+        const uint64_t v2 = in_2[counterB];
+        const uint64_t colorDocB = in_2[counterB + 1] << level; // On decale de 2 bits au level 2, 4 au level 4, etc.
+        if (v2 == last_value) {
+            dest[ndst - 1] |= colorDocB;
+            counterB += 2;
+        }
+    }else if (nElementsB == 0) {
+        const uint64_t v1        = in_1[counterA    ];
+        const uint64_t colorDocA = in_1[counterA + 1];
+        if (v1 == last_value){
+            dest[ndst-1] |= colorDocA;
+            counterA  += 2;
+        }
+    }
+
+    //
+    // On realise le flush du buffer de sortie, cela nous simplifier la vie par la suite !
+    //
     if (ndst != 0) {
+//        printf("flush dest buffer (Z-1) : (%16.16llX, %16.16llX)\n", dest[ndst-2], dest[ndst-1]);
+//        printf("                          (%16.16llX)\n", dest[ndst-1]);
         fwrite(dest, sizeof(uint64_t), ndst, fdst);
         ndst = 0;
     }
 
     if (nElementsA == 0) {
-        fwrite(in_2 + nElementsB, sizeof(uint64_t), nElementsB - counterB, fdst);
+//        printf("flush B : %lld %lld\n", counterB, nElementsB);
+        for(int i = counterB + 1; i < nElementsB; i+= 2) in_2[i] = in_2[i] << level;
+        fwrite(in_2 + counterB, sizeof(uint64_t), nElementsB - counterB, fdst);
         do{
             nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
-            ndst = 0;
-            fwrite(in_2, sizeof(uint64_t), nElementsB, fdst);
+            for(int i = 1; i < nElementsB; i+= 2) in_2[i] = in_2[i] << level;
+//            printf(" - flush B : %lld\n", nElementsB);
+            if( nElementsB != 0 )
+                fwrite(in_2, sizeof(uint64_t), nElementsB, fdst);
         }while(nElementsB == _iBuff_);
 
     }else if (nElementsB == 0) {
-        fwrite(in_1 + nElementsA, sizeof(uint64_t), nElementsA - counterA, fdst);
+//        printf("flush A : %lld %lld\n", counterA, nElementsA);
+        for(int i = counterA + 1; i < nElementsA; i+= 2) in_1[i] = in_1[i] << level;
+        fwrite(in_1 + counterA, sizeof(uint64_t), nElementsA - counterA, fdst);
         do{
             nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
-            fwrite(in_1, sizeof(uint64_t), nElementsA, fdst);
+            for(int i = 1; i < nElementsA; i+= 2) in_1[i] = in_1[i] << level;
+//            printf(" - flush A : %lld\n", nElementsA);
+            if( nElementsA != 0 )
+                fwrite(in_1, sizeof(uint64_t), nElementsA, fdst);
         }while(nElementsB == _iBuff_);
     }
 
