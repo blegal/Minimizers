@@ -124,8 +124,10 @@ project(min_sorter)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/progress/progressbar.cpp
-        src/sorting/std_4cores/std_4cores.cpp
-        src/sorting/std_2cores/std_2cores.cpp
+        ./src/sorting/std_4cores/std_4cores.cpp
+        ./src/sorting/std_2cores/std_2cores.cpp
+        ./src/sorting/crumsort/crumsort.cpp
+        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
         ./src/back/SaveMiniToRawFile.cpp
         ./src/back/SaveMiniToTxtFile.cpp
         ./src/min_sorter.cpp)
@@ -146,8 +148,10 @@ project(min_sorter_ref)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/progress/progressbar.cpp
-        src/sorting/std_4cores/std_4cores.cpp
-        src/sorting/std_2cores/std_2cores.cpp
+        ./src/sorting/std_4cores/std_4cores.cpp
+        ./src/sorting/std_2cores/std_2cores.cpp
+        ./src/sorting/crumsort/crumsort.cpp
+        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
         ./src/back/SaveMiniToRawFile.cpp
         ./src/back/SaveMiniToTxtFile.cpp
         ./src/min_sorter_ref.cpp)
@@ -161,5 +165,29 @@ target_include_directories(min_sorter_ref
 target_link_libraries(min_sorter_ref pthread)
 target_link_libraries(min_sorter_ref bz2)
 target_link_libraries(min_sorter_ref curses)
+
+########################################################################################################################
+
+project(merge)
+
+file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
+        ./src/progress/progressbar.cpp
+        ./src/sorting/std_4cores/std_4cores.cpp
+        ./src/sorting/std_2cores/std_2cores.cpp
+        ./src/sorting/crumsort/crumsort.cpp
+        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
+        ./src/back/SaveMiniToRawFile.cpp
+        ./src/back/SaveMiniToTxtFile.cpp
+        ./src/merge.cpp)
+add_executable(merge ${source_files})
+
+target_include_directories(merge
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+target_link_libraries(merge pthread)
+target_link_libraries(merge bz2)
+target_link_libraries(merge curses)
 
 ########################################################################################################################
