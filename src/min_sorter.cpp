@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
     int file_save_debug   = 0;
     int file_save_output  = 1;
 
-    int worst_case_memory = 1;
+    int worst_case_memory = 0;
 
     //
     //
@@ -630,13 +630,55 @@ int main(int argc, char* argv[])
 */
     if( file_save_debug )
     {
-        SaveMiniToTxtFile_v2(o_file + ".simplified.txt", liste_mini);
+        SaveMiniToTxtFile_v2(o_file + ".txt", liste_mini);
     }
 
     if( file_save_output )
     {
-        SaveMiniToFileRAW(o_file + ".simplified.raw", liste_mini);
+        SaveMiniToFileRAW(o_file + ".raw", liste_mini);
     }
 
     return 0;
 }
+
+//
+// AHX_ATRIOSF_7_1_C0URMACXX.IND4_clean.fastx => 164939720 lines
+// (II) # k-mer            : 1979276616
+// (II) # m-mer            : 25730596008
+// (II) # minimizers       :  329879436
+// (II) Number of skipped minizr :  891047976
+// (II) Number of minimizers     : 1699435677
+// (II) memory occupancy         :      12965 MB
+// (II) - Number of samples (start) = 1699435677
+// (II) - Number of samples (stop)  =  844741384
+// (II) - Execution time    = 0h01m57s 0h02m33s
+
+// (II) # k-mer            :  989638308
+// (II) # minimizers       :  164939718
+// (II) Number of ADN sequences  :   82469859
+// (II) Number of k-mer          : 1277160061
+// (II) Number of skipped minizr :  430079792
+// (II) Number of minimizers     :  847080269
+// (II) memory occupancy         :       6462 MB
+// (II) Launching the simplification step
+// (II) - Number of samples (start) =  847080269
+// (II) - Number of samples (stop)  =  494471415
+// (II) - Execution time    = 0h00m44s 0h00m55s
+//(II) Launching the simplification step
+//(II) - Number of samples (start) =  852355408
+//(II) - Number of samples (stop)  =  483776049
+//(II) - Execution time    = 1.686398
+// 0h01m03s 0h00m16s
+//(II) Document (3) information
+//(II) - filename      : tara_2x.merge.raw
+//(II) - filesize      : 6757931080 bytes
+//(II) -               : 6444 Mbytes
+//(II) - #minzer start : 978247464 elements
+//(II) -       skipped : 133506079 elements
+//(II) -         final : 844741385 elements
+//(II) - 8.17
+
+
+// 4x => 41234930 lines
+
+// 32x => 5154367 lines
