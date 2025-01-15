@@ -10,7 +10,10 @@
 #include <getopt.h>
 #include <sys/stat.h>
 #include <dirent.h>
+
 #include "./merger/merger_level_0.hpp"
+#include "./merger/merger_level_1.hpp"
+#include "./merger/merger_level_2_32.hpp"
 
 uint64_t get_file_size(const std::string& filen) {
     struct stat file_status;
@@ -52,7 +55,7 @@ std::vector<std::string> file_list_cpp()
 
 void gen_tests()
 {
-    const int length = 32;
+    const int length = 16;
 
     //
     //
@@ -79,13 +82,25 @@ void gen_tests()
     //
     //
     //
-    f = fopen("test_r.raw",   "w");
-    for(int x = 0; x < 2 * length; x += 1)
+    f = fopen("test_c.raw",   "w");
+    for(int x = 0; x < length; x += 1)
     {
-        const uint64_t value = x;
+        const uint64_t value = 2 * length + 2 * x;
         fwrite(&value, sizeof(uint64_t), 1, f);
     }
     fclose( f );
+
+    //
+    //
+    //
+    f = fopen("test_d.raw",   "w");
+    for(int x = 0; x < length; x += 1)
+    {
+        const uint64_t value = 2 * length + 2 * x + 1;
+        fwrite(&value, sizeof(uint64_t), 1, f);
+    }
+    fclose( f );
+
 }
 
 int main(int argc, char *argv[]) {
@@ -129,11 +144,25 @@ int main(int argc, char *argv[]) {
     printf("(II) -             : %llu Mbytes\n", size_2_Mbytes);
     printf("(II) - #minimizers : %llu elements\n", mizer_2);
     printf("(II)\n");
+    printf("(II) Merging level : %d\n", level);
+    printf("(II)\n");
 
     double start_time = omp_get_wtime();
 
     if( level == 0 )
         merge_level_0(ifile_1, ifile_2, o_file);
+    else if( level == 1 )
+        merge_level_1(ifile_1, ifile_2, o_file);
+    else if( level == 2 )
+        merge_level_2_32(ifile_1, ifile_2, o_file, 2);
+    else if( level == 4 )
+        merge_level_2_32(ifile_1, ifile_2, o_file, 4);
+    else if( level == 8 )
+        merge_level_2_32(ifile_1, ifile_2, o_file, 8);
+    else if( level == 16 )
+        merge_level_2_32(ifile_1, ifile_2, o_file, 16);
+    else if( level == 32 )
+        merge_level_2_32(ifile_1, ifile_2, o_file, 32);
     else
         exit( EXIT_FAILURE );
 

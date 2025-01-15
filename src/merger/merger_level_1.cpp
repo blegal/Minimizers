@@ -1,10 +1,10 @@
-#include "merger_level_0.hpp"
+#include "merger_level_1.hpp"
 
-void merge_level_0(std::string& ifile_1, std::string& ifile_2, std::string& o_file)
+void merge_level_1(std::string& ifile_1, std::string& ifile_2, std::string& o_file)
 {
 
     const int64_t _iBuff_ = 64 * 1024;
-    const int64_t _oBuff_ = _iBuff_;
+    const int64_t _oBuff_ = 2 * _iBuff_; // 2 fois plus grand car on insere les couleurs
 
     uint64_t *in_1 = new uint64_t[_iBuff_];
     uint64_t *in_2 = new uint64_t[_iBuff_];
@@ -21,44 +21,55 @@ void merge_level_0(std::string& ifile_1, std::string& ifile_2, std::string& o_fi
     FILE *fin_2 = fopen(ifile_2.c_str(), "r");
     FILE *fdst  = fopen(o_file.c_str(),   "w");
 
+    uint64_t colorDocA = 0x0000000000000001;
+    uint64_t colorDocB = 0x0000000000000002;
+
     uint64_t last_value = 0xFFFFFFFFFFFFFFFF;
     while (true) {
 
         if (counterA == nElementsA) {
             nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
             if (nElementsA == 0) {
-//                printf("End A (nElementsA = %lld, nElementsB = %lld)\n", nElementsA, nElementsB);
                 break;
             }
             counterA = 0;
-//            printf("Read A\n");
+
         }
         if (counterB == nElementsB) {
             nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
             if (nElementsB == 0) {
-//                printf("End B (nElementsA = %lld, nElementsB = %lld)\n", nElementsA, nElementsB);
                 break;
             };
             counterB = 0;
-//            printf("Read B\n");
         }
 
         while ((counterA != nElementsA) && (counterB != nElementsB) && ndst != (_oBuff_)) {
             const uint64_t v1 = in_1[counterA];
             const uint64_t v2 = in_2[counterB];
-//            const uint64_t ll = last_value;
+
             if (v1 < v2) {
-                if (v1 != last_value)
+                if (v1 != last_value){
                     dest[ndst++] = v1;
+                    dest[ndst++] = colorDocA;
+                    printf("un (%3llu, %3llu)...\n", v1, v2);
+                }else{
+                    dest[ndst-1] |= colorDocA;
+                    printf("ici %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
+                }
                 last_value = v1;
-                counterA      += 1;
+                counterA  += 1;
             } else {
-                if (v1 != last_value)
+                if (v1 != last_value){
                     dest[ndst++] = v2;
+                    dest[ndst++] = colorDocB;
+                    printf("deux (%3llu, %3llu)...\n", v1, v2);
+                }else{
+                    dest[ndst-1] |= colorDocB;
+                    printf("la %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
+                }
                 last_value = v2;
-                counterB      += 1;
+                counterB  += 1;
             }
-//            printf("last: 0x%16.16llX | v1: 0x%16.16llX | v2: 0x%16.16llX | cnt1: %llu | cnt2: %llu | dst: %llu |\n", ll, v1, v2, counterA, counterB, ndst);
         }
 
         //
@@ -67,33 +78,33 @@ void merge_level_0(std::string& ifile_1, std::string& ifile_2, std::string& o_fi
         if (ndst == _oBuff_) {
             fwrite(dest, sizeof(uint64_t), ndst, fdst);
             ndst = 0;
-//            printf("flush\n");
         }
     }
-
-//    printf("End X (nElementsA = %lld, nElementsB = %lld)\n", nElementsA, nElementsB);
 
     if (ndst != 0) {
         fwrite(dest, sizeof(uint64_t), ndst, fdst);
         ndst = 0;
-//        printf("flush (end)\n");
     }
 
-//    printf("Ending\n");
     if (nElementsA == 0) {
-//        printf("flushing B (%lld)\n", nElementsA);
-        fwrite(in_2 + counterB, sizeof(uint64_t), nElementsB - counterB, fdst);
+        ndst = 0;
+        for(int i = counterB; i < nElementsB; i += 1){ dest[ndst++] = in_2[i]; dest[ndst++] = colorDocB; }
+        fwrite(dest, sizeof(uint64_t), ndst, fdst);
         do{
             nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
-            fwrite(in_2, sizeof(uint64_t), nElementsB, fdst);
+            ndst = 0;
+            for( int i = 0; i < nElementsB; i += 1){ dest[ndst++] = in_2[i]; dest[ndst++] = colorDocB; }
+            fwrite(dest, sizeof(uint64_t), ndst, fdst);
         }while(nElementsB == _iBuff_);
 
     }else if (nElementsB == 0) {
-//        printf("flushing A (%lld)\n", nElementsB);
-        fwrite(in_1 + counterA, sizeof(uint64_t), nElementsA - counterA, fdst);
+        ndst = 0;
+        for(int i = counterA; i < nElementsA; i += 1){  dest[ndst++] = in_1[i]; dest[ndst++] = colorDocA; }
+        fwrite(dest, sizeof(uint64_t), ndst, fdst);
         do{
             nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
-            fwrite(in_1, sizeof(uint64_t), nElementsA, fdst);
+            for( int i = 0; i < nElementsA; i += 1){  dest[ndst++] = in_1[i]; dest[ndst++] = colorDocA; }
+            fwrite(dest, sizeof(uint64_t), ndst, fdst);
         }while(nElementsB == _iBuff_);
     }
 

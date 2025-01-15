@@ -172,12 +172,9 @@ project(merge)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/progress/progressbar.cpp
-        ./src/sorting/std_4cores/std_4cores.cpp
-        ./src/sorting/std_2cores/std_2cores.cpp
-        ./src/sorting/crumsort/crumsort.cpp
-        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        ./src/back/SaveMiniToRawFile.cpp
-        ./src/back/SaveMiniToTxtFile.cpp
+        ./src/merger/merger_level_0.cpp
+        ./src/merger/merger_level_1.cpp
+        ./src/merger/merger_level_2_32.cpp
         ./src/merge.cpp)
 add_executable(merge ${source_files})
 
