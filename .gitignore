@@ -32,3 +32,8 @@
 *.app
 build/
 .DS_Store
+.idea/.name
+.idea/Minimizers.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
