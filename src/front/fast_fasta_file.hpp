@@ -18,8 +18,6 @@ private:
 public:
     fast_fasta_file(const std::string filen)
     {
-        printf("(II) Creating fast_fasta_file object\n");
-
         buffer = new char[buff_size];
 
         f = fopen( filen.c_str(), "r" );
@@ -29,7 +27,6 @@ public:
             exit( EXIT_FAILURE );
         }
         n_data = fread(buffer, sizeof(char), buff_size, f);
-        printf("(II) Creation done\n");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////

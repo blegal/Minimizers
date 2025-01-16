@@ -128,8 +128,8 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        ./src/back/SaveMiniToRawFile.cpp
-        ./src/back/SaveMiniToTxtFile.cpp
+        src/back/raw/SaveMiniToRawFile.cpp
+        src/back/txt/SaveMiniToTxtFile.cpp
         ./src/min_sorter.cpp)
 add_executable(min_sorter ${source_files})
 
@@ -152,8 +152,8 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        ./src/back/SaveMiniToRawFile.cpp
-        ./src/back/SaveMiniToTxtFile.cpp
+        src/back/raw/SaveMiniToRawFile.cpp
+        src/back/txt/SaveMiniToTxtFile.cpp
         ./src/min_sorter_ref.cpp)
 add_executable(min_sorter_ref ${source_files})
 
@@ -186,5 +186,45 @@ target_include_directories(merge
 target_link_libraries(merge pthread)
 target_link_libraries(merge bz2)
 target_link_libraries(merge curses)
+
+########################################################################################################################
+
+project(raw_dump)
+
+file(GLOB_RECURSE source_files
+        ./src/raw_dump.cpp)
+add_executable(raw_dump ${source_files})
+
+target_include_directories(raw_dump
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+########################################################################################################################
+
+project(BreiZHMinimizer)
+
+file(GLOB_RECURSE source_files
+        ./src/BreiZHMinimizer.cpp
+        ./src/progress/progressbar.cpp
+        ./src/merger/merger_level_0.cpp
+        ./src/merger/merger_level_1.cpp
+        ./src/merger/merger_level_2_32.cpp
+        ./src/sorting/std_4cores/std_4cores.cpp
+        ./src/sorting/std_2cores/std_2cores.cpp
+        ./src/sorting/crumsort/crumsort.cpp
+        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
+        ./src/back/raw/SaveMiniToRawFile.cpp
+        ./src/back/txt/SaveMiniToTxtFile.cpp
+        ./src/minimizer/deduplication.cpp
+        ./src/minimizer/minimizer.cpp)
+add_executable(BreiZHMinimizer ${source_files})
+
+target_include_directories(BreiZHMinimizer
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+target_link_libraries(BreiZHMinimizer curses)
 
 ########################################################################################################################
