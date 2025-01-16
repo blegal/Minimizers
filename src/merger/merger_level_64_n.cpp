@@ -2,9 +2,11 @@
 
 void merge_level_64_n(std::string& ifile_1, std::string& ifile_2, std::string& o_file, const int level)
 {
-    const int64_t _iBuff_ = 64 * 1024;
-    const int64_t _oBuff_ = _iBuff_; // 2 fois plus grand car on insere les couleurs
-fzezf
+    const int n_u64_per_min = level / 64; // En entrée de la fonction
+
+    const int64_t _iBuff_ = (1 +     n_u64_per_min) * 1024;
+    const int64_t _oBuff_ = (1 + 2 * n_u64_per_min) * 1024;
+
     uint64_t *in_1 = new uint64_t[_iBuff_];
     uint64_t *in_2 = new uint64_t[_iBuff_];
     uint64_t *dest = new uint64_t[_oBuff_];
@@ -40,29 +42,39 @@ fzezf
         }
 
         while ((counterA != nElementsA) && (counterB != nElementsB) && ndst != (_oBuff_)) {
-            const uint64_t v1        = in_1[counterA    ];
-            const uint64_t colorDocA = in_1[counterA + 1];
-            const uint64_t v2        = in_2[counterB    ];
-            const uint64_t colorDocB = in_2[counterB + 1] << level; // On decale de 2 bits au level 2, 4 au level 4, etc.
+            const uint64_t v1        = in_1[counterA];
+            const uint64_t v2        = in_2[counterB];
 
             if (v1 < v2) {
                 if (v1 != last_value){
+                    // on ajoute notre minimizer dans la sortie
                     dest[ndst++] = v1;
-                    dest[ndst++] = colorDocA;
+                    // on insere notre couleur (A) dans la sortie
+                    for(int c = 0; c < n_u64_per_min; c +=1)
+                        dest[ndst++] = in_1[counterA + 1 + c];
+                    // on ajoute des zero pour les autres culeurs
+                    for(int c = 0; c < n_u64_per_min; c +=1)
+                        dest[ndst++] = 0;
                 }else{
-                    dest[ndst-1] |= colorDocA;
+                    // on recopie notre couleur (A) dans la sortie
+                    for(int c = 0; c < n_u64_per_min; c +=1)
+                        dest[ndst - 2 * n_u64_per_min + c] = in_1[counterA + 1 + c];
                 }
                 last_value = v1;
-                counterA  += 2;
+                counterA  += (1 + n_u64_per_min);
             } else {
-                if (v1 != last_value){
+                if (v2 != last_value){
                     dest[ndst++] = v2;
-                    dest[ndst++] = colorDocB;
+                    for(int c = 0; c < n_u64_per_min; c +=1)
+                        dest[ndst++] = 0;
+                    for(int c = 0; c < n_u64_per_min; c +=1)
+                        dest[ndst++] = in_2[counterB + 1 + c];
                 }else{
-                    dest[ndst-1] |= colorDocB;
+                    for(int c = 0; c < n_u64_per_min; c +=1)
+                        dest[ndst - 1 * n_u64_per_min + c] = in_2[counterB + 1 + c];
                 }
                 last_value = v2;
-                counterB  += 2;
+                counterB  += (1 + n_u64_per_min);
             }
         }
 
@@ -75,25 +87,71 @@ fzezf
         }
     }
 
+    //
+    // Il faut absolument faire un check pour verifier qu'il n'y a pas de redondance dans le flux
+    // qui n'est pas encore vide sinon on aura un doublon lors du flush !
+    //
+    if (nElementsA == 0) {
+        const uint64_t v2 = in_2[counterB];
+        const uint64_t colorDocB = in_2[counterB + 1] << level; // On decale de 2 bits au level 2, 4 au level 4, etc.
+        if (v2 == last_value) {
+            for(int c = 0; c < n_u64_per_min; c +=1)
+                dest[ndst - 1 * n_u64_per_min + c] = in_2[counterB + 1 + c];
+            counterB += (1 + n_u64_per_min);
+        }
+    }else if (nElementsB == 0) {
+        const uint64_t v1        = in_1[counterA    ];
+        if (v1 == last_value){
+            for(int c = 0; c < n_u64_per_min; c +=1)
+                dest[ndst - 2 * n_u64_per_min + c] = in_1[counterA + 1 + c];
+            counterA  += (1 + n_u64_per_min);
+        }
+    }
+
+    //
+    // On realise le flush du buffer de sortie, cela nous simplifier la vie par la suite !
+    //
     if (ndst != 0) {
         fwrite(dest, sizeof(uint64_t), ndst, fdst);
         ndst = 0;
     }
-
+oups en 32 aussi ?
     if (nElementsA == 0) {
-        fwrite(in_2 + nElementsB, sizeof(uint64_t), nElementsB - counterB, fdst);
+        //
+        // On insere les elements restant dans le buffer de dest.
+        //
+        for(int i = counterB; i < nElementsB; i += 1 + n_u64_per_min)
+            in_2[i] = in_2[i] << level; // OK c verifié
+        fwrite(in_2 + counterB, sizeof(uint64_t), nElementsB - counterB, fdst);
+
+        //
+        // On traite les donées restantes en passant par le buffer de dest.
+        //
         do{
             nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
-            ndst = 0;
-            fwrite(in_2, sizeof(uint64_t), nElementsB, fdst);
+            for(int i = 1; i < nElementsB; i+= 1 + n_u64_per_min)
+                in_2[i] = in_2[i] << level;
+            if( nElementsB != 0 )
+                fwrite(in_2, sizeof(uint64_t), nElementsB, fdst);
         }while(nElementsB == _iBuff_);
 
     }else if (nElementsB == 0) {
-        fwrite(in_1 + nElementsA, sizeof(uint64_t), nElementsA - counterA, fdst);
+        //
+        // On insere les elements restant dans le buffer de dest.
+        //
+        for(int i = counterA; i < nElementsA; i+= 2)
+            in_1[i] = in_1[i];
+        fwrite(in_1 + counterA, sizeof(uint64_t), nElementsA - counterA, fdst);
+
+        //
+        // On traite les donées restantes en passant par le buffer de dest.
+        //
         do{
             nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
-            fwrite(in_1, sizeof(uint64_t), nElementsA, fdst);
-        }while(nElementsB == _iBuff_);
+            for(int i = 1; i < nElementsA; i+= 2) in_1[i] = in_1[i] << level;
+            if( nElementsA != 0 )
+                fwrite(in_1, sizeof(uint64_t), nElementsA, fdst);
+        }while(nElementsA == _iBuff_);
     }
 
     fclose( fin_1 );
