@@ -128,15 +128,15 @@ void merge_level_2_32(
 
     }else if (nElementsB == 0) {
 //        printf("flush A : %lld %lld\n", counterA, nElementsA);
-        for(int i = counterA + 1; i < nElementsA; i+= 2) in_1[i] = in_1[i] << level;
+        for(int i = counterA + 1; i < nElementsA; i+= 2) in_1[i] = in_1[i];
         fwrite(in_1 + counterA, sizeof(uint64_t), nElementsA - counterA, fdst);
         do{
             nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
-            for(int i = 1; i < nElementsA; i+= 2) in_1[i] = in_1[i] << level;
+            for(int i = 1; i < nElementsA; i+= 2) in_1[i] = in_1[i];
 //            printf(" - flush A : %lld\n", nElementsA);
             if( nElementsA != 0 )
                 fwrite(in_1, sizeof(uint64_t), nElementsA, fdst);
-        }while(nElementsB == _iBuff_);
+        }while(nElementsA == _iBuff_);
     }
 
     fclose( fin_1 );
