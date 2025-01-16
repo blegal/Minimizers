@@ -1,6 +1,9 @@
 #include "merger_level_1.hpp"
 
-void merge_level_1(std::string& ifile_1, std::string& ifile_2, std::string& o_file)
+void merge_level_1(
+        const std::string& ifile_1,
+        const std::string& ifile_2,
+        const std::string& o_file)
 {
 
     const int64_t _iBuff_ = 64 * 1024;
@@ -51,10 +54,10 @@ void merge_level_1(std::string& ifile_1, std::string& ifile_2, std::string& o_fi
                 if (v1 != last_value){
                     dest[ndst++] = v1;
                     dest[ndst++] = colorDocA;
-                    printf("un (%3llu, %3llu)...\n", v1, v2);
+//                    printf("un (%3llu, %3llu)...\n", v1, v2);
                 }else{
                     dest[ndst-1] |= colorDocA;
-                    printf("ici %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
+//                    printf("ici %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
                 }
                 last_value = v1;
                 counterA  += 1;
@@ -62,10 +65,10 @@ void merge_level_1(std::string& ifile_1, std::string& ifile_2, std::string& o_fi
                 if (v1 != last_value){
                     dest[ndst++] = v2;
                     dest[ndst++] = colorDocB;
-                    printf("deux (%3llu, %3llu)...\n", v1, v2);
+//                    printf("deux (%3llu, %3llu)...\n", v1, v2);
                 }else{
                     dest[ndst-1] |= colorDocB;
-                    printf("la %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
+//                    printf("la %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
                 }
                 last_value = v2;
                 counterB  += 1;

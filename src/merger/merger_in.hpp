@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-extern void merge_level_2_32(
+extern void merger_in(
         const std::string& ifile_1,
         const std::string& ifile_2,
         const std::string& o_file,

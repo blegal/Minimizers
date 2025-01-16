@@ -1,6 +1,10 @@
 #include "merger_level_1.hpp"
 
-void merge_level_2_32(std::string& ifile_1, std::string& ifile_2, std::string& o_file, const int level)
+void merge_level_2_32(
+        const std::string& ifile_1,
+        const std::string& ifile_2,
+        const std::string& o_file,
+        const int level)
 {
 
     const int64_t _iBuff_ = 64 * 1024;
@@ -51,9 +55,9 @@ void merge_level_2_32(std::string& ifile_1, std::string& ifile_2, std::string& o
                     dest[ndst++] = v1;
                     dest[ndst++] = colorDocA;
                 }else{
-                    printf("merge colorDoc1 (%16.16llX / %16.16llX)\n", dest[ndst-1], colorDocA);
+//                    printf("merge colorDoc1 (%16.16llX / %16.16llX)\n", dest[ndst-1], colorDocA);
                     dest[ndst-1] |= colorDocA;
-                    printf("                (%16.16llX)\n", dest[ndst-1]);
+//                    printf("                (%16.16llX)\n", dest[ndst-1]);
                 }
                 last_value = v1;
                 counterA  += 2;
@@ -62,9 +66,9 @@ void merge_level_2_32(std::string& ifile_1, std::string& ifile_2, std::string& o
                     dest[ndst++] = v2;
                     dest[ndst++] = colorDocB;
                 }else{
-                    printf("merge colorDocB (%16.16llX / %16.16llX)\n", dest[ndst-1], colorDocB);
+//                    printf("merge colorDocB (%16.16llX / %16.16llX)\n", dest[ndst-1], colorDocB);
                     dest[ndst-1] |= colorDocB;
-                    printf("                (%16.16llX)\n", dest[ndst-1]);
+//                    printf("                (%16.16llX)\n", dest[ndst-1]);
                 }
                 last_value = v2;
                 counterB  += 2;

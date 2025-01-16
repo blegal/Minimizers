@@ -11,4 +11,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-extern void merge_level_0(std::string& ifile_1, std::string& ifile_2, std::string& o_file);
+extern void merge_level_0(
+        const std::string& ifile_1,
+        const std::string& ifile_2,
+        const std::string& o_file);

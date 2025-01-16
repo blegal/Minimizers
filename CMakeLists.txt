@@ -207,6 +207,7 @@ project(BreiZHMinimizer)
 file(GLOB_RECURSE source_files
         ./src/BreiZHMinimizer.cpp
         ./src/progress/progressbar.cpp
+        ./src/merger/merger_in.cpp
         ./src/merger/merger_level_0.cpp
         ./src/merger/merger_level_1.cpp
         ./src/merger/merger_level_2_32.cpp

@@ -1,6 +1,9 @@
 #include "merger_level_0.hpp"
 
-void merge_level_0(std::string& ifile_1, std::string& ifile_2, std::string& o_file)
+void merge_level_0(
+        const std::string& ifile_1,
+        const std::string& ifile_2,
+        const std::string& o_file)
 {
 
     const int64_t _iBuff_ = 64 * 1024;
