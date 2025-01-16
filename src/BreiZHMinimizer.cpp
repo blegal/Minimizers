@@ -2,12 +2,14 @@
 #include <fstream>
 #include <vector>
 #include <omp.h>
+#include <unistd.h>
 #include <getopt.h>
 #include <sys/stat.h>
+#include <filesystem>
+
 
 #include "./minimizer/minimizer.hpp"
 #include "./merger/merger_in.hpp"
-
 //
 //  Récupère la taille en octet du fichier passé en paramètre
 //
