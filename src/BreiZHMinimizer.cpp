@@ -6,6 +6,9 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+//
+//  Récupère la taille en octet du fichier passé en paramètre
+//
 uint64_t get_file_size(const std::string& filen) {
     struct stat file_status;
     if (stat(filen.c_str(), &file_status) < 0) {
@@ -14,6 +17,9 @@ uint64_t get_file_size(const std::string& filen) {
     return file_status.st_size;
 }
 
+//
+//  Récupère la liste des fichiers contenus dans un répertoire
+//
 std::vector<std::string> file_list_cpp(std::string path)
 {
     std::vector<std::string> paths;
