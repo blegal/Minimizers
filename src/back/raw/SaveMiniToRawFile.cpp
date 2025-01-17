@@ -28,7 +28,8 @@ bool SaveMiniToFileRAW(const std::string filename, const std::vector<uint64_t> l
     FILE* f = fopen( n_file.c_str(), "w" );
     if( f == NULL )
     {
-        printf("(EE) File does not exist !\n");
+        printf("(EE) File does not exist (%s))\n", filename.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
 

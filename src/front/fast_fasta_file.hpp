@@ -23,7 +23,8 @@ public:
         f = fopen( filen.c_str(), "r" );
         if( f == NULL )
         {
-            printf("(EE) File does not exist !\n");
+            printf("(EE) File does not exist (%s))\n", filen.c_str());
+            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
             exit( EXIT_FAILURE );
         }
         n_data = fread(buffer, sizeof(char), buff_size, f);

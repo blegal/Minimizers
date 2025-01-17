@@ -1,12 +1,7 @@
 #include <cstdio>
-#include <cstdlib>
 #include <fstream>
 #include <vector>
-#include <chrono>
-#include <algorithm>
-#include <iostream>
 #include <omp.h>
-#include <sstream>
 #include <getopt.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -14,6 +9,8 @@
 #include "./merger/merger_level_0.hpp"
 #include "./merger/merger_level_1.hpp"
 #include "./merger/merger_level_2_32.hpp"
+
+#include "./merger/merger_in.hpp"
 
 uint64_t get_file_size(const std::string& filen) {
     struct stat file_status;
@@ -106,7 +103,7 @@ void gen_tests()
 int main(int argc, char *argv[]) {
     if (argc < 4) {
         gen_tests();
-        return EXIT_FAILURE;
+        exit( EXIT_FAILURE );
     }
 
     std::string ifile_1 = argv[1];
@@ -144,27 +141,13 @@ int main(int argc, char *argv[]) {
     printf("(II) -             : %llu Mbytes\n", size_2_Mbytes);
     printf("(II) - #minimizers : %llu elements\n", mizer_2);
     printf("(II)\n");
-    printf("(II) Merging level : %d\n", level);
+    printf("(II) #colors ifile : %d\n",     level);
+    printf("(II) #colors ofile : %d\n", 2 * level);
     printf("(II)\n");
 
     double start_time = omp_get_wtime();
 
-    if( level == 0 )
-        merge_level_0(ifile_1, ifile_2, o_file);
-    else if( level == 1 )
-        merge_level_1(ifile_1, ifile_2, o_file);
-    else if( level == 2 )
-        merge_level_2_32(ifile_1, ifile_2, o_file, 2);
-    else if( level == 4 )
-        merge_level_2_32(ifile_1, ifile_2, o_file, 4);
-    else if( level == 8 )
-        merge_level_2_32(ifile_1, ifile_2, o_file, 8);
-    else if( level == 16 )
-        merge_level_2_32(ifile_1, ifile_2, o_file, 16);
-    else if( level == 32 )
-        merge_level_2_32(ifile_1, ifile_2, o_file, 32);
-    else
-        exit( EXIT_FAILURE );
+    merger_in(ifile_1, ifile_2, o_file, level);
 
     double end_time = omp_get_wtime();
 

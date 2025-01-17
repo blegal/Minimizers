@@ -17,6 +17,7 @@
 #include "sorting/std_4cores/std_4cores.hpp"
 #include "sorting/crumsort_2cores/crumsort_2cores.hpp"
 
+#include "./minimizer/deduplication.hpp"
 #include "./tools/read_k_value.hpp"
 #include "front/count_lines.hpp"
 

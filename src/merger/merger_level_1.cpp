@@ -62,7 +62,7 @@ void merge_level_1(
                 last_value = v1;
                 counterA  += 1;
             } else {
-                if (v1 != last_value){
+                if (v2 != last_value){
                     dest[ndst++] = v2;
                     dest[ndst++] = colorDocB;
 //                    printf("deux (%3llu, %3llu)...\n", v1, v2);

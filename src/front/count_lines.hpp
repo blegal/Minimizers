@@ -22,7 +22,7 @@ int count_lines(std::string filename)
     if( ifile.is_open() == false )
     {
         printf("(EE) File does not exist !\n");
-        return EXIT_FAILURE;
+        exit( EXIT_FAILURE );
     }
     double start_time = omp_get_wtime();
     int n_sequences = 0;
@@ -53,8 +53,9 @@ uint64_t count_lines_c(std::string filename)
     FILE* f = fopen( filename.c_str(), "r" );
     if( f == NULL )
     {
-//        printf("(EE) File does not exist !\n");
-        return EXIT_FAILURE;
+        printf("(EE) File does not exist (%s))\n", filename.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        exit( EXIT_FAILURE );
     }
 
     uint64_t n_sequences = 0;
@@ -87,8 +88,9 @@ int count_lines_cpp(std::string filename)
     std::ifstream ifile( filename );
     if( ifile.is_open() == false )
     {
-        printf("(EE) File does not exist !\n");
-        return EXIT_FAILURE;
+        printf("(EE) An error corrured while openning the file (%s)\n", filename.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        exit( EXIT_FAILURE );
     }
 
     int n_sequences = 0;

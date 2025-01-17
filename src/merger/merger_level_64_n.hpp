@@ -12,4 +12,9 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-extern void merge_level_64_n(std::string& ifile_1, std::string& ifile_2, std::string& o_file);
+extern void merge_level_64_n(
+        const std::string& ifile_1,
+        const std::string& ifile_2,
+        const std::string& o_file,
+        const int level);
+

@@ -9,8 +9,6 @@
 #include <sstream>
 #include <getopt.h>
 
-#include "../../src/headers/additional_methods.hpp"
-
 #include "progress/progressbar.h"
 
 #include "front/fast_fasta_file.hpp"
@@ -19,53 +17,13 @@
 #include "sorting/std_4cores/std_4cores.hpp"
 #include "sorting/crumsort_2cores/crumsort_2cores.hpp"
 
+#include "./kmer/bfc_hash64.hpp"
+
 #include "./tools/read_k_value.hpp"
 #include "front/count_lines.hpp"
 
-#include "./tools/fast_atoi.hpp"
-
 #include "back/txt/SaveMiniToTxtFile.hpp"
 #include "back/raw/SaveMiniToRawFile.hpp"
-
-void my_sort(std::vector<uint64_t>& test)
-{
-    const int size = test.size();
-    const int half = size / 2;
-
-    std::vector<uint64_t> v1( half );
-    std::vector<uint64_t> v2( half );
-
-    vec_copy(v1, test.data(),        half );
-    vec_copy(v2, test.data() + half, half );
-
-    std::sort( v1.begin(), v1.end() );
-    std::sort( v2.begin(), v2.end() );
-
-    int ptr_1 = 0;
-    int ptr_2 = 0;
-
-    int i;
-    for(i = 0; i < size; i += 1)
-    {
-        if( v1[ptr_1] < v2[ptr_2] )
-        {
-            test[i] = v1[ptr_1++];
-        } else {
-            test[i] = v2[ptr_2++];
-        }
-    }
-    if( ptr_1 == half )
-    {
-        for(; i < size; i += 1)
-            test[i] = v2[ptr_2++];
-    }else{
-        for(; i < size; i += 1)
-            test[i] = v2[ptr_1++];
-    }
-    v1.clear();
-    v2.clear();
-}
-
 //
 //
 //
@@ -73,9 +31,14 @@ void my_sort(std::vector<uint64_t>& test)
 //
 //
 //
-
 std::chrono::steady_clock::time_point begin;
-
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
 void VectorDeduplication(std::vector<uint64_t>& values)
 {
     printf("(II)\n");
@@ -111,24 +74,7 @@ void VectorDeduplication(std::vector<uint64_t>& values)
 //
 //
 //
-inline uint64_t revcomp64 (const uint64_t v, size_t bitsize){
-    return (((uint64_t)rev_table[v & 0xff] << 56) |
-            ((uint64_t)rev_table[(v >>  8) & 0xff] << 48) |
-            ((uint64_t)rev_table[(v >> 16) & 0xff] << 40) |
-            ((uint64_t)rev_table[(v >> 24) & 0xff] << 32) |
-            ((uint64_t)rev_table[(v >> 32) & 0xff] << 24) |
-            ((uint64_t)rev_table[(v >> 40) & 0xff] << 16) |
-            ((uint64_t)rev_table[(v >> 48) & 0xff] << 8) |
-            ((uint64_t)rev_table[(v >> 56) & 0xff])) >> (64-bitsize);
-}
-
-inline uint64_t canonical(uint64_t smer, size_t size)
-{
-    uint64_t revcomp = revcomp64(smer, size);
-    if (revcomp < smer) { return revcomp; }
-    else { return smer; }
-}
-
+#define MEM_UNIT 64
 inline uint64_t mask_right(uint64_t numbits){
     uint64_t mask = -(numbits >= MEM_UNIT) | ((1ULL << numbits) - 1ULL);
     return mask;
@@ -367,14 +313,19 @@ int main(int argc, char* argv[])
                 memcpy(mmer_b, kmer_b + m_pos, mmer);
 
                 uint64_t current_mmer = 0;
+                uint64_t cur_inv_mmer = 0;
                 for(int x = 0; x < mmer; x += 1)
                 {
                     current_mmer <<= 2;
-                    current_mmer |= ((mmer_b[x] >> 1) & 0b11); // conversion ASCII => 2bits (Yoann)
+                    cur_inv_mmer >>= 2;
+
+                    const uint64_t encoded = ((mmer_b[x] >> 1) & 0b11); // conversion ASCII => 2bits (Yoann)
+                    current_mmer |=  encoded;
+                    cur_inv_mmer |= (encoded << (2 * (mmer - 1)));
                 }
 
-                const uint64_t canon  = canonical(current_mmer, 2 * 19);
-                const uint64_t mask = mask_right(2 * mmer); // on masque
+                const uint64_t canon  = (current_mmer < cur_inv_mmer) ? current_mmer : cur_inv_mmer;
+                const uint64_t mask   = mask_right(2 * mmer); // on masque
                 const uint64_t s_hash = bfc_hash_64(canon, mask);
                 minv = (s_hash < minv) ? s_hash : minv;
                 mmer_cnt += 1;

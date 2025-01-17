@@ -128,6 +128,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
+        ./src/minimizer/deduplication.cpp
         src/back/raw/SaveMiniToRawFile.cpp
         src/back/txt/SaveMiniToTxtFile.cpp
         ./src/min_sorter.cpp)
@@ -152,8 +153,8 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        src/back/raw/SaveMiniToRawFile.cpp
-        src/back/txt/SaveMiniToTxtFile.cpp
+        ./src/back/raw/SaveMiniToRawFile.cpp
+        ./src/back/txt/SaveMiniToTxtFile.cpp
         ./src/min_sorter_ref.cpp)
 add_executable(min_sorter_ref ${source_files})
 
@@ -175,6 +176,8 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/merger/merger_level_0.cpp
         ./src/merger/merger_level_1.cpp
         ./src/merger/merger_level_2_32.cpp
+        ./src/merger/merger_level_64_n.cpp
+        ./src/merger/merger_in.cpp
         ./src/merge.cpp)
 add_executable(merge ${source_files})
 
@@ -202,6 +205,13 @@ target_include_directories(raw_dump
 
 ########################################################################################################################
 
+project(test_generator)
+
+file(GLOB_RECURSE source_files  ./src/test_generator.cpp)
+add_executable(test_generator ${source_files})
+
+########################################################################################################################
+
 project(BreiZHMinimizer)
 
 file(GLOB_RECURSE source_files
@@ -211,6 +221,7 @@ file(GLOB_RECURSE source_files
         ./src/merger/merger_level_0.cpp
         ./src/merger/merger_level_1.cpp
         ./src/merger/merger_level_2_32.cpp
+        ./src/merger/merger_level_64_n.cpp
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
@@ -227,5 +238,18 @@ target_include_directories(BreiZHMinimizer
 )
 
 target_link_libraries(BreiZHMinimizer curses)
+
+########################################################################################################################
+
+project(extract_color)
+
+file(GLOB_RECURSE source_files
+        ./src/extract_color.cpp)
+add_executable(extract_color ${source_files})
+
+target_include_directories(extract_color
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
 
 ########################################################################################################################

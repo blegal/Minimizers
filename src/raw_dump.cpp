@@ -23,7 +23,8 @@ uint64_t get_file_size(const std::string& filen) {
 int main(int argc, char *argv[]) {
 
     if (argc < 2) {
-        return EXIT_FAILURE;
+        printf("(EE) Not enougth arguments...\n");
+        exit( EXIT_FAILURE );
     }
 
     std::string ifile = argv[1];
@@ -33,33 +34,105 @@ int main(int argc, char *argv[]) {
         level = std::atoi( argv[2] );
     }
 
-    int scale = (level == 0 ? 1 : 2);
-
     const uint64_t size_bytes  = get_file_size(ifile);
     const uint64_t n_elements  = size_bytes / sizeof(uint64_t);
-    const uint64_t n_minimizr  = n_elements / (level == 0 ? 1 : 2);
+
+    ////////////////////////////////////////////////////////////////////////////////////
+
+    uint64_t n_minimizr;
+    uint64_t n_colors;
+    uint64_t n_uint64_c;
+    if( level == 0 ){
+        n_minimizr  = n_elements;
+        n_uint64_c  = 0;
+        n_colors    = 0;
+    }else if( level < 64  ){
+        n_colors    = level;
+        n_uint64_c  = 1;
+        n_minimizr  = n_elements / (1 + n_uint64_c);
+    }else{
+        n_colors    = level;
+        n_uint64_c  = (level / 64);
+        n_minimizr  = n_elements / (1 + n_uint64_c);
+    }
+
+    const int scale = 1 + n_uint64_c;
+
+    printf("(II) file size in bytes  : %llu\n", size_bytes);
+    printf("(II) # uint64_t elements : %llu\n", n_elements);
+    printf("(II) # minimizers        : %llu\n", n_minimizr);
+    printf("(II) # of colors         : %llu\n", n_colors  );
+    printf("(II) # uint64_t/colors   : %llu\n", n_uint64_c);
+
+    ////////////////////////////////////////////////////////////////////////////////////
 
     std::vector<uint64_t> liste( n_elements );
 
     FILE* f = fopen( ifile.c_str(), "r" );
+    if( f == NULL )
+    {
+        printf("(EE) An error corrured while openning the file (%s)\n", ifile.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        exit( EXIT_FAILURE );
+    }
+
     fread(liste.data(), sizeof(uint64_t), n_elements, f);
     fclose(f);
 
-    for(int i = 0; i < n_minimizr; i += 1)
-    {
-        printf("%6d | %16.16llX | ", i, liste[scale * i]);
-        uint64_t value = liste[scale * i + 1];
-        printf("%16.16llX | ", value);
+    if( n_colors == 0 ) {
 
-        if( level != 0 )
-        {
-            for(int x = 0; x < 64; x +=1)
-            {
-                if( (value >> x) & 0x01 )
-                    printf("%d ", (x+1));
-            }
+        //
+        // On se simplifie la vie car on n'a pas de couleurs a gerer
+        //
+        printf("-------+------------------+\n");
+        printf("  idx  |     minimizers   |\n");
+        printf("-------+------------------+\n");
+        for(int i = 0; i < n_minimizr; i += 1) {
+//          printf("%6d | %16.16llX |\n", i, liste[i]);
+            const uint64_t miniz = liste[i];
+            printf("%6d |\e[0;32m %16.16llX \e[0;37m|\n", i, miniz);
         }
-        printf("\n");
+
+    }else{
+
+        //
+        // On se simplifie la vie car on n'a pas de couleurs a gerer
+        //
+
+        for(int i = 0; i < n_minimizr; i += 1)
+        {
+            const int pos        = scale * i;
+            const uint64_t miniz = liste[pos];
+
+//          printf("%6d | %16.16llX | ", i, miniz);
+            printf("%6d |\e[0;32m %16.16llX \e[0;37m| ", i, miniz);
+
+            //
+            // On affiche les couleurs en mode Hexa
+            //
+
+            for(int c = 0; c < n_uint64_c; c += 1)
+            {
+                const uint64_t value = liste[scale * i + 1 + c];
+                printf("%16.16llX", value);
+            }
+            printf(" | ");
+
+            //
+            // On affiche les couleurs du minimizer
+            //
+
+            for(int c = 0; c < n_uint64_c; c += 1)
+            {
+                const uint64_t value = liste[scale * i + 1 + c];
+                for(int x = 0; x < 64; x +=1)
+                {
+                    if( (value >> x) & 0x01 )
+                        printf("%d ", 64 * c + x);
+                }
+            }
+            printf("\n");
+        }
     }
 
     return 0;

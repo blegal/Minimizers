@@ -21,7 +21,8 @@ int read_k_value(std::string filename)
     std::ifstream ifile( filename );
     if( ifile.is_open() == false )
     {
-        printf("(EE) File does not exist !\n");
+        printf("(EE) File does not exist (%s))\n", filename.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         return EXIT_FAILURE;
     }
     std::string line, seq;

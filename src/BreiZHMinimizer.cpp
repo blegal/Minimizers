@@ -41,11 +41,87 @@ int main(int argc, char *argv[])
     //
     //
     //
-    if (argc < 2) {
-        return EXIT_FAILURE;
+    std::string directory = "";
+    std::string filename  = "";
+
+    int  verbose_flag        = 0;
+    bool  skip_minimizer_step = 0;
+    bool  keep_temp_files     = 0;
+    bool help_flag           = false;
+    int  threads             = 0;
+
+    static struct option long_options[] ={
+            {"verbose",     no_argument, 0, 'v'},
+            {"skip-minimizer-step",     no_argument, 0, 's'},
+            {"keep-temp-files",     no_argument, 0, 'k'},
+            {"help",        no_argument, 0, 'h'},
+            {"directory",       required_argument, 0, 'd'},
+            {"filename",      required_argument, 0,  'f'},
+            {"threads",      required_argument, 0,  't'},
+            {0, 0, 0, 0}
+    };
+
+
+    /* getopt_long stores the option index here. */
+    int option_index = 0;
+    int c;
+    while( true )
+    {
+        c = getopt_long (argc, argv, "d:f:t:vhks", long_options, &option_index);
+        if (c == -1)
+            break;
+
+        switch ( c )
+        {
+            case 'd':
+                directory = optarg;
+                break;
+
+            case 'f':
+                filename = optarg;
+                break;
+
+            case 's':
+                skip_minimizer_step = true;
+                break;
+
+            case 'k':
+                keep_temp_files = true;
+                break;
+
+            case 't':
+                threads = std::atoi( optarg );
+                break;
+
+            case 'h':
+                help_flag = true;
+                break;
+
+            case '?':
+                break;
+
+            default:
+                abort ();
+        }
     }
 
-    std::string dir = argv[1];
+    /*
+     * Print any remaining command line arguments (not options).
+     * */
+    if ( (optind < argc) || (help_flag == true) || ((directory.size() == 0) && (filename.size() == 0)))
+    {
+        printf ("Usage :\n");
+        printf ("./BreiZHMinimizer -d <directory to process>              [options]\n");
+        printf ("./BreiZHMinimizer -d <file with list of file to process> [options]\n");
+        printf ("\n");
+        printf ("Options :\n");
+        printf ("  -s : --skip-minimizer-step : \n");
+        printf ("  -k --keep-temp-files     : \n");
+        printf ("  -t  <number>    : threads\n");
+        putchar ('\n');
+        exit( EXIT_FAILURE );
+    }
+
 
     //
     // On recuperer la liste des fichiers que l'on doit traiter. Ce nombre de fichiers doit
@@ -53,47 +129,50 @@ int main(int argc, char *argv[])
     // (ajout de la donnée uint64_t pour la couleur). Ce n'est pas un probleme scientifique mais
     // technique, un peu plus de code a developper plus tard...
     //
-    std::vector<std::string> l_files = file_list_cpp(dir);
-#if 0
-    if( l_files.size()%2 == 1 )
+    std::vector<std::string> l_files = file_list_cpp(directory);
+    for( int i = 0; i < l_files.size(); i += 1 )
     {
-        printf("(EE) Le nombre de fichiers a traiter est impair, cela n'est pour le moment pas supporté !\n");
-        exit(EXIT_FAILURE);
+        if( l_files[i].find(".DS_Store") != std::string::npos )
+            l_files.erase( l_files.begin() + i );
     }
-#endif
+
+    std::sort(l_files.begin(), l_files.end());
 
     std::vector<std::string> n_files;
 
     //
     //
     //
-#pragma omp parallel for
-    for(int i = 0; i < l_files.size(); i += 1)
+    if( skip_minimizer_step == false )
     {
-        const std::string i_file = l_files[i];
-        const uint64_t f_size    = get_file_size(i_file);
-        const uint64_t size_mb   = f_size / 1024 / 1024;
-        const std::string o_file = "file_n" + std::to_string(i) + ".raw";
-        /////
-        minimizer_processing(
-                i_file,
-                o_file,
-                "crumsort",         // algo
-                true,               // file_save_output,
-                true,               // worst_case_memory,
-                false,              // verbose_flag,
-                false               // file_save_debug
-        );
-        /////
-        const uint64_t o_size    = get_file_size(o_file);
-        const uint64_t sizo_mb   = o_size / 1024 / 1024;
-        printf("%5d | %20s | %6lld MB | ==========> | %20s | %6lld MB |\n", i, i_file.c_str(), size_mb, o_file.c_str(), sizo_mb);
-        /////
-        n_files.push_back( o_file );
-        /////
+//#pragma omp parallel for
+        for(int i = 0; i < l_files.size(); i += 1)
+        {
+            const std::string i_file = l_files[i];
+            const uint64_t f_size    = get_file_size(i_file);
+            const uint64_t size_mb   = f_size / 1024 / 1024;
+            const std::string o_file = "data_n" + std::to_string(i) + ".c0";
+            /////
+            minimizer_processing(
+                     i_file,
+                     o_file,
+                    "crumsort",         // algo
+                    true,               // file_save_output,
+                    true,               // worst_case_memory,
+                    false,              // verbose_flag,
+                    false               // file_save_debug
+            );
+            /////
+            const uint64_t o_size    = get_file_size(o_file);
+            const uint64_t sizo_mb   = o_size / 1024 / 1024;
+            printf("%5d | %20s | %6lld MB | ==========> | %20s | %6lld MB |\n", i, i_file.c_str(), size_mb, o_file.c_str(), sizo_mb);
+            /////
+            n_files.push_back( o_file );
+            /////
+        }
+        l_files = n_files;
+        n_files.clear();
     }
-    l_files = n_files;
-    n_files.clear();
 
     //
     //
@@ -104,7 +183,7 @@ int main(int argc, char *argv[])
     //
     //
     //
-    int level = 1;
+    int colors = 1;
     while( l_files.size() > 1 )
     {
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
@@ -113,7 +192,7 @@ int main(int argc, char *argv[])
         {
             const std::string i_file_1 = l_files[0]; l_files.erase( l_files.begin() );
             const std::string i_file_2 = l_files[0]; l_files.erase( l_files.begin() );
-            const std::string o_file   = "lvl_" + std::to_string(level) + "_n" + std::to_string(cnt) + ".raw";
+            const std::string o_file   = "data_n" + std::to_string(cnt) + "." + std::to_string(2 * colors) + "c";
 
             const uint64_t i1_size   = get_file_size(i_file_1);
             const uint64_t siz1_mb   = i1_size / 1024 / 1024;
@@ -121,20 +200,22 @@ int main(int argc, char *argv[])
             const uint64_t i2_size   = get_file_size(i_file_2);
             const uint64_t siz2_mb   = i2_size / 1024 / 1024;
 
-//          printf("| %20s | + | %20s | %d |\n", i_file_1.c_str(), i_file_2.c_str(), 1 << (level-1));
+//            printf("| %20s | + | %20s | %d |\n", i_file_1.c_str(), i_file_2.c_str(), colors);
 
-            merger_in(i_file_1, i_file_2, o_file, 1 << (level-1));
+            merger_in(i_file_1, i_file_2, o_file, colors);
 
-            std::remove( i_file_1.c_str() ); // delete file
-            std::remove( i_file_2.c_str() ); // delete file
+            if( keep_temp_files == 0 )
+            {
+                std::remove( i_file_1.c_str() ); // delete file
+                std::remove( i_file_2.c_str() ); // delete file
+            }
 
             const uint64_t o_size    = get_file_size(o_file);
             const uint64_t sizo_mb   = o_size / 1024 / 1024;
 
             n_files.push_back( o_file );
-            printf("%5d | %20s | %6lld MB | %20s | %6lld MB | ==========> | %20s | %6lld MB |\n", cnt, i_file_1.c_str(), siz1_mb, i_file_2.c_str(), i2_size, o_file.c_str(), sizo_mb);
+            printf("%5d | %20s | %6lld MB | %20s | %6lld MB | ==========> | %20s | %6lld MB |\n", cnt, i_file_1.c_str(), siz1_mb, i_file_2.c_str(), siz2_mb, o_file.c_str(), sizo_mb);
             cnt += 1;
-            usleep( 1000 );
         }
 
         //
@@ -144,19 +225,18 @@ int main(int argc, char *argv[])
         if( l_files.size() != 0 )
         {
             vrac_names.push_back ( l_files.front() );
-            vrac_levels.push_back( level           );
+            vrac_levels.push_back( colors          );
         }
 
         l_files = n_files;
         n_files.clear();
-        level += 1;
-        if( level == 7 ) break;
+        colors *= 2;
     }
     printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
     for(int i = 0; i < vrac_names.size(); i += 1)
     {
-        printf("%5d | %20s | level = %6d ||\n", i, vrac_names[i].c_str(), vrac_levels[i]);
+        printf("> %5d | %20s | level = %6d ||\n", i, vrac_names[i].c_str(), vrac_levels[i]);
     }
 
     printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
