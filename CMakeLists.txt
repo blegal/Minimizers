@@ -175,8 +175,10 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/progress/progressbar.cpp
         ./src/merger/merger_level_0.cpp
         ./src/merger/merger_level_1.cpp
+        ./src/merger/merger_level_2_0.cpp
         ./src/merger/merger_level_2_32.cpp
         ./src/merger/merger_level_64_n.cpp
+        ./src/merger/merger_level_n_p.cpp
         ./src/merger/merger_in.cpp
         ./src/merge.cpp)
 add_executable(merge ${source_files})
@@ -220,8 +222,10 @@ file(GLOB_RECURSE source_files
         ./src/merger/merger_in.cpp
         ./src/merger/merger_level_0.cpp
         ./src/merger/merger_level_1.cpp
+        ./src/merger/merger_level_2_0.cpp
         ./src/merger/merger_level_2_32.cpp
         ./src/merger/merger_level_64_n.cpp
+        ./src/merger/merger_level_n_p.cpp
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
@@ -248,6 +252,19 @@ file(GLOB_RECURSE source_files
 add_executable(extract_color ${source_files})
 
 target_include_directories(extract_color
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+########################################################################################################################
+
+project(color_stats)
+
+file(GLOB_RECURSE source_files
+        ./src/color_stats.cpp)
+add_executable(color_stats ${source_files})
+
+target_include_directories(color_stats
         PUBLIC
         "${PROJECT_SOURCE_DIR}/../src/headers/"
 )

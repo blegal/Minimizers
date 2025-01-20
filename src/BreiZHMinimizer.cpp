@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
     //
     if( skip_minimizer_step == false )
     {
-//#pragma omp parallel for
+#pragma omp parallel for
         for(int i = 0; i < l_files.size(); i += 1)
         {
             const std::string i_file = l_files[i];
@@ -195,14 +195,21 @@ int main(int argc, char *argv[])
             const std::string o_file   = "data_n" + std::to_string(cnt) + "." + std::to_string(2 * colors) + "c";
 
             const uint64_t i1_size   = get_file_size(i_file_1);
-            const uint64_t siz1_mb   = i1_size / 1024 / 1024;
+            const uint64_t siz1_kb   = i1_size / 1024;
+            const uint64_t siz1_mb   = siz1_kb / 1024;
 
             const uint64_t i2_size   = get_file_size(i_file_2);
-            const uint64_t siz2_mb   = i2_size / 1024 / 1024;
+            const uint64_t siz2_kb   = i2_size / 1024;
+            const uint64_t siz2_mb   = siz2_kb / 1024;
 
 //            printf("| %20s | + | %20s | %d |\n", i_file_1.c_str(), i_file_2.c_str(), colors);
 
-            merger_in(i_file_1, i_file_2, o_file, colors);
+            merger_in(
+                    i_file_1,
+                    i_file_2,
+                    o_file,
+                    colors,     // les 2 fichiers ont un nombre de couleurs homogene donc
+                    colors);    // on passe 2 fois le meme parametre
 
             if( keep_temp_files == 0 )
             {
@@ -211,10 +218,32 @@ int main(int argc, char *argv[])
             }
 
             const uint64_t o_size    = get_file_size(o_file);
-            const uint64_t sizo_mb   = o_size / 1024 / 1024;
+            const uint64_t sizo_kb   = o_size  / 1024;
+            const uint64_t sizo_mb   = sizo_kb / 1024;
+
+            //
+            //
+            //
 
             n_files.push_back( o_file );
-            printf("%5d | %20s | %6lld MB | %20s | %6lld MB | ==========> | %20s | %6lld MB |\n", cnt, i_file_1.c_str(), siz1_mb, i_file_2.c_str(), siz2_mb, o_file.c_str(), sizo_mb);
+            if     ( siz1_kb < 10 ) printf("%5d | %20s | %6lld B  ",  cnt, i_file_1.c_str(), i1_size);
+            else if( siz1_mb < 10 ) printf("%5d | %20s | %6lld KB ", cnt, i_file_1.c_str(), siz1_kb);
+            else                    printf("%5d | %20s | %6lld MB ", cnt, i_file_1.c_str(), siz1_mb);
+
+            //
+            //
+            //
+            if     ( siz2_kb < 10 ) printf("| %20s | %6lld B  | ==========> | ", i_file_2.c_str(), i2_size);
+            else if( siz2_mb < 10 ) printf("| %20s | %6lld KB | ==========> | ", i_file_2.c_str(), siz2_kb);
+            else                    printf("| %20s | %6lld MB | ==========> | ", i_file_2.c_str(), siz2_mb);
+
+            //
+            //
+            //
+            if     ( sizo_kb < 10 ) printf("%20s | %6lld B  |\n", o_file.c_str(), o_size);
+            else if( sizo_mb < 10 ) printf("%20s | %6lld KB |\n", o_file.c_str(), sizo_kb);
+            else                    printf("%20s | %6lld MB |\n", o_file.c_str(), sizo_mb);
+
             cnt += 1;
         }
 

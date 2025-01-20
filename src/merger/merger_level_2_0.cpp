@@ -110,8 +110,10 @@ void merge_level_2_0(
         fwrite(dest, sizeof(uint64_t), ndst, fdst);
         ndst = 0;
     }
-ezglkejrglkerjx
+
     if (nElementsA == 0) {
+#if 0
+        // original code
         for(int i = counterB + 1; i < nElementsB; i+= 2) in_2[i] = in_2[i] << level;
         fwrite(in_2 + counterB, sizeof(uint64_t), nElementsB - counterB, fdst);
         do{
@@ -120,7 +122,18 @@ ezglkejrglkerjx
             if( nElementsB != 0 )
                 fwrite(in_2, sizeof(uint64_t), nElementsB, fdst);
         }while(nElementsB == _iBuffB_);
-
+#else
+        // modified code
+        ndst = 0;
+        for(int i = counterB; i < nElementsB; i += 1){ dest[ndst++] = in_2[i]; dest[ndst++] = colorDocB; }
+        fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        do{
+            nElementsB = fread(in_2, sizeof(uint64_t), _iBuffB_, fin_2);
+            ndst = 0;
+            for( int i = 0; i < nElementsB; i += 1){ dest[ndst++] = in_2[i]; dest[ndst++] = colorDocB; }
+            fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        }while(nElementsB == _iBuffB_);
+#endif
     }else if (nElementsB == 0) {
         for(int i = counterA + 1; i < nElementsA; i+= 2) in_1[i] = in_1[i];
         fwrite(in_1 + counterA, sizeof(uint64_t), nElementsA - counterA, fdst);
