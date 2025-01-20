@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
     printf("(II) Document (1) information\n");
     printf("(II) - filename    : %s\n", ifile_1.c_str());
     printf("(II) - filesize    : %llu bytes\n", size_1_bytes);
-    if( size_1_Kbytes <= 66 )
+    if( size_1_Kbytes <= 32 )
         printf("(II) -             : %llu Kbytes\n", size_1_Kbytes);
     else
         printf("(II) -             : %llu Mbytes\n", size_1_Mbytes);
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
     printf("(II) Document (2) information\n");
     printf("(II) - filename    : %s\n", ifile_2.c_str());
     printf("(II) - filesize    : %llu bytes\n", size_2_bytes);
-    if( size_1_Kbytes <= 66 )
+    if( size_1_Kbytes <= 32 )
         printf("(II) -             : %llu Kbytes\n", size_2_Kbytes);
     else
         printf("(II) -             : %llu Mbytes\n", size_2_Mbytes);
@@ -159,9 +159,9 @@ int main(int argc, char *argv[])
     printf("(II)\n");
 
 
-    printf("(II) #colors f(1)  : %d\n", ((f1_colors) ? f1_colors : 1) );
-    printf("(II) #colors f(2)  : %d\n", ((f2_colors) ? f2_colors : 1)            );
-    printf("(II) #colors ofile : %d\n", ((f1_colors) ? f1_colors : 1) + ((f2_colors) ? f2_colors : 1));
+    printf("(II) #colors f(1)  : %d\n", f1_colors);
+    printf("(II) #colors f(2)  : %d\n", f2_colors);
+    printf("(II) #colors ofile : %d\n", f1_colors + f2_colors);
     printf("(II)\n");
 
     double start_time = omp_get_wtime();
