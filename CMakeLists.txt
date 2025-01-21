@@ -129,8 +129,11 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
         ./src/minimizer/deduplication.cpp
-        src/back/raw/SaveMiniToRawFile.cpp
-        src/back/txt/SaveMiniToTxtFile.cpp
+        ./src/back/raw/SaveMiniToRawFile.cpp
+        ./src/back/txt/SaveMiniToTxtFile.cpp
+        src/front/count_file_lines.cpp
+        ./src/front/fastx/count_lines_fastx.cpp
+        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
         ./src/min_sorter.cpp)
 add_executable(min_sorter ${source_files})
 
@@ -233,6 +236,9 @@ file(GLOB_RECURSE source_files
         ./src/back/raw/SaveMiniToRawFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
         ./src/minimizer/deduplication.cpp
+        src/front/count_file_lines.cpp
+        ./src/front/fastx/count_lines_fastx.cpp
+        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
         ./src/minimizer/minimizer.cpp)
 add_executable(BreiZHMinimizer ${source_files})
 
@@ -242,6 +248,7 @@ target_include_directories(BreiZHMinimizer
 )
 
 target_link_libraries(BreiZHMinimizer curses)
+target_link_libraries(BreiZHMinimizer bz2)
 
 ########################################################################################################################
 

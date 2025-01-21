@@ -1,9 +1,7 @@
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
+#pragma once
+#include "../file_reader.hpp"
 
-class fast_fasta_file
+class read_fastx_file : public file_reader
 {
 private:
     const int buff_size = 64 * 1024 * 1024;
@@ -16,7 +14,7 @@ private:
     FILE* f;
 
 public:
-    fast_fasta_file(const std::string filen)
+    read_fastx_file(const std::string filen)
     {
         buffer = new char[buff_size];
 
@@ -32,7 +30,7 @@ public:
 
     //////////////////////////////////////////////////////////////////////////////////////////
 
-    ~fast_fasta_file()
+    ~read_fastx_file()
     {
         delete[] buffer;
         fclose( f );

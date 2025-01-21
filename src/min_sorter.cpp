@@ -11,7 +11,7 @@
 
 #include "progress/progressbar.h"
 
-#include "front/fast_fasta_file.hpp"
+#include "front/fastx/read_fastx_file.hpp"
 
 #include "sorting/std_2cores/std_2cores.hpp"
 #include "sorting/std_4cores/std_4cores.hpp"
@@ -19,7 +19,7 @@
 
 #include "./minimizer/deduplication.hpp"
 #include "./tools/read_k_value.hpp"
-#include "front/count_lines.hpp"
+#include "front/count_file_lines.hpp"
 
 #include "./tools/fast_atoi.hpp"
 
@@ -126,10 +126,17 @@ void minimizer_processing(
         )
 {
 
+    if( i_file.find_last_of(".fastx_bz2") == i_file.size() - 1 )
+    {
+        printf("fichier fastx_bz2 (%d %d)\n", i_file.find_last_of(".fastx_bz2"), i_file.size());
+    }else{
+        printf("fichier fastx (%d %d)\n", i_file.find_last_of(".fastx_bz2"), i_file.size());
+    }
+
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */
-    const int n_lines = count_lines_c( i_file );    //
+    const int n_lines = count_file_lines( i_file );    //
 
     /*
      * Reading the K value from the first file line
@@ -181,7 +188,7 @@ void minimizer_processing(
     // Allocating the object that performs fast file parsing
     //
 
-    fast_fasta_file fasta_ifile(i_file);
+    read_fastx_file fasta_ifile(i_file);
 
     progressbar *progress;
 

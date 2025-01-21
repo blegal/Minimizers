@@ -3,8 +3,11 @@
 
 #include "../progress/progressbar.h"
 
-#include "../front/fast_fasta_file.hpp"
-#include "../front/count_lines.hpp"
+#include "../front/fastx/read_fastx_file.hpp"
+#include "../front/fastx_bz2/read_fastx_bz2_file.hpp"
+
+#include "../front/count_file_lines.hpp"
+
 #include "../tools/read_k_value.hpp"
 
 #include "../kmer/bfc_hash64.hpp"
@@ -36,7 +39,7 @@ void minimizer_processing(
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */
-    const int n_lines = count_lines_c( i_file );    //
+    const int n_lines = count_file_lines( i_file );    //
 
     /*
      * Reading the K value from the first file line
@@ -87,8 +90,13 @@ void minimizer_processing(
     //
     // Allocating the object that performs fast file parsing
     //
-
-    fast_fasta_file fasta_ifile(i_file);
+    file_reader* reader;
+    if( i_file.find_last_of(".fastx_bz2") == i_file.size() - 1 )
+    {
+        reader = new read_fastx_bz2_file(i_file);
+    }else{
+        reader = new read_fastx_file(i_file);
+    }
 
     progressbar *progress;
 
@@ -116,7 +124,7 @@ void minimizer_processing(
 
     for(int l_number = 0; l_number < n_lines; l_number += 1)
     {
-        bool not_oef = fasta_ifile.next_sequence(seq_value);
+        bool not_oef = reader->next_sequence(seq_value);
         if( not_oef == false )
             break;
 
@@ -428,4 +436,7 @@ void minimizer_processing(
     if( file_save_output ){
         SaveMiniToFileRAW(o_file, liste_mini);
     }
+
+    delete reader;
+
 }

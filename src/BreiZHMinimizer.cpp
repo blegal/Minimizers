@@ -91,6 +91,8 @@ int main(int argc, char *argv[])
 
             case 't':
                 threads = std::atoi( optarg );
+                omp_set_dynamic(0);
+                omp_set_num_threads(threads);
                 break;
 
             case 'h':

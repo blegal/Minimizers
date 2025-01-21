@@ -11,7 +11,7 @@
 
 #include "progress/progressbar.h"
 
-#include "front/fast_fasta_file.hpp"
+#include "front/fastx/read_fastx_file.hpp"
 
 #include "sorting/std_2cores/std_2cores.hpp"
 #include "sorting/std_4cores/std_4cores.hpp"
@@ -20,7 +20,7 @@
 #include "./kmer/bfc_hash64.hpp"
 
 #include "./tools/read_k_value.hpp"
-#include "front/count_lines.hpp"
+#include "front/count_file_lines.hpp"
 
 #include "back/txt/SaveMiniToTxtFile.hpp"
 #include "back/raw/SaveMiniToRawFile.hpp"
@@ -264,7 +264,7 @@ int main(int argc, char* argv[])
     // Allocating the object that performs fast file parsing
     //
 
-    fast_fasta_file fasta_ifile(i_file);
+    fast_fastx_file fasta_ifile(i_file);
 
     progressbar *progress = progressbar_new("Loading k-mers",100);
     const int prog_step = n_lines / 100;
