@@ -1,12 +1,4 @@
-#pragma once
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <vector>
-#include <chrono>
-#include <algorithm>
-#include <omp.h>
-
+#include "./read_fastx_k_value.hpp"
 //
 //
 //
@@ -14,9 +6,7 @@
 //
 //
 //
-
-
-int read_k_value(std::string filename)
+int read_fastx_k_value(std::string filename)
 {
     std::ifstream ifile( filename );
     if( ifile.is_open() == false )
@@ -40,7 +30,6 @@ int read_k_value(std::string filename)
 
     return k_length;
 }
-
 //
 //
 //

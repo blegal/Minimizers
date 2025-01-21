@@ -1,4 +1,3 @@
-#pragma once
 #include "count_lines_fastx.hpp"
 //
 //
@@ -10,6 +9,7 @@
 uint64_t count_lines_fastx(std::string filename)
 {
 //    printf("(II) Counting the number of sequences (c)\n");
+    printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
     FILE* f = fopen( filename.c_str(), "r" );
     if( f == NULL )
     {
@@ -31,6 +31,7 @@ uint64_t count_lines_fastx(std::string filename)
 //    double end_time = omp_get_wtime();
 //    printf("(II) - %llu lines in file\n", n_sequences);
 //    printf("(II) - It took %g seconds\n", end_time - start_time);
+    printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
     return n_sequences;
 }
 //

@@ -19,7 +19,7 @@
 
 #include "./kmer/bfc_hash64.hpp"
 
-#include "./tools/read_k_value.hpp"
+#include "front/read_k_value.hpp"
 #include "front/count_file_lines.hpp"
 
 #include "back/txt/SaveMiniToTxtFile.hpp"
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */
-    const int n_lines = count_lines_c( i_file );    //
+    const int n_lines = count_file_lines( i_file );    //
 
     /*
      * Reading the K value from the first file line
@@ -264,7 +264,7 @@ int main(int argc, char* argv[])
     // Allocating the object that performs fast file parsing
     //
 
-    fast_fastx_file fasta_ifile(i_file);
+    read_fastx_file fasta_ifile(i_file);
 
     progressbar *progress = progressbar_new("Loading k-mers",100);
     const int prog_step = n_lines / 100;

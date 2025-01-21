@@ -8,13 +8,19 @@
 //
 //
 //
-uint64_t count_file_lines(std::string filename)
-{
-    if( filename.find_last_of(".fastx_bz2") == filename.size() - 1 )
+uint64_t count_file_lines(std::string filen) {
+    if (filen.substr(filen.find_last_of(".") + 1) == "bz2")
     {
-        return count_lines_fastx_bz2(filename);
+        return count_lines_fastx_bz2(filen);
+    }
+    else if (filen.substr(filen.find_last_of(".") + 1) == "fastx")
+    {
+        return count_lines_fastx(filen);
     }else{
-        return count_lines_fastx(filename);
+        printf("(EE) File extension is not supported (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        exit( EXIT_FAILURE );
+        return -1;
     }
 //#if 0
 ////    printf("(II) Counting the number of sequences (c)\n");

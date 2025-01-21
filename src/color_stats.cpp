@@ -18,7 +18,35 @@ uint64_t get_file_size(const std::string& filen) {
     }
     return file_status.st_size;
 }
-
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+#if defined(__SSE4_2__)
+#include <immintrin.h>
+inline int popcount_u64_x86(const uint64_t _val)
+{
+    uint64_t val = _val;
+	asm("popcnt %[val], %[val]" : [val] "+r" (val) : : "cc");
+	return val;
+}
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#include <arm_neon.h>
+inline uint64_t popcount_u64_arm(const uint64_t val)
+{
+    return vaddlv_u8(vcnt_u8(vcreate_u8((uint64_t) val)));
+}
+#endif
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+inline uint64_t popcount_u64_builtin(const uint64_t val)
+{
+    return __builtin_popcountll(val);
+}
 
 int main(int argc, char *argv[]) {
 
@@ -123,7 +151,10 @@ int main(int argc, char *argv[]) {
 
     ////////////////////////////////////////////////////////////////////////////////////
 
-    std::vector<uint64_t> liste( n_elements );
+    const int n_buff_mini = ((64 * 1024 * 1024) / scale);
+    const int buffer_size = n_buff_mini * scale;
+
+    std::vector<uint64_t> liste( buffer_size );
 
     FILE* f = fopen( ifile.c_str(), "r" );
     if( f == NULL )
@@ -132,9 +163,6 @@ int main(int argc, char *argv[]) {
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
-
-    fread(liste.data(), sizeof(uint64_t), n_elements, f);
-    fclose(f);
 
     //
     // On cree le vecteur qui va nous permettre de calculer l'histogramme
@@ -151,26 +179,35 @@ int main(int argc, char *argv[]) {
     //
     auto t1 = std::chrono::high_resolution_clock::now();
 
-    for(int i = 0; i < n_minimizr; i += 1)
+    bool stop = false;
+    while( stop == false )
     {
-        const int pos        = scale * i;
+        //
+        // on precharge un sous ensemble de données
+        //
+        const int n_reads = fread(liste.data(), sizeof(uint64_t), buffer_size, f);
+        const int elements = n_reads / (1 + n_uint64_c);
+        stop = (n_reads != buffer_size);
 
         //
-        // On parcours l'ensemble des couleurs du minimisers
+        // On parcours l'ensemble des minimizer que l'on a chargé
         //
-
-        int colors = 0;
-        for(int c = 0; c < n_uint64_c; c += 1)
+        for(int m = 0; m < elements; m += 1) // le nombre total de minimizers
         {
-            const uint64_t value = liste[pos + 1 + c];
-            for(int x = 0; x < 64; x +=1)
+            //
+            // On compte le nombre de couleurs associé au minimizer
+            //
+            int colors = 0;
+            for(int c = 0; c < n_uint64_c; c += 1)
             {
-                if( (value >> x) & 0x01 )
-                    colors += 1;
+                uint64_t value = liste[scale * m + 1 + c];
+                colors += popcount_u64_builtin(value);
             }
+            histo[colors] += 1;
         }
-        histo[colors] += 1;
     }
+
+    fclose(f);
 
     //
     // On va afficher l'ensemble des données issues de l'histo
@@ -180,33 +217,17 @@ int main(int argc, char *argv[]) {
     printf("| Idx  | #Occurence | Occ. %% | Cumul.%% |\n");
     printf("+------+------------+--------+---------+\n");
 
-    bool silent = false;
-    int  last = -1;
     double sum = 0.0;
     for(uint64_t i = 1; i < histo.size(); i += 1)
     {
-#if 0
-        if( (histo[i] != last) )
-        {
-            double proba = 100.0 * (double)histo[i] / (double)n_minimizr;
-            sum         += proba;
-            printf("%6llu | %10llu | %6.3f | %6.3f |\n", i, histo[i], proba, sum);
-            silent = false;
-        } else if( silent == false )
-        {
-            printf("  .... |  ......... |  ..... |\n");
-            silent = true;
-        }
-        last = histo[i];
-#else
         if( histo[i] != 0 )
         {
             double proba = 100.0 * (double)histo[i] / (double)n_minimizr;
             sum         += proba;
             printf("%6llu | %10llu | %6.3f | %7.3f |\n", i, histo[i], proba, sum);
         }
-#endif
     }
+
     printf("+------+------------+--------+---------+\n");
 
     auto t2 = std::chrono::high_resolution_clock::now();

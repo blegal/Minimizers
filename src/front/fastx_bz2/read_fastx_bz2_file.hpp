@@ -35,10 +35,11 @@ public:
             exit(EXIT_FAILURE);
         }
 
-//      n_data = fread(buffer, sizeof(char), buff_size, f);
         n_data = BZ2_bzRead ( &bzerror, streaz, buffer, buff_size * sizeof(char) );
+
         if( bzerror == BZ_STREAM_END ) {
-            exit(EXIT_FAILURE);
+            // cela signifie juste que l'on a atteint la fin du fichier !
+            // exit(EXIT_FAILURE);
         }else if( bzerror == BZ_UNEXPECTED_EOF ) {
             printf("(DD) BZ_UNEXPECTED_EOF\n");
             exit(EXIT_FAILURE);
@@ -151,7 +152,7 @@ public:
         int bzerror = 0;
         int nread = BZ2_bzRead ( &bzerror, streaz, buffer + reste, (buff_size - reste) * sizeof(char) );
         if( bzerror == BZ_STREAM_END ) {
-            exit(EXIT_FAILURE);
+            no_more_load = true;
         }else if( bzerror == BZ_UNEXPECTED_EOF ) {
             printf("(DD) BZ_UNEXPECTED_EOF\n");
             exit(EXIT_FAILURE);
@@ -188,14 +189,9 @@ public:
             printf("(EE) nread             = %d\n", nread);
             exit(EXIT_FAILURE);
         }
-//        printf("[%6d] ASKED        : %d\n", n_lines, buff_size - reste);
-//        printf("[%6d] READ         : %d\n", n_lines, nread);
-        no_more_load = ( n_data != buff_size ); // a t'on atteint la fin du fichier ?
-//        printf("[%6d] no_more_load : %d\n", n_lines, no_more_load);
+        no_more_load |= ( n_data != buff_size ); // a t'on atteint la fin du fichier ?
         c_ptr        = 0;                       // on remet a zero le pointeur de lecture
         n_data       = nread + reste;           // on met a jour le nombre de données dans le buffer
-//        printf("[%6d] n_data       : %d\n", n_lines, n_data);
-//        printf("[%6d] END OF DATA RELOADING !\n", n_lines);
         return true;
     }
 

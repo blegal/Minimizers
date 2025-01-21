@@ -8,7 +8,7 @@
 
 #include "../front/count_file_lines.hpp"
 
-#include "../tools/read_k_value.hpp"
+#include "../front/read_k_value.hpp"
 
 #include "../kmer/bfc_hash64.hpp"
 
@@ -91,11 +91,19 @@ void minimizer_processing(
     // Allocating the object that performs fast file parsing
     //
     file_reader* reader;
-    if( i_file.find_last_of(".fastx_bz2") == i_file.size() - 1 )
+    if (i_file.substr(i_file.find_last_of(".") + 1) == "bz2")
     {
         reader = new read_fastx_bz2_file(i_file);
-    }else{
+    }
+    else if (i_file.substr(i_file.find_last_of(".") + 1) == "fastx")
+    {
         reader = new read_fastx_file(i_file);
+    }
+    else
+    {
+        printf("(EE) File extension is not supported (%s)\n", i_file.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        exit( EXIT_FAILURE );
     }
 
     progressbar *progress;
@@ -314,6 +322,10 @@ void minimizer_processing(
             kmer_cnt += 1;
             cnt      += 1;
         }
+
+        // On vient de finir le traitement d'une ligne. On peut en profiter pour purger le
+        // buffer de sortie sur le disque dur apres l'avoir purgé des doublons et l'avoir
+        // trié...
 
         /////////////////////////////////////////////////////////////////////////////////////
         if( verbose_flag == true ) {

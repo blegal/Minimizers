@@ -124,6 +124,7 @@ project(min_sorter)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/progress/progressbar.cpp
+        # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
@@ -131,9 +132,15 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/minimizer/deduplication.cpp
         ./src/back/raw/SaveMiniToRawFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
-        src/front/count_file_lines.cpp
+        # Line counters
+        ./src/front/count_file_lines.cpp
         ./src/front/fastx/count_lines_fastx.cpp
         ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
+        # sequence size estimator
+        ./src/front/read_k_value.cpp
+        ./src/front/fastx/read_fastx_k_value.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
+        # main
         ./src/min_sorter.cpp)
 add_executable(min_sorter ${source_files})
 
@@ -158,6 +165,15 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
         ./src/back/raw/SaveMiniToRawFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
+        # Line counters
+        ./src/front/count_file_lines.cpp
+        ./src/front/fastx/count_lines_fastx.cpp
+        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
+        # sequence size estimator
+        ./src/front/read_k_value.cpp
+        ./src/front/fastx/read_fastx_k_value.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
+        # main program
         ./src/min_sorter_ref.cpp)
 add_executable(min_sorter_ref ${source_files})
 
@@ -236,9 +252,12 @@ file(GLOB_RECURSE source_files
         ./src/back/raw/SaveMiniToRawFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
         ./src/minimizer/deduplication.cpp
-        src/front/count_file_lines.cpp
+        ./src/front/count_file_lines.cpp
         ./src/front/fastx/count_lines_fastx.cpp
         ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
+        ./src/front/read_k_value.cpp
+        ./src/front/fastx/read_fastx_k_value.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
         ./src/minimizer/minimizer.cpp)
 add_executable(BreiZHMinimizer ${source_files})
 

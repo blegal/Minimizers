@@ -1,4 +1,4 @@
-#include "count_lines_fastx_bz2.hpp"
+#include "read_fastx_bz2_k_value.hpp"
 #include <bzlib.h>
 //
 //
@@ -7,7 +7,7 @@
 //
 //
 //
-#define buffer_size (4096)
+#define buffer_size (1024*1024)
 //
 //
 //
@@ -15,7 +15,7 @@
 //
 //
 //
-uint64_t count_lines_fastx_bz2(std::string filename)
+int read_fastx_bz2_k_value(std::string filename)
 {
     FILE* stream = fopen( filename.c_str(), "r" );
     if( stream == NULL )
@@ -33,57 +33,45 @@ uint64_t count_lines_fastx_bz2(std::string filename)
         exit(EXIT_FAILURE);
     }
 
-    uint64_t n_sequences = 0;
+    uint64_t end_of_line = 0;
     char buffer[buffer_size];
 
     int nread = buffer_size;
     while ( nread == buffer_size )
     {
-
 //      nread = fread(buffer, sizeof(char), buffer_size, f);
         nread = BZ2_bzRead ( &bzerror, streaz, buffer, buffer_size * sizeof(char) );
         if( bzerror == BZ_STREAM_END ) {
-            //printf("(II) BZ_STREAM_END\n");
-            // c'est juste normal a la fin de la lecture du fichier
+            exit(EXIT_FAILURE);
         }else if( bzerror == BZ_UNEXPECTED_EOF ) {
-            printf("(EE) BZ_UNEXPECTED_EOF\n");
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+            printf("(DD) BZ_UNEXPECTED_EOF\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_CONFIG_ERROR ) {
-            printf("(EE) BZ_CONFIG_ERROR\n");
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+            printf("(DD) BZ_CONFIG_ERROR\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_SEQUENCE_ERROR ) {
-            printf("(EE) BZ_SEQUENCE_ERROR\n");
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+            printf("(DD) BZ_SEQUENCE_ERROR\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_PARAM_ERROR ) {
-            printf("(EE) BZ_PARAM_ERROR\n");
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+            printf("(DD) BZ_PARAM_ERROR\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_MEM_ERROR ) {
-            printf("(EE) BZ_MEM_ERROR\n");
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+            printf("(DD) BZ_MEM_ERROR\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_DATA_ERROR_MAGIC ) {
-            printf("(EE) BZ_DATA_ERROR_MAGIC\n");
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+            printf("(DD) BZ_DATA_ERROR_MAGIC\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_DATA_ERROR ) {
-            printf("(EE) BZ_DATA_ERROR\n");
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+            printf("(DD) BZ_DATA_ERROR\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_IO_ERROR ) {
-            printf("(EE) BZ_IO_ERROR\n");
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+            printf("(DD) BZ_IO_ERROR\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_UNEXPECTED_EOF ) {
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-            printf("(EE) BZ_UNEXPECTED_EOF\n");
+            printf("(DD) BZ_UNEXPECTED_EOF\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_OUTBUFF_FULL ) {
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-            printf("(EE) BZ_OUTBUFF_FULL\n");
+            printf("(DD) BZ_OUTBUFF_FULL\n");
             exit(EXIT_FAILURE);
         }else if( bzerror != BZ_OK ) {
             printf("(EE) An error happens during BZ2_bzRead\n");
@@ -93,13 +81,20 @@ uint64_t count_lines_fastx_bz2(std::string filename)
         }
 
         for(int x = 0; x < nread; x += 1)
-            n_sequences += (buffer[x] == '\n');
+        {
+            if( buffer[x] == '\n' )
+            {
+                nread = 0;  // on arret de cherche la fin de la premiere sequence
+                break;      // car on est arrivé sur une fin de ligne
+            }
+            end_of_line += 1;
+        }
     }
 
     BZ2_bzclose(streaz);
     fclose( stream );
 
-    return n_sequences;
+    return end_of_line;
 }
 //
 //

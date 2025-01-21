@@ -12,13 +12,14 @@
 #include "progress/progressbar.h"
 
 #include "front/fastx/read_fastx_file.hpp"
+#include "front/fastx_bz2/read_fastx_bz2_file.hpp"
 
 #include "sorting/std_2cores/std_2cores.hpp"
 #include "sorting/std_4cores/std_4cores.hpp"
 #include "sorting/crumsort_2cores/crumsort_2cores.hpp"
 
 #include "./minimizer/deduplication.hpp"
-#include "./tools/read_k_value.hpp"
+#include "front/read_k_value.hpp"
 #include "front/count_file_lines.hpp"
 
 #include "./tools/fast_atoi.hpp"
@@ -125,14 +126,6 @@ void minimizer_processing(
         const bool file_save_debug   = false
         )
 {
-
-    if( i_file.find_last_of(".fastx_bz2") == i_file.size() - 1 )
-    {
-        printf("fichier fastx_bz2 (%d %d)\n", i_file.find_last_of(".fastx_bz2"), i_file.size());
-    }else{
-        printf("fichier fastx (%d %d)\n", i_file.find_last_of(".fastx_bz2"), i_file.size());
-    }
-
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */
@@ -188,7 +181,21 @@ void minimizer_processing(
     // Allocating the object that performs fast file parsing
     //
 
-    read_fastx_file fasta_ifile(i_file);
+    file_reader* reader;
+    if (i_file.substr(i_file.find_last_of(".") + 1) == "bz2")
+    {
+        reader = new read_fastx_bz2_file(i_file);
+    }
+    else if (i_file.substr(i_file.find_last_of(".") + 1) == "fastx")
+    {
+        reader = new read_fastx_file(i_file);
+    }
+    else
+    {
+        printf("(EE) File extension is not supported (%s)\n", i_file.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        exit( EXIT_FAILURE );
+    }
 
     progressbar *progress;
 
@@ -216,7 +223,7 @@ void minimizer_processing(
 
     for(int l_number = 0; l_number < n_lines; l_number += 1)
     {
-        bool not_oef = fasta_ifile.next_sequence(seq_value);
+        bool not_oef = reader->next_sequence(seq_value);
         if( not_oef == false )
             break;
 
