@@ -155,6 +155,43 @@ target_link_libraries(min_sorter curses)
 
 ########################################################################################################################
 
+project(min_sorter_v2)
+
+file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
+        ./src/progress/progressbar.cpp
+        # sorting algorithms
+        ./src/sorting/std_4cores/std_4cores.cpp
+        ./src/sorting/std_2cores/std_2cores.cpp
+        ./src/sorting/crumsort/crumsort.cpp
+        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
+        ./src/minimizer/deduplication.cpp
+        ./src/minimizer/minimizer_v2.cpp
+        ./src/back/raw/SaveMiniToRawFile.cpp
+        ./src/back/txt/SaveMiniToTxtFile.cpp
+        # Line counters
+        ./src/front/count_file_lines.cpp
+        ./src/front/fastx/count_lines_fastx.cpp
+        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
+        # sequence size estimator
+        ./src/front/read_k_value.cpp
+        ./src/front/fastx/read_fastx_k_value.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
+        # main
+        ./src/min_sorter_v2.cpp)
+
+add_executable(min_sorter_v2 ${source_files})
+
+target_include_directories(min_sorter_v2
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+target_link_libraries(min_sorter_v2 pthread)
+target_link_libraries(min_sorter_v2 bz2)
+target_link_libraries(min_sorter_v2 curses)
+
+########################################################################################################################
+
 project(min_sorter_ref)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp

@@ -6,7 +6,6 @@
 #include <chrono>
 #include <algorithm>
 #include <omp.h>
-#include "nucl_encode.hpp"
 
 
 // Thomas Wang's integer hash functions. See <https://gist.github.com/lh3/59882d6b96166dfc3d8d> for a snapshot.

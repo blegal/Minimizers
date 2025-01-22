@@ -141,6 +141,122 @@ public:
 
     //////////////////////////////////////////////////////////////////////////////////////////
 
+    std::tuple<int, bool> next_sequence(char* n_kmer, int buffer_size)
+    {
+        //
+        // Le fichier est fini, donc rien à faire
+        //
+        if( file_ended == true )
+        {
+            return {0, true}; // aucun octet n'est disponible
+        }
+
+        //
+        // Normalement on se trouve en début d'une ligne du fichier on doit donc regarder si c'est un
+        // commentaire ou une sequence de nucléotide
+        //
+        bool new_seq = (buffer[c_ptr] == '>') || (buffer[c_ptr] == '+') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '>');
+        while(true)
+        {
+            if( (buffer[c_ptr] == '>') || (buffer[c_ptr] == '+') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '>') )
+            {
+                //
+                // On est dans un commentaire, on doit sauter la ligne
+                //
+                int pos_nline = -1;
+                for(int i = c_ptr; i < n_data; i += 1) {
+                    if (buffer[i] == '\n')
+                    {
+                        c_ptr = i + 1; // on se positionne sur le 1er caractere de la prochaine ligne
+                        break;
+                    }
+                }
+                //
+                // on n'a plus assez de data dans le buffer...
+                //
+                if( pos_nline == -1 )
+                {
+                    if( is_eof() == true )
+                        return {0, false};                          // on est arrivé au bout du fichier
+                    if( reload() == true ){
+                        return next_sequence(n_kmer, buffer_size);  // apres le rechargement on a des données à lire
+                    }else{
+                        return {0, false};                          // on est arrivé au bout du fichier
+                    }
+                }
+            }else{
+                break; // la prochaine ligne n'est pas un commentaire, on peut travailler normalement
+            }
+        }
+
+        //
+        // On regarde si l'on a encore une entrée complete dans le buffer
+        //
+        int pos_nline = -1;
+        for(int i = c_ptr; i < n_data; i += 1)
+        {
+            if(buffer[i] == '\n')
+            {
+                pos_nline = i; // il n'y a rien derniere donc c'est OK
+                break;
+            }
+        }
+
+        if( pos_nline == -1 )                               // On n'a pas trouvé de retour à la ligne
+        {                                                   // avec des données dedans
+            if( is_eof() == true )
+                return {0, false};                          // on est arrivé au bout du fichier
+            if( reload() == true ){
+                return next_sequence(n_kmer, buffer_size);  // apres le rechargement on a des données à lire
+            }else{
+                return {0, false};                          // on est arrivé au bout du fichier
+            }
+        }
+
+        int cnt = 0;                                        // On recoipie les données que l'on souhaite
+        while( buffer[c_ptr] != '\n' )                      // transmettre a la fonction appelante
+        {
+            n_kmer[cnt++] = buffer[c_ptr++];
+        }
+        n_kmer[cnt] = 0;                                    // On rajoute un caractere fin de string
+        c_ptr      += 1;                                    // pour des raison de compatibilité (strlen)
+
+        n_lines    += 1;
+
+        //
+        // on detecte le moment ou l'on arrive a la fin du fichier
+        //
+        file_ended = (c_ptr == n_data) && (n_data != buff_size);
+
+        //
+        // On doit preciser si on est arrivé à la fin de la séquence de nucléotide
+        // - fin de fichier
+        // - la ligne suivante est un commentaire
+        //
+        if( file_ended == true )
+        {
+            return {cnt, true};
+        }
+
+        //
+        // c'est penible, on doit recharger le buffer pour avoir la réponse...
+        //
+        if( c_ptr == n_data )
+        {
+            if( reload() == false ) // donc fin de fichier
+                return {cnt, true}; // c'est la fin de la sequence de nucleotides
+        }
+
+        bool is_comment  = (buffer[c_ptr] == '>');  // sinon on regarde si la prochaine ligne
+        is_comment |= (buffer[c_ptr] == '+');  // est un commentaire car cela signifie
+        is_comment |= (buffer[c_ptr] == '@');  // aussi que c'est la fin de la
+        is_comment |= (buffer[c_ptr] == '>');  // sequence de nucleotides
+
+        return {cnt, is_comment};
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+
     bool reload()
     {
         int reste = n_data - c_ptr;

@@ -12,12 +12,16 @@
 
 #include "../kmer/bfc_hash64.hpp"
 
+#include "../hash//CustomMurmurHash3.hpp"
+
 #include "../back/txt/SaveMiniToTxtFile.hpp"
 #include "../back/raw/SaveMiniToRawFile.hpp"
 
 #include "../sorting/std_2cores/std_2cores.hpp"
 #include "../sorting/std_4cores/std_4cores.hpp"
 #include "../sorting/crumsort_2cores/crumsort_2cores.hpp"
+
+#define MEM_UNIT 64ULL
 
 inline uint64_t mask_right(const uint64_t numbits)
 {
@@ -209,7 +213,20 @@ void minimizer_processing(
 
             const uint64_t canon  = (current_mmer < cur_inv_mmer) ? current_mmer : cur_inv_mmer;
 //          const uint64_t canon  = canonical(current_mmer, 2 * 19);
+
+#if 1
+            //
+            //
+            uint64_t tab[2];
+            CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
+            const uint64_t s_hash = tab[0];
+#else
+            //
+            //
             const uint64_t s_hash = bfc_hash_64(canon, mask);
+#endif
+            //
+            //
 
 //          printf(" nuc | %16.16llX | %16.16llX | <%16.16llX> | %16.16llX |\n", current_mmer, cur_inv_mmer, canon, cano2);
 

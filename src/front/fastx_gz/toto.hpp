@@ -9,7 +9,8 @@
 #include <stdio.h>
 #include <cassert>
 
-int inf(FILE* fp) {
+int inf(FILE* fp)
+{
     gzFile* gzf = gzdopen(fileno(fp), "r");
     assert(::gztell(gzf) == 0);
     std::cout << "pos: " << ::gztell(gzf) << std::endl;

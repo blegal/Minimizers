@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 
     const int e_size = 1 + n_uint64_c;
     uint64_t buff[e_size];
-    for(uint64_t i = 0; i < n_elements; i +=e_size )
+    for(uint64_t i = 0; i < n_elements; i += e_size )
     {
         if( (i%(4*1024*1024)) == 0 )
             printf("%llu/%llu\n", i, n_elements);
