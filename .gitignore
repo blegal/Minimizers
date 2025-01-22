@@ -38,3 +38,6 @@ build/
 .idea/modules.xml
 .idea/vcs.xml
 data/
+
+# Clion
+.idea/
