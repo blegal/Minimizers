@@ -176,10 +176,15 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/back/raw/SaveMiniToRawFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
         # Front-end parsers
-        ./src/front/fastx/read_fastx_file.cpp
-        ./src/front/fastx_gz/read_fastx_gz_file.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
-        ./src/front/fastx_lz4/read_fastx_lz4_file.cpp
+        src/front/fastx/read_fastx_file.cpp
+        src/front/fastx_gz/read_fastx_gz_file.cpp
+        src/front/fastx_bz2/read_fastx_bz2_file.cpp
+        src/front/fastx_lz4/read_fastx_lz4_file.cpp
+        src/front/fastx_lz4/lz4/lz4file.c
+        src/front/fastx_lz4/lz4/lz4frame.c
+        src/front/fastx_lz4/lz4/xxhash.c
+        src/front/fastx_lz4/lz4/lz4hc.c
+                    src/front/fastx_lz4/lz4/lz4.c
         # Line counters
         ./src/front/count_file_lines.cpp
         ./src/front/fastx/count_lines_fastx.cpp
