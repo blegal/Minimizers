@@ -5,7 +5,6 @@
 #ifndef COLOR_STATS_TOTO_HPP
 #define COLOR_STATS_TOTO_HPP
 #include <iostream>
-#include <zlib.h>
 #include <stdio.h>
 #include <cassert>
 

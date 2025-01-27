@@ -1,8 +1,14 @@
 #pragma once
 #include "../file_reader.hpp"
-#include <bzlib.h>
-
-class read_fastx_bz2_file : public file_reader
+#include <zlib.h>
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+class read_fastx_gz_file : public file_reader
 {
 private:
     const int buff_size = 64 * 1024 * 1024;
@@ -13,11 +19,11 @@ private:
     bool no_more_load  = false;
     bool file_ended    = false;
     FILE*   stream;
-    BZFILE* streaz;
+    gzFile  streaz;
 
 public:
-     read_fastx_bz2_file(const std::string filen);
-    ~read_fastx_bz2_file();
+     read_fastx_gz_file(const std::string filen);
+    ~read_fastx_gz_file();
 
     virtual bool next_sequence(char* n_kmer);
 
@@ -27,3 +33,10 @@ public:
 
     virtual bool is_eof();
 };
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//

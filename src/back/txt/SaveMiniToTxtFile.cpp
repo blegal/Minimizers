@@ -1,5 +1,3 @@
-#pragma once
-
 #include "./SaveMiniToTxtFile.hpp"
 #include "../../progress/progressbar.h"
 

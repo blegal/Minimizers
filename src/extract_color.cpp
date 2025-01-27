@@ -114,8 +114,8 @@ int main(int argc, char *argv[])
     printf("(II) file size in bytes  : %llu\n", size_bytes);
     printf("(II) # uint64_t elements : %llu\n", n_elements);
     printf("(II) # minimizers        : %llu\n", n_minimizr);
-    printf("(II) # of n_colorss         : %llu\n", n_colors  );
-    printf("(II) # uint64_t/n_colorss   : %llu\n", n_uint64_c);
+    printf("(II) # of n_colors       : %d\n",   n_colors  );
+    printf("(II) # uint64_t/n_colors : %llu\n", n_uint64_c);
 
     ////////////////////////////////////////////////////////////////////////////////////
 

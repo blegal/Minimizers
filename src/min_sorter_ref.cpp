@@ -1,23 +1,17 @@
 #include <cstdio>
-#include <cstdlib>
-#include <fstream>
 #include <vector>
-#include <chrono>
 #include <algorithm>
-#include <iostream>
 #include <omp.h>
-#include <sstream>
 #include <getopt.h>
 
 #include "progress/progressbar.h"
+#include "hash/CustomMurmurHash3.hpp"
 
 #include "front/fastx/read_fastx_file.hpp"
 
 #include "sorting/std_2cores/std_2cores.hpp"
 #include "sorting/std_4cores/std_4cores.hpp"
 #include "sorting/crumsort_2cores/crumsort_2cores.hpp"
-
-#include "./kmer/bfc_hash64.hpp"
 
 #include "front/read_k_value.hpp"
 #include "front/count_file_lines.hpp"
@@ -39,6 +33,8 @@ std::chrono::steady_clock::time_point begin;
 //
 //
 //
+#define _murmurhash_
+
 void VectorDeduplication(std::vector<uint64_t>& values)
 {
     printf("(II)\n");
@@ -74,13 +70,6 @@ void VectorDeduplication(std::vector<uint64_t>& values)
 //
 //
 //
-#define MEM_UNIT 64
-inline uint64_t mask_right(uint64_t numbits){
-    uint64_t mask = -(numbits >= MEM_UNIT) | ((1ULL << numbits) - 1ULL);
-    return mask;
-}
-
-
 bool vec_compare(std::vector<uint64_t> dst, std::vector<uint64_t> src)
 {
     if(dst.size() != src.size())
@@ -301,13 +290,13 @@ int main(int argc, char* argv[])
 
             if( verbose_flag )
             {
-                printf(" k: %s\n", kmer_b);
+                printf(" k-mer (%2d) : %s\n", k_pos, kmer_b);
             }
 
             //
             // On calcule le début du m-mer
             //
-
+            printf("       m-mer                            | curr-m-mer       | curr-m-mer-inv   | cannonic-hash    |> minimum\n");
             for(int m_pos = 0; m_pos < kmer - mmer + 1; m_pos += 1) // attention au <=
             {
                 memcpy(mmer_b, kmer_b + m_pos, mmer);
@@ -316,23 +305,27 @@ int main(int argc, char* argv[])
                 uint64_t cur_inv_mmer = 0;
                 for(int x = 0; x < mmer; x += 1)
                 {
-                    current_mmer <<= 2;
-                    cur_inv_mmer >>= 2;
-
                     const uint64_t encoded = ((mmer_b[x] >> 1) & 0b11); // conversion ASCII => 2bits (Yoann)
+                    current_mmer <<= 2;
                     current_mmer |=  encoded;
-                    cur_inv_mmer |= (encoded << (2 * (mmer - 1)));
+                    cur_inv_mmer >>= 2;
+//                  cur_inv_mmer |= (encoded << (2 * (mmer - 1)));
+                    cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (mmer - 1))); // cf Yoann
                 }
 
                 const uint64_t canon  = (current_mmer < cur_inv_mmer) ? current_mmer : cur_inv_mmer;
-                const uint64_t mask   = mask_right(2 * mmer); // on masque
-                const uint64_t s_hash = bfc_hash_64(canon, mask);
+
+                // On hash le minimizer
+                uint64_t tab[2];
+                CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
+                const uint64_t s_hash = tab[0];
+
                 minv = (s_hash < minv) ? s_hash : minv;
                 mmer_cnt += 1;
 
                 if( verbose_flag )
                 {
-                    printf("   m: %s | %16.16llX | %16.16llX |\n", mmer_b, current_mmer, s_hash);
+                    printf("       m-mer (%2d) : %s | %16.16llX | %16.16llX | %16.16llX |> %16.16llX\n", m_pos, mmer_b, current_mmer, cur_inv_mmer, s_hash, minv);
                 }
             }
 
@@ -345,7 +338,7 @@ int main(int argc, char* argv[])
             {
                 liste_mini.push_back( minv );
                 if( verbose_flag )
-                    printf("(+)-  min = | %16.16llX |\n", minv);
+                    printf("(+)-      min = | %16.16llX |\n", minv);
             }
             else if( liste_mini[liste_mini.size()-1] != minv )
             {
@@ -432,33 +425,13 @@ int main(int argc, char* argv[])
     /////////////////////////////////////////////////////////////////////////////////////
 
     VectorDeduplication( liste_mini );
-/*
 
-    printf("(II)\n");
-    printf("(II) Launching the simplification step\n");
-    printf("(II) - Number of samples (start) = %ld\n", liste_mini.size());
+    /////////////////////////////////////////////////////////////////////////////////////
 
-    uint64_t* ptr_i = liste_mini.data() + 1;
-    uint64_t* ptr_o = liste_mini.data() + 1;
-    int64_t length  = liste_mini.size();
-
-    uint64_t value = liste_mini[0];
-    for(int64_t x = 1; x < length; x += 1)
-    {
-        if( value != *ptr_i )
-        {
-            value  = *ptr_i;
-            *ptr_o = value;
-            ptr_o += 1;
-        }
-        ptr_i += 1;
-    }
-    int64_t new_length  = ptr_o - liste_mini.data();
-    liste_mini.resize( new_length );
-    printf("(II) - Number of samples (stop)  = %ld\n", liste_mini.size());
-*/
     if( file_save_output )
         SaveMiniToTxtFile(o_file + ".ref.simplified.txt", liste_mini);
+
+    SaveMiniToFileRAW(o_file, liste_mini);
 
     return 0;
 }

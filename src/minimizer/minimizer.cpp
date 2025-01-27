@@ -10,8 +10,6 @@
 
 #include "../front/read_k_value.hpp"
 
-#include "../kmer/bfc_hash64.hpp"
-
 #include "../hash//CustomMurmurHash3.hpp"
 
 #include "../back/txt/SaveMiniToTxtFile.hpp"
@@ -39,7 +37,6 @@ void minimizer_processing(
         const bool file_save_debug   = false
 )
 {
-
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */
@@ -99,7 +96,7 @@ void minimizer_processing(
     {
         reader = new read_fastx_bz2_file(i_file);
     }
-    else if (i_file.substr(i_file.find_last_of(".") + 1) == "fastx")
+    else if(i_file.substr(i_file.find_last_of(".") + 1) == "fastx")
     {
         reader = new read_fastx_file(i_file);
     }
@@ -214,17 +211,11 @@ void minimizer_processing(
             const uint64_t canon  = (current_mmer < cur_inv_mmer) ? current_mmer : cur_inv_mmer;
 //          const uint64_t canon  = canonical(current_mmer, 2 * 19);
 
-#if 1
-            //
-            //
+
             uint64_t tab[2];
             CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
             const uint64_t s_hash = tab[0];
-#else
-            //
-            //
-            const uint64_t s_hash = bfc_hash_64(canon, mask);
-#endif
+
             //
             //
 
@@ -244,6 +235,7 @@ void minimizer_processing(
             printf("(+)-  min = | %16.16llX |\n", minv);
         }
 #endif
+        printf("(+)-  min = | %16.16llX |\n", minv);
         //
         // On pousse le premier minimiser dans la liste
         //
@@ -275,21 +267,27 @@ void minimizer_processing(
             cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (mmer - 1))); // cf Yoann
 
             const uint64_t canon  = (current_mmer < cur_inv_mmer) ? current_mmer : cur_inv_mmer;
-            const uint64_t s_hash = bfc_hash_64(canon, mask);
+
+            uint64_t tab[2];
+            CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
+            const uint64_t s_hash = tab[0];
+
             minv                  = (s_hash < minv) ? s_hash : minv;
 
             if( minv == buffer[0] )
             {
                 minv = s_hash;
-                for(int p = 0; p < z+1; p += 1) {
+//              for(int p = 0; p < z + 1; p += 1) {
+                for(int p = 0; p < z; p += 1) { // < z car on fait p+1
                     const uint64_t value = buffer[p+1];
                     minv = (minv < value) ? minv : value;
                     buffer[p] = value;
                 }
                 buffer[z] = s_hash; // on memorise le hash du dernier m-mer
             }else{
-                for(int p = 0; p < z+1; p += 1) {
-                    buffer[p] = buffer[p+1];
+//                for(int p = 0; p < z + 1; p += 1) {
+                for(int p = 0; p < z; p += 1) { // < z car on fait p+1
+                    buffer[p] = buffer[p + 1];
                 }
                 buffer[z] = s_hash; // on memorise le hash du dernier m-mer
             }
@@ -319,6 +317,8 @@ void minimizer_processing(
             }else{
                 n_skipper += 1;
             }
+            printf("(+)   min = | %16.16llX |\n", minv);
+
 /*
             if( liste_mini[liste_mini.size()-1] != minv )
             {

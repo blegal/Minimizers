@@ -84,6 +84,30 @@ void merge_level_1(
         }
     }
 
+
+    //
+    // Il faut absolument faire un check pour verifier qu'il n'y a pas de redondance dans le flux
+    // qui n'est pas encore vide sinon on aura un doublon lors du flush !
+    //
+    if (nElementsA == 0) {
+        const uint64_t v2 = in_2[counterB];
+        if (v2 == last_value) {
+            dest[ndst - 1] |= colorDocB;
+            counterB += 1;
+        }
+    }else if (nElementsB == 0) {
+        const uint64_t v1        = in_1[counterA    ];
+        const uint64_t colorDocA = in_1[counterA + 1];
+        if (v1 == last_value){
+            dest[ndst-1] |= colorDocA;
+            counterA  += 2;
+        }
+    }
+
+    //
+    // On realise le flush du buffer de sortie, cela nous simplifier la vie par la suite !
+    //
+
     if (ndst != 0) {
         fwrite(dest, sizeof(uint64_t), ndst, fdst);
         ndst = 0;
@@ -94,9 +118,9 @@ void merge_level_1(
         for(int i = counterB; i < nElementsB; i += 1){ dest[ndst++] = in_2[i]; dest[ndst++] = colorDocB; }
         fwrite(dest, sizeof(uint64_t), ndst, fdst);
         do{
+            ndst       = 0;
             nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
-            ndst = 0;
-            for( int i = 0; i < nElementsB; i += 1){ dest[ndst++] = in_2[i]; dest[ndst++] = colorDocB; }
+            for(int i = 0; i < nElementsB; i += 1){ dest[ndst++] = in_2[i]; dest[ndst++] = colorDocB; }
             fwrite(dest, sizeof(uint64_t), ndst, fdst);
         }while(nElementsB == _iBuff_);
 
@@ -105,10 +129,11 @@ void merge_level_1(
         for(int i = counterA; i < nElementsA; i += 1){  dest[ndst++] = in_1[i]; dest[ndst++] = colorDocA; }
         fwrite(dest, sizeof(uint64_t), ndst, fdst);
         do{
+            ndst       = 0;
             nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
-            for( int i = 0; i < nElementsA; i += 1){  dest[ndst++] = in_1[i]; dest[ndst++] = colorDocA; }
+            for(int i = 0; i < nElementsA; i += 1){  dest[ndst++] = in_1[i]; dest[ndst++] = colorDocA; }
             fwrite(dest, sizeof(uint64_t), ndst, fdst);
-        }while(nElementsB == _iBuff_);
+        }while(nElementsA == _iBuff_);
     }
 
     fclose( fin_1 );

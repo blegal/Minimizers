@@ -97,7 +97,7 @@ void merge_level_0(
         do{
             nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
             fwrite(in_1, sizeof(uint64_t), nElementsA, fdst);
-        }while(nElementsB == _iBuff_);
+        }while(nElementsA == _iBuff_);
     }
 
     fclose( fin_1 );

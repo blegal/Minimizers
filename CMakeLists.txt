@@ -43,9 +43,11 @@ if(BUILD_MACOS_ARM)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native -mtune=native")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math -fopenmp -std=c++17")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flax-vector-conversions") # gcc patch
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/opt/homebrew/Cellar/boost@1.76/1.76.0_5/include") # gcc patch
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/opt/homebrew/include") # gcc patch
 
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/lib")      # NemaTode
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/lib")      # NemaTode
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /opt/homebrew/lib/liblz4.a")      # NemaTode
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Accelerate")
 endif()
 
@@ -132,6 +134,10 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/minimizer/deduplication.cpp
         ./src/back/raw/SaveMiniToRawFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
+        # Front-end parsers
+        ./src/front/fastx/read_fastx_file.cpp
+        ./src/front/fastx_gz/read_fastx_gz_file.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
         # Line counters
         ./src/front/count_file_lines.cpp
         ./src/front/fastx/count_lines_fastx.cpp
@@ -150,6 +156,7 @@ target_include_directories(min_sorter
 )
 
 target_link_libraries(min_sorter pthread)
+target_link_libraries(min_sorter z)
 target_link_libraries(min_sorter bz2)
 target_link_libraries(min_sorter curses)
 
@@ -168,6 +175,11 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/minimizer/minimizer_v2.cpp
         ./src/back/raw/SaveMiniToRawFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
+        # Front-end parsers
+        ./src/front/fastx/read_fastx_file.cpp
+        ./src/front/fastx_gz/read_fastx_gz_file.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
+        ./src/front/fastx_lz4/read_fastx_lz4_file.cpp
         # Line counters
         ./src/front/count_file_lines.cpp
         ./src/front/fastx/count_lines_fastx.cpp
@@ -188,6 +200,8 @@ target_include_directories(min_sorter_v2
 
 target_link_libraries(min_sorter_v2 pthread)
 target_link_libraries(min_sorter_v2 bz2)
+target_link_libraries(min_sorter_v2 z)
+target_link_libraries(min_sorter_v2 lz4)
 target_link_libraries(min_sorter_v2 curses)
 
 ########################################################################################################################
@@ -202,6 +216,10 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
         ./src/back/raw/SaveMiniToRawFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
+        # Front-end parsers
+        ./src/front/fastx/read_fastx_file.cpp
+        ./src/front/fastx_gz/read_fastx_gz_file.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
         # Line counters
         ./src/front/count_file_lines.cpp
         ./src/front/fastx/count_lines_fastx.cpp
@@ -221,6 +239,7 @@ target_include_directories(min_sorter_ref
 
 target_link_libraries(min_sorter_ref pthread)
 target_link_libraries(min_sorter_ref bz2)
+target_link_libraries(min_sorter_ref z)
 target_link_libraries(min_sorter_ref curses)
 
 ########################################################################################################################
@@ -246,6 +265,7 @@ target_include_directories(merge
 
 target_link_libraries(merge pthread)
 target_link_libraries(merge bz2)
+target_link_libraries(merge z)
 target_link_libraries(merge curses)
 
 ########################################################################################################################
@@ -295,6 +315,11 @@ file(GLOB_RECURSE source_files
         ./src/front/read_k_value.cpp
         ./src/front/fastx/read_fastx_k_value.cpp
         ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
+        # Front-end parsers
+        ./src/front/fastx/read_fastx_file.cpp
+        ./src/front/fastx_gz/read_fastx_gz_file.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
+        #
         ./src/minimizer/minimizer.cpp)
 add_executable(BreiZHMinimizer ${source_files})
 
@@ -304,6 +329,7 @@ target_include_directories(BreiZHMinimizer
 )
 
 target_link_libraries(BreiZHMinimizer curses)
+target_link_libraries(BreiZHMinimizer z)
 target_link_libraries(BreiZHMinimizer bz2)
 
 ########################################################################################################################
