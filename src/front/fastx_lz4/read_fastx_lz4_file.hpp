@@ -1,6 +1,6 @@
 #pragma once
 #include "../file_reader.hpp"
-#include <lz4file.h>
+#include "lz4/lz4file.h"
 
 class read_fastx_lz4_file : public file_reader
 {
