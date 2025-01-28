@@ -17,6 +17,8 @@
 #include "../sorting/std_4cores/std_4cores.hpp"
 #include "../sorting/crumsort_2cores/crumsort_2cores.hpp"
 
+#include "../merger/merger_level_0.hpp"
+
 #define MEM_UNIT 64ULL
 
 #define _debug_ 0
@@ -31,7 +33,7 @@ inline uint64_t mask_right(const uint64_t numbits)
 //
 //
 
-void minimizer_processing_v2(
+void minimizer_processing_v3(
         const std::string& i_file    = "none",
         const std::string& o_file    = "none",
         const std::string& algo      = "crumsort",
@@ -110,6 +112,14 @@ void minimizer_processing_v2(
 
     std::tuple<int, bool> mTuple = reader->next_sequence(seq_value, 4096);
 
+
+    //
+    // Liste des fichiers temporaires dont on a eu besoin pour générer la liste des minimizers
+    // sous contrainte de mémoire (un fichier est créé à chaque fois que l'on dépasse l'espace
+    // alloué par l'utilisateur).
+    //
+    std::vector<std::string> file_list;
+
     while( std::get<0>(mTuple) != 0 )
     {
 #if _debug_core_
@@ -174,6 +184,7 @@ void minimizer_processing_v2(
 #if _debug_core_
         printf("   curr-m-mer       | curr-m-mer-inv   | cannonic-hash    |          hash    |\n");
 #endif
+        uint64_t last_pushed = UINT64_MAX;
         uint64_t minv = UINT64_MAX;
         for(int m_pos = 0; m_pos <= z; m_pos += 1)
         {
@@ -209,11 +220,13 @@ void minimizer_processing_v2(
 #endif
         if( n_minizer == 0 ){
             liste_mini[n_minizer++] = minv;
+            last_pushed = minv;
 #if _debug_core_
             printf("   - pushed (%d)\n", n_minizer);
 #endif
-        }else if( liste_mini[n_minizer-1] != minv ){
+        }else if( last_pushed != minv ){
             liste_mini[n_minizer++] = minv;
+            last_pushed = minv;
 #if _debug_core_
             printf("   - pushed (%d)\n", n_minizer);
 #endif
@@ -294,18 +307,37 @@ void minimizer_processing_v2(
 
                 ////////////////////////////////////////////////////////////////////////////////////
 
-                if( liste_mini[n_minizer-1] != minv ){
+                if( last_pushed != minv ){
 #if _debug_core_
                     printf("(+)   min = | %16.16llX |\n", minv);
 #endif
                     liste_mini[n_minizer++] = minv;
+                    last_pushed             = minv;
+
                     if( n_minizer >= (max_in_ram - 2) )
                     {
+                        // On est obligé de flush sur le disque les données
+                        std::string t_file = o_file + "." + std::to_string( file_list.size() );
+
+                        SaveRawToFile(o_file + ".non-sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
+
+                        // On trie les donnnées en memoire
+                        crumsort_prim( liste_mini.data(), n_minizer, 9 /*uint64*/ );
+
+                        // On supprime les redondances
+                        int n_elements = VectorDeduplication(liste_mini, n_minizer);
+
+                        SaveRawToFile(t_file, liste_mini, n_elements);
+
+                        file_list.push_back( t_file );
+
+                        printf("flushed on SSD drive [%s]\n", t_file.c_str());
+
                         //
-                        // On est obligé de resize le vecteur car on n'a plus de place
+                        // ATTENTION PATCH tres praqtique et sans conséquence car on dé-dupliquera a la fin !
                         //
-                        max_in_ram += (max_in_ram >> 2);    // on rajoute 50%
-                        liste_mini.resize( max_in_ram );
+                        //liste_mini[0] = liste_mini[n_minizer-1];
+                        n_minizer     = 0;
                     }
 #if _debug_core_
                     printf("   - pushed (%d)\n", n_minizer);
@@ -361,6 +393,45 @@ void minimizer_processing_v2(
 
     }
 
+    //
+    // On a du stocker des données sur le disque dur en cours de route... On finit ICI et MAINTENANT !
+    //
+    if( file_list.size() != 0 )
+    {
+        printf("boucle de fusion !\n");
+        //
+        // On flush le dernier lot de données avant de débuter la fusion (c plus homogène)
+        //
+        SaveRawToFile(o_file + ".non-sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
+
+        std::string t_file = o_file + "." + std::to_string( file_list.size() );
+        crumsort_prim( liste_mini.data(), n_minizer, 9 /*uint64*/ );
+        int n_elements = VectorDeduplication(liste_mini, n_minizer);
+        SaveRawToFile(t_file, liste_mini, n_elements);
+        file_list.push_back( t_file );
+        printf("flushed on SSD drive [%s]\n", t_file.c_str());
+
+        int name_c = file_list.size();
+        while(file_list.size() > 1)
+        {
+            const std::string t_file = o_file + "." + std::to_string( name_c++ );
+            merge_level_0(file_list[0], file_list[1], t_file);
+            std::remove(file_list[0].c_str() ); // delete file
+            std::remove(file_list[1].c_str() ); // delete file
+            file_list.erase(file_list.begin());
+            file_list.erase(file_list.begin());
+            file_list.push_back( t_file );
+        }
+
+        std::cout << "renaming(" << file_list[0] << ") => " << o_file << std::endl;
+        std::rename(file_list[file_list.size()-1].c_str(), o_file.c_str());
+
+        delete reader;
+        return;
+    }
+
+
+
     // On vient de finir le traitement d'une ligne. On peut en profiter pour purger le
     // buffer de sortie sur le disque dur apres l'avoir purgé des doublons et l'avoir
     // trié...
@@ -371,7 +442,6 @@ void minimizer_processing_v2(
     // On stoque à l'indentique les données que l'on vient lire. Cette étape est uniquement utile
     // pour du debug
     //
-    SaveRawToFile(o_file + ".non-sorted", liste_mini);
 
     if( file_save_debug ){
         SaveMiniToTxtFile_v2(o_file + ".non-sorted-v2.txt", liste_mini);

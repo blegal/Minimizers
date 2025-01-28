@@ -3,7 +3,7 @@
 #include <omp.h>
 #include <getopt.h>
 
-#include "minimizer/minimizer_v2.hpp"
+#include "minimizer/minimizer_v3.hpp"
 
 #include "./minimizer/deduplication.hpp"
 #include "front/count_file_lines.hpp"
@@ -145,11 +145,11 @@ int main(int argc, char* argv[])
         exit( EXIT_FAILURE );
     }
 
-    minimizer_processing_v2(
+    minimizer_processing_v3(
             i_file,
             o_file,
             algo,
-            1024,
+            2048,
             file_save_output,
             verbose_flag,
             file_save_debug

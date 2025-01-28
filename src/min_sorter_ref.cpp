@@ -17,7 +17,7 @@
 #include "front/count_file_lines.hpp"
 
 #include "back/txt/SaveMiniToTxtFile.hpp"
-#include "back/raw/SaveMiniToRawFile.hpp"
+#include "back/raw/SaveRawToFile.hpp"
 //
 //
 //
@@ -420,7 +420,7 @@ int main(int argc, char* argv[])
     // pour du debug
     //
     if( file_save_debug )
-        SaveMiniToFileRAW(o_file + ".hash", liste_mini);
+        SaveRawToFile(o_file + ".hash", liste_mini);
 
     /////////////////////////////////////////////////////////////////////////////////////
 
@@ -431,7 +431,7 @@ int main(int argc, char* argv[])
     if( file_save_output )
         SaveMiniToTxtFile(o_file + ".ref.simplified.txt", liste_mini);
 
-    SaveMiniToFileRAW(o_file, liste_mini);
+    SaveRawToFile(o_file, liste_mini);
 
     return 0;
 }

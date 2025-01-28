@@ -15,7 +15,8 @@
 //
 //
 
-extern bool SaveMiniToFileRAW(const std::string filename, const std::vector<uint64_t> list_hash);
+extern bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_hash);
+extern bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_hash, const int n_elements);
 
 //
 //

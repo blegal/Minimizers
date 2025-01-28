@@ -47,7 +47,6 @@ if(BUILD_MACOS_ARM)
 
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/lib")      # NemaTode
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/lib")      # NemaTode
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /opt/homebrew/lib/liblz4.a")      # NemaTode
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Accelerate")
 endif()
 
@@ -132,7 +131,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
         ./src/minimizer/deduplication.cpp
-        ./src/back/raw/SaveMiniToRawFile.cpp
+        src/back/raw/SaveRawToFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
         # Front-end parsers
         ./src/front/fastx/read_fastx_file.cpp
@@ -173,7 +172,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
         ./src/minimizer/deduplication.cpp
         ./src/minimizer/minimizer_v2.cpp
-        ./src/back/raw/SaveMiniToRawFile.cpp
+        src/back/raw/SaveRawToFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
         # Front-end parsers
         src/front/fastx/read_fastx_file.cpp
@@ -184,7 +183,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         src/front/fastx_lz4/lz4/lz4frame.c
         src/front/fastx_lz4/lz4/xxhash.c
         src/front/fastx_lz4/lz4/lz4hc.c
-                    src/front/fastx_lz4/lz4/lz4.c
+        src/front/fastx_lz4/lz4/lz4.c
         # Line counters
         ./src/front/count_file_lines.cpp
         ./src/front/fastx/count_lines_fastx.cpp
@@ -206,8 +205,56 @@ target_include_directories(min_sorter_v2
 target_link_libraries(min_sorter_v2 pthread)
 target_link_libraries(min_sorter_v2 bz2)
 target_link_libraries(min_sorter_v2 z)
-target_link_libraries(min_sorter_v2 lz4)
 target_link_libraries(min_sorter_v2 curses)
+
+########################################################################################################################
+
+project(min_sorter_v3)
+
+file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
+        ./src/progress/progressbar.cpp
+        # sorting algorithms
+        ./src/sorting/std_4cores/std_4cores.cpp
+        ./src/sorting/std_2cores/std_2cores.cpp
+        ./src/sorting/crumsort/crumsort.cpp
+        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
+        ./src/minimizer/deduplication.cpp
+        ./src/minimizer/minimizer_v3.cpp
+        src/back/raw/SaveRawToFile.cpp
+        ./src/back/txt/SaveMiniToTxtFile.cpp
+        # Front-end parsers
+        src/front/fastx/read_fastx_file.cpp
+        src/front/fastx_gz/read_fastx_gz_file.cpp
+        src/front/fastx_bz2/read_fastx_bz2_file.cpp
+        src/front/fastx_lz4/read_fastx_lz4_file.cpp
+        src/front/fastx_lz4/lz4/lz4file.c
+        src/front/fastx_lz4/lz4/lz4frame.c
+        src/front/fastx_lz4/lz4/xxhash.c
+        src/front/fastx_lz4/lz4/lz4hc.c
+        src/front/fastx_lz4/lz4/lz4.c
+        # Line counters
+        ./src/front/count_file_lines.cpp
+        ./src/front/fastx/count_lines_fastx.cpp
+        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
+        # sequence size estimator
+        ./src/merger/merger_level_0.cpp
+        ./src/front/read_k_value.cpp
+        ./src/front/fastx/read_fastx_k_value.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
+        # main
+        ./src/min_sorter_v3.cpp)
+
+add_executable(min_sorter_v3 ${source_files})
+
+target_include_directories(min_sorter_v3
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+target_link_libraries(min_sorter_v3 pthread)
+target_link_libraries(min_sorter_v3 bz2)
+target_link_libraries(min_sorter_v3 z)
+target_link_libraries(min_sorter_v3 curses)
 
 ########################################################################################################################
 
@@ -219,7 +266,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        ./src/back/raw/SaveMiniToRawFile.cpp
+        src/back/raw/SaveRawToFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
         # Front-end parsers
         ./src/front/fastx/read_fastx_file.cpp
@@ -311,7 +358,7 @@ file(GLOB_RECURSE source_files
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        ./src/back/raw/SaveMiniToRawFile.cpp
+        src/back/raw/SaveRawToFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
         ./src/minimizer/deduplication.cpp
         ./src/front/count_file_lines.cpp

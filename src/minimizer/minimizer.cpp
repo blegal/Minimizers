@@ -13,7 +13,7 @@
 #include "../hash//CustomMurmurHash3.hpp"
 
 #include "../back/txt/SaveMiniToTxtFile.hpp"
-#include "../back/raw/SaveMiniToRawFile.hpp"
+#include "../back/raw/SaveRawToFile.hpp"
 
 #include "../sorting/std_2cores/std_2cores.hpp"
 #include "../sorting/std_4cores/std_4cores.hpp"
@@ -431,7 +431,7 @@ void minimizer_processing(
     if( file_save_debug )
     {
         SaveMiniToTxtFile_v2(o_file + ".sorted.txt", liste_mini);
-        SaveMiniToFileRAW   (o_file + ".hash", liste_mini);
+        SaveRawToFile   (o_file + ".hash", liste_mini);
     }
 
     //
@@ -463,7 +463,7 @@ void minimizer_processing(
     }
 
     if( file_save_output ){
-        SaveMiniToFileRAW(o_file, liste_mini);
+        SaveRawToFile(o_file, liste_mini);
     }
 
     delete reader;

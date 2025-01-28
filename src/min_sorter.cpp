@@ -25,7 +25,7 @@
 #include "./tools/fast_atoi.hpp"
 
 #include "back/txt/SaveMiniToTxtFile.hpp"
-#include "back/raw/SaveMiniToRawFile.hpp"
+#include "back/raw/SaveRawToFile.hpp"
 
 #include "hash/CustomMurmurHash3.hpp"
 
@@ -545,7 +545,7 @@ void minimizer_processing(
     if( file_save_debug )
     {
         SaveMiniToTxtFile_v2(o_file + ".sorted.txt", liste_mini);
-        SaveMiniToFileRAW   (o_file + ".hash", liste_mini);
+        SaveRawToFile   (o_file + ".hash", liste_mini);
     }
 
     //
@@ -577,7 +577,7 @@ void minimizer_processing(
     }
 
     if( file_save_output ){
-        SaveMiniToFileRAW(o_file, liste_mini);
+        SaveRawToFile(o_file, liste_mini);
     }
 }
 
