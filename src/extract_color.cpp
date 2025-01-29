@@ -36,11 +36,11 @@ int main(int argc, char *argv[])
 
     static struct option long_options[] ={
             {"verbose",     no_argument, &verbose_flag, 1},
-            {"help    ",     no_argument, 0, 'h'},
-            {"n_colors",       required_argument, 0,  'c'},
-            {"s_color",       required_argument, 0,  's'},
+            {"help",         no_argument, 0, 'h'},
             {"input",        required_argument, 0, 'i'},
-            {"output",      required_argument, 0,  'o'},
+            {"output",       required_argument, 0,  'o'},
+            {"n_colors",       required_argument, 0,  'c'},
+            {"s_color",      required_argument, 0,  's'},
             {0, 0, 0, 0}
     };
 
@@ -89,9 +89,16 @@ int main(int argc, char *argv[])
     if ( (optind < argc) || (help_flag == true) || (i_file.size() == 0) || (o_file.size() == 0)
         || (n_colors == 0) || (s_color >= n_colors))
     {
+        printf ("\n");
         printf ("Usage :\n");
-        printf ("./extract_n_colors -i <input file> -c <# of n_colorss> -o <output file> -s <selected color>");
-        putchar ('\n');
+        printf ("./extract_n_colors -i <string> -c <int> -o <string> -s <int>\n");
+        printf ("\n");
+        printf ("Options :\n");
+        printf (" -i (--file)   : The raw file to analyze\n");
+        printf (" -c (--colors) : The number of colors in the file\n");
+        printf (" -o (--output) : The raw file to create\n");
+        printf (" -s (--colors) : The color id to extract\n");
+        printf ("\n");
         exit( EXIT_FAILURE );
     }
 
