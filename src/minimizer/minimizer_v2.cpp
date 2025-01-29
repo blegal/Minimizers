@@ -367,11 +367,14 @@ void minimizer_processing_v2(
 
     liste_mini.resize(n_minizer);
 
+
+//  SaveRawToFile(o_file + ".non-sorted.0", liste_mini, 268435454);
+
     //
     // On stoque à l'indentique les données que l'on vient lire. Cette étape est uniquement utile
     // pour du debug
     //
-    SaveRawToFile(o_file + ".non-sorted", liste_mini);
+//  SaveRawToFile(o_file + ".non-sorted", liste_mini);
 
     if( file_save_debug ){
         SaveMiniToTxtFile_v2(o_file + ".non-sorted-v2.txt", liste_mini);

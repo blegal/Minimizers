@@ -47,7 +47,7 @@ void minimizer_processing_v3(
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */
-    int max_in_ram = 1024 * 1024* ram_limit_in_MB / sizeof(uint64_t); // on parle en elements de type uint64_t
+    uint64_t max_in_ram = 1024 * 1024* (uint64_t)ram_limit_in_MB / sizeof(uint64_t); // on parle en elements de type uint64_t
 
     /*
      * Reading the K value from the first file line
@@ -224,7 +224,7 @@ void minimizer_processing_v3(
 #if _debug_core_
             printf("   - pushed (%d)\n", n_minizer);
 #endif
-        }else if( last_pushed != minv ){
+        }else if( liste_mini[n_minizer-1] != minv ){
             liste_mini[n_minizer++] = minv;
             last_pushed = minv;
 #if _debug_core_
@@ -307,7 +307,7 @@ void minimizer_processing_v3(
 
                 ////////////////////////////////////////////////////////////////////////////////////
 
-                if( last_pushed != minv ){
+                if( liste_mini[n_minizer-1] != minv ){
 #if _debug_core_
                     printf("(+)   min = | %16.16llX |\n", minv);
 #endif
@@ -319,25 +319,29 @@ void minimizer_processing_v3(
                         // On est obligé de flush sur le disque les données
                         std::string t_file = o_file + "." + std::to_string( file_list.size() );
 
-                        SaveRawToFile(o_file + ".non-sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
+//                        SaveRawToFile(o_file + ".non-sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer - 1);
 
                         // On trie les donnnées en memoire
-                        crumsort_prim( liste_mini.data(), n_minizer, 9 /*uint64*/ );
+                        crumsort_prim( liste_mini.data(), n_minizer - 1, 9 /*uint64*/ );
+
+//                        SaveRawToFile(o_file + ".sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer - 1);
 
                         // On supprime les redondances
-                        int n_elements = VectorDeduplication(liste_mini, n_minizer);
+                        int n_elements = VectorDeduplication(liste_mini, n_minizer - 1);
 
-                        SaveRawToFile(t_file, liste_mini, n_elements);
+                        SaveRawToFile(t_file, liste_mini, n_elements - 1);
 
                         file_list.push_back( t_file );
 
                         printf("flushed on SSD drive [%s]\n", t_file.c_str());
 
                         //
-                        // ATTENTION PATCH tres praqtique et sans conséquence car on dé-dupliquera a la fin !
+                        // ATTENTION PATCH tres pratique mais compliqué à comprendre... Pour éviter d'avoir un doublon
+                        // on ne copie pas le dernier minimizer maintenant. On le laisse en début de tableau pour avoir
+                        // a disposition la denriere valeur
                         //
-                        //liste_mini[0] = liste_mini[n_minizer-1];
-                        n_minizer     = 0;
+                        liste_mini[0] = liste_mini[n_minizer-1];
+                        n_minizer     = 1;
                     }
 #if _debug_core_
                     printf("   - pushed (%d)\n", n_minizer);
@@ -406,8 +410,12 @@ void minimizer_processing_v3(
 
         std::string t_file = o_file + "." + std::to_string( file_list.size() );
         crumsort_prim( liste_mini.data(), n_minizer, 9 /*uint64*/ );
+
+        SaveRawToFile(o_file + ".sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
+
         int n_elements = VectorDeduplication(liste_mini, n_minizer);
         SaveRawToFile(t_file, liste_mini, n_elements);
+
         file_list.push_back( t_file );
         printf("flushed on SSD drive [%s]\n", t_file.c_str());
 

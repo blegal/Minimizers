@@ -42,6 +42,7 @@ if(BUILD_MACOS_ARM)
     SET(CMAKE_CXX_FLAGS "-Wall")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native -mtune=native")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math -fopenmp -std=c++17")
+#    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fopenmp -std=c++17")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flax-vector-conversions") # gcc patch
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/opt/homebrew/include") # gcc patch
 
@@ -329,6 +330,19 @@ file(GLOB_RECURSE source_files
 add_executable(raw_dump ${source_files})
 
 target_include_directories(raw_dump
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+########################################################################################################################
+
+project(raw_compare)
+
+file(GLOB_RECURSE source_files
+        ./src/raw_compare.cpp)
+add_executable(raw_compare ${source_files})
+
+target_include_directories(raw_compare
         PUBLIC
         "${PROJECT_SOURCE_DIR}/../src/headers/"
 )
