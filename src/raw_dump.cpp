@@ -27,11 +27,59 @@ int main(int argc, char *argv[]) {
         exit( EXIT_FAILURE );
     }
 
-    std::string ifile = argv[1];
+    std::string ifile;
+    uint64_t n_colors = -1;
+    int help_flag     = 0;
 
-    int level = 0;
-    if (argc >= 3) {
-        level = std::atoi( argv[2] );
+    static struct option long_options[] ={
+            {"help",        no_argument, 0, 'h'},
+            {"file",        required_argument, 0,  'f'},
+            {"colors",      required_argument, 0,  'c'},
+            {0, 0, 0, 0}
+    };
+
+    int option_index = 0;
+    int c;
+    while( true )
+    {
+        c = getopt_long (argc, argv, "f:c:vh", long_options, &option_index);
+        if (c == -1)
+            break;
+
+        switch ( c )
+        {
+            case 'f':
+                ifile = optarg;
+                break;
+
+            case 'c':
+                n_colors = std::atoi( optarg );
+                break;
+
+            case 'h':
+                help_flag = true;
+                break;
+
+            case '?':
+                break;
+
+            default:
+                abort ();
+        }
+    }
+
+    if ( (optind < argc) || (help_flag == true) || (ifile.size() == 0) || (ifile.size() == 0) || (n_colors < 0) )
+    {
+        printf ("(II)\n");
+        printf ("(II) Usage :\n");
+        printf ("(II) ./color_stats -f <input file> -c <number of color>");
+        printf ("(II)\n");
+        printf ("(II) Options :\n");
+        printf ("(II) -f (--file)   : The raw file to analyze\n");
+        printf ("(II) -c (--colors) : The number of colors in the file\n");
+        printf ("(II)\n");
+        putchar ('\n');
+        exit( EXIT_FAILURE );
     }
 
     const uint64_t size_bytes  = get_file_size(ifile);
@@ -40,19 +88,15 @@ int main(int argc, char *argv[]) {
     ////////////////////////////////////////////////////////////////////////////////////
 
     uint64_t n_minimizr;
-    uint64_t n_colors;
     uint64_t n_uint64_c;
-    if( level == 0 ){
+    if( n_colors == 0 ){
         n_minimizr  = n_elements;
         n_uint64_c  = 0;
-        n_colors    = 0;
-    }else if( level < 64  ){
-        n_colors    = level;
+    }else if( n_colors < 64  ){
         n_uint64_c  = 1;
         n_minimizr  = n_elements / (1 + n_uint64_c);
     }else{
-        n_colors    = level;
-        n_uint64_c  = (level / 64);
+        n_uint64_c  = (n_colors / 64);
         n_minimizr  = n_elements / (1 + n_uint64_c);
     }
 
