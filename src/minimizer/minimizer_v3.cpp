@@ -184,7 +184,6 @@ void minimizer_processing_v3(
 #if _debug_core_
         printf("   curr-m-mer       | curr-m-mer-inv   | cannonic-hash    |          hash    |\n");
 #endif
-        uint64_t last_pushed = UINT64_MAX;
         uint64_t minv = UINT64_MAX;
         for(int m_pos = 0; m_pos <= z; m_pos += 1)
         {
@@ -220,13 +219,11 @@ void minimizer_processing_v3(
 #endif
         if( n_minizer == 0 ){
             liste_mini[n_minizer++] = minv;
-            last_pushed = minv;
 #if _debug_core_
             printf("   - pushed (%d)\n", n_minizer);
 #endif
         }else if( liste_mini[n_minizer-1] != minv ){
             liste_mini[n_minizer++] = minv;
-            last_pushed = minv;
 #if _debug_core_
             printf("   - pushed (%d)\n", n_minizer);
 #endif
@@ -312,7 +309,6 @@ void minimizer_processing_v3(
                     printf("(+)   min = | %16.16llX |\n", minv);
 #endif
                     liste_mini[n_minizer++] = minv;
-                    last_pushed             = minv;
 
                     if( n_minizer >= (max_in_ram - 2) )
                     {

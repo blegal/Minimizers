@@ -36,11 +36,10 @@ int main(int argc, char* argv[])
 
     int help_flag         = 0;
     int verbose_flag      = 0;
-    int file_save_loaded  = 0;
     int file_save_debug   = 0;
     int file_save_output  = 1;
 
-    int worst_case_memory = 0;
+    int ram_alloc_start   = 1024; // Comme on parle en MB, cela fait 1 GB
 
     //
     //
@@ -54,12 +53,12 @@ int main(int argc, char* argv[])
                     {"help",               no_argument, &help_flag,    1},
                     {"verbose",            no_argument, &verbose_flag,    1},
                     {"brief",              no_argument, &verbose_flag,    0},
-                    {"worst-case",         no_argument, &worst_case_memory,1},
-                    {"save-loaded",        no_argument, &file_save_loaded,1},
                     {"save-debug",         no_argument, &file_save_debug, 1},
                     {"do-not-save-output", no_argument, &file_save_output, 0},
                     /* These options don’t set a flag.
                        We distinguish them by their indices. */
+                    {"GB",           required_argument, 0, 'G'},
+                    {"MB",           required_argument, 0, 'M'},
                     {"sorter",      required_argument, 0, 's'},
                     {"file",        required_argument, 0, 'i'},
                     {"output",      required_argument, 0, 'o'},
@@ -111,6 +110,14 @@ int main(int argc, char* argv[])
                 algo = optarg;
                 break;
 
+            case 'M':
+                ram_alloc_start = std::atoi( optarg );
+                break;
+
+            case 'G':
+                ram_alloc_start = 1024 * std::atoi( optarg );
+                break;
+
             case '?':
                 /* getopt_long already printed an error message. */
                 break;
@@ -131,17 +138,24 @@ int main(int argc, char* argv[])
         putchar ('\n');
         putchar ('\n');
         printf ("Usage :\n");
-        printf ("./kmer_sorter --file [kmer-file] [options]");
+        printf ("./min_sorter_v2 --file [filename] --output [filename] [options]");
         putchar ('\n');
         printf ("Options :\n");
-        printf (" --file [string]      : the name of the file that contains k-mers\n");
-        printf (" --output             : the name of the file that sorted k-mers at the end\n");
-        printf (" --verbose            : display debug informations\n");
-        printf (" --save-loaded        : for debugging purpose\n");
-        printf (" --save-debug         : for debugging purpose\n");
-        printf (" --do-not-save-output : for debugging purpose\n");
-        printf (" --sorter             : the name of the sorting algorithm to apply\n");
-        printf (" --quotient           : the quotient size\n");
+        printf (" --file           (-i) [string] : the name of the input file that contains ADN sequence\n");
+        printf (" --output         (-o) [string] : the name of the output file that containt minimizers at the end\n");
+        printf (" --sorter         (-s) [string] : the name of the sorting algorithm to apply\n");
+        printf("                        + std::sort       :\n");
+        printf("                        + std_2cores      :\n");
+        printf("                        + std_4cores      :\n");
+        printf("                        + crumsort        : default\n");
+        printf("                        + crumsort_2cores :\n");
+        printf (" --MB             (-M) [int]    : initial memory allocation in MBytes\n");
+        printf (" --GB             (-G) [int]    : initial memory allocation in GBytes\n");
+        printf ("\n");
+        printf ("Others :\n");
+        printf (" --verbose        (-v)          : display debug informations\n");
+        printf (" --save-debug                   : for debugging purpose\n");
+        printf (" --do-not-save-output           : for debugging purpose\n");
         exit( EXIT_FAILURE );
     }
 
@@ -149,7 +163,7 @@ int main(int argc, char* argv[])
             i_file,
             o_file,
             algo,
-            1024,
+            ram_alloc_start, // increase by 50% when required
             file_save_output,
             verbose_flag,
             file_save_debug
