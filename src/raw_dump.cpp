@@ -22,11 +22,6 @@ uint64_t get_file_size(const std::string& filen) {
 
 int main(int argc, char *argv[]) {
 
-    if (argc < 2) {
-        printf("(EE) Not enougth arguments...\n");
-        exit( EXIT_FAILURE );
-    }
-
     std::string ifile;
     uint64_t n_colors = -1;
     int help_flag     = 0;
@@ -70,15 +65,14 @@ int main(int argc, char *argv[]) {
 
     if ( (optind < argc) || (help_flag == true) || (ifile.size() == 0) || (ifile.size() == 0) || (n_colors < 0) )
     {
-        printf ("(II)\n");
-        printf ("(II) Usage :\n");
-        printf ("(II) ./color_stats -f <input file> -c <number of color>");
-        printf ("(II)\n");
-        printf ("(II) Options :\n");
-        printf ("(II) -f (--file)   : The raw file to analyze\n");
-        printf ("(II) -c (--colors) : The number of colors in the file\n");
-        printf ("(II)\n");
-        putchar ('\n');
+        printf ("\n");
+        printf ("Usage :\n");
+        printf ("  ./raw_dump -f <string> -c <int>\n");
+        printf ("\n");
+        printf ("Options :\n");
+        printf ("  -f (--file)   : The raw file to analyze\n");
+        printf ("  -c (--colors) : The number of colors in the file\n");
+        printf ("\n");
         exit( EXIT_FAILURE );
     }
 
