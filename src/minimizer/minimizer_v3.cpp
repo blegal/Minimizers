@@ -319,12 +319,10 @@ void minimizer_processing_v3(
                         // On est obligé de flush sur le disque les données
                         std::string t_file = o_file + "." + std::to_string( file_list.size() );
 
-//                        SaveRawToFile(o_file + ".non-sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer - 1);
 
                         // On trie les donnnées en memoire
                         crumsort_prim( liste_mini.data(), n_minizer - 1, 9 /*uint64*/ );
 
-//                        SaveRawToFile(o_file + ".sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer - 1);
 
                         // On supprime les redondances
                         int n_elements = VectorDeduplication(liste_mini, n_minizer - 1);

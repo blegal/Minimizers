@@ -20,7 +20,6 @@
 #define MEM_UNIT 64ULL
 
 #define _debug_ 0
-#define _murmurhash_
 
 inline uint64_t mask_right(const uint64_t numbits)
 {
