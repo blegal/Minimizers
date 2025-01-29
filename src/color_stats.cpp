@@ -101,31 +101,16 @@ int main(int argc, char *argv[]) {
     uint64_t n_minimizr;
     uint64_t n_uint64_c;
 
-    //
-    // On verifie que le nombre de couleurs indiqué est non nul
-    //
-
-    if( ifile.size() == 0 ){
-        printf("(EE) The input file is not set !\n");
-        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-        exit( EXIT_FAILURE );
-    }
-
-    if( n_colors == 0 ){
-        printf("(EE) The number of color is set to ZERO !\n");
-        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-        exit( EXIT_FAILURE );
-    }
-
     if ( (optind < argc) || (help_flag == true) || (ifile.size() == 0) || (n_colors < 0) )
     {
-        printf ("(II) Usage :\n");
-        printf ("(II) ./color_stats -f <input file> -c <number of color>");
-        printf ("(II)\n");
-        printf ("(II) Options :\n");
-        printf ("(II) -f (--file)   : The raw file to analyze\n");
-        printf ("(II) -c (--colors) : The number of colors in the file\n");
-        putchar ('\n');
+        printf ("\n");
+        printf ("Usage :\n");
+        printf ("  ./color_stats -f <string> -c <int>\n");
+        printf ("\n");
+        printf ("Options :\n");
+        printf ("  -f (--file)   : The raw file to analyze\n");
+        printf ("  -c (--colors) : The number of colors in the file\n");
+        printf ("\n");
         exit( EXIT_FAILURE );
     }
 
