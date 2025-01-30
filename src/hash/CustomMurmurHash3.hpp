@@ -12,6 +12,8 @@
 
 // Microsoft Visual Studio
 
+#include <cstdint>
+
 #if defined(_MSC_VER)
 
 #define FORCE_INLINE	__forceinline
