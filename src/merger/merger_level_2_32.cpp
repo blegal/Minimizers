@@ -56,6 +56,8 @@ void merge_level_2_32(
                     dest[ndst++] = colorDocA;
                 }else{
 //                    printf("merge colorDoc1 (%16.16llX / %16.16llX)\n", dest[ndst-1], colorDocA);
+                    if( ndst == 0 )
+                        exit(EXIT_FAILURE);
                     dest[ndst-1] |= colorDocA;
 //                    printf("                (%16.16llX)\n", dest[ndst-1]);
                 }
@@ -79,8 +81,10 @@ void merge_level_2_32(
         //
         //
         if (ndst == _oBuff_) {
-            fwrite(dest, sizeof(uint64_t), ndst, fdst);
-            ndst = 0;
+            fwrite(dest, sizeof(uint64_t), ndst - 2, fdst);
+            dest[0] = dest[_oBuff_ - 2]; // we should keep the last value in case the next
+            dest[1] = dest[_oBuff_ - 1]; // processed value is the same (should update the color)
+            ndst = 2;
         }
     }
 

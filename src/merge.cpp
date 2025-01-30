@@ -123,11 +123,24 @@ int main(int argc, char *argv[])
      * Counting the number of SMER in the file (to allocate memory)
      */
 
-    const uint64_t size_1_bytes = get_file_size(ifile_1);
-    const uint64_t size_2_bytes = get_file_size(ifile_2);
+    const int64_t size_1_bytes = get_file_size(ifile_1);
+    if( size_1_bytes == -1 )
+    {
+        printf("(EE) The first file to merge does not exist (%s)\n", ifile_1.c_str());
+        printf("(EE) Error was detected in %s (line %d)\n", __FILE__, __LINE__);
+        exit( EXIT_FAILURE );
+    }
 
-    const uint64_t size_1_Kbytes = size_1_bytes / 1024;
-    const uint64_t size_2_Kbytes = size_2_bytes / 1024;
+    const int64_t size_2_bytes = get_file_size(ifile_2);
+    if( size_2_bytes == -1 )
+    {
+        printf("(EE) The second file to merge does not exist (%s)\n", ifile_1.c_str());
+        printf("(EE) Error was detected in %s (line %d)\n", __FILE__, __LINE__);
+        exit( EXIT_FAILURE );
+    }
+
+    const uint64_t size_1_Kbytes = (uint64_t)size_1_bytes / 1024;
+    const uint64_t size_2_Kbytes = (uint64_t)size_2_bytes / 1024;
 
     const uint64_t size_1_Mbytes = size_1_Kbytes / 1024;
     const uint64_t size_2_Mbytes = size_2_Kbytes / 1024;

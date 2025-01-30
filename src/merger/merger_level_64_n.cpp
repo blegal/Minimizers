@@ -60,6 +60,12 @@ void merge_level_64_n_t(
                     for(int c = 0; c < n_u64_per_min; c +=1)
                         dest[ndst++] = 0;
                 }else{
+                    if( ndst == 0 )
+                    {
+                        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+                        exit( EXIT_FAILURE );
+                    }
+
                     // on recopie notre couleur (A) dans la sortie
                     for(int c = 0; c < n_u64_per_min; c +=1)
                         dest[ndst - 2 * n_u64_per_min + c] = in_1[counterA + 1 + c];
@@ -74,6 +80,11 @@ void merge_level_64_n_t(
                     for(int c = 0; c < n_u64_per_min; c +=1)
                         dest[ndst++] = in_2[counterB + 1 + c];
                 }else{
+                    if( ndst == 0 )
+                    {
+                        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+                        exit( EXIT_FAILURE );
+                    }
                     for(int c = 0; c < n_u64_per_min; c +=1)
                         dest[ndst - 1 * n_u64_per_min + c] = in_2[counterB + 1 + c];
                 }

@@ -101,9 +101,10 @@ void minimizer_processing_v2(
     // Defining counters for statistics
     //
 
-//  uint32_t kmer_cnt = 0;
+    uint32_t kmer_cnt = 0;
     int n_minizer     = 0;
-//  int n_skipper     = 0;
+    int n_skipper     = 0;
+    int n_lines       = 0;
 
     std::tuple<int, bool> mTuple = reader->next_sequence(seq_value, 4096);
 
@@ -112,6 +113,9 @@ void minimizer_processing_v2(
 #if _debug_core_
         printf("first  = %s (start = %d, new = %d)\n", seq_value, std::get<0>(mTuple), std::get<1>(mTuple) );
 #endif
+
+        n_lines += 1; // on compte les séquences
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //
         // Buffer utilisé pour la fenetre glissante des hash des m-mer
@@ -204,8 +208,8 @@ void minimizer_processing_v2(
 #if _debug_core_
         printf("(+)1  min = | %16.16llX |\n", minv);
 #endif
-        if( n_minizer == 0 ){
-            liste_mini[n_minizer++] = minv;
+            if( n_minizer == 0 ){
+                liste_mini[n_minizer++] = minv;
 #if _debug_core_
             printf("   - pushed (%d)\n", n_minizer);
 #endif
@@ -215,13 +219,13 @@ void minimizer_processing_v2(
             printf("   - pushed (%d)\n", n_minizer);
 #endif
         }else{
-//          n_skipper += 1;
+            n_skipper += 1;
 #if _debug_core_
             printf("   - skipped (%d)\n", n_minizer);
 #endif
         }
 
-//      kmer_cnt += 1;
+        kmer_cnt += 1;
 
         ////////////////////////////////////////////////////////////////////////////////////
         //
@@ -279,7 +283,7 @@ void minimizer_processing_v2(
                     printf(" -2minv = %16.16llX (1)\n", minv);
 #endif
                 }else{
-                    for(int p = 0; p < z; p += 1) { // SUREMENT UN BUG, IL FAUDRAIT ENLEVER LE +1
+                    for(int p = 0; p < z; p += 1) {
                         buffer[p] = buffer[p+1];
                     }
                     buffer[z] = s_hash; // on memorise le hash du dernier m-mer
@@ -311,13 +315,13 @@ void minimizer_processing_v2(
 #if _debug_core_
                     printf("(+)  skip = | %16.16llX |\n", minv);
 #endif
-//                  n_skipper += 1;
+                    n_skipper += 1;
 #if _debug_core_
                     printf("   - skipped (%d)\n", n_minizer);
 #endif
                 }
 
-//              kmer_cnt += 1; // on a traité un kmer de plus
+                kmer_cnt += 1; // on a traité un kmer de plus
                 cnt      += 1; // on avance le pointeur dans le flux
 // DEBUG !
                 if( minv == 0 ) exit( 0 );
@@ -364,6 +368,15 @@ void minimizer_processing_v2(
 
     liste_mini.resize(n_minizer);
 
+    if( verbose_flag == true ) {
+        printf("(II) Minimizer generation pass\n");
+        printf("(II) - Number of ADN sequences  : %10d\n", n_lines);
+        printf("(II) - Number of k-mer          : %10u\n", kmer_cnt);
+        printf("(II) - Number of skipped minizr : %10d\n", n_skipper);
+        printf("(II) - Number of minimizers     : %10zu\n", liste_mini.size());
+        printf("(II) - Memory occupancy         : %10lu MB\n", (liste_mini.size() * sizeof(uint64_t)) / 1024 / 1024);
+        printf("(II)\n");
+    }
 
 //  SaveRawToFile(o_file + ".non-sorted.0", liste_mini, 268435454);
 
@@ -378,10 +391,10 @@ void minimizer_processing_v2(
     }
 
     if( verbose_flag == true ) {
-        printf("(II)\n");
         printf("(II) Launching the sorting step\n");
         printf("(II) - Sorting algorithm = %s\n", algo.c_str());
         printf("(II) - Number of samples = %ld\n", liste_mini.size());
+        printf("(II)\n");
     }
 
     double start_time = omp_get_wtime();
@@ -424,12 +437,19 @@ void minimizer_processing_v2(
     // On stoque à l'indentique les données que l'on vient lire. Cette étape est uniquement utile
     // pour du debug
     //
-    if( verbose_flag == true ) {
-        printf("(II)\n");
-        printf("(II) Vector deduplication step\n");
-    }
-
+    uint64_t before =  liste_mini.size();
     VectorDeduplication( liste_mini );
+    uint64_t after  =  liste_mini.size();
+    uint64_t diffr  =  before - after;
+
+    if( verbose_flag == true )
+    {
+        printf("(II) Vector deduplication step\n");
+        printf("(II) - #m-mer before = %llu\n", before);
+        printf("(II) - #m-mer after  = %llu\n", after);
+        printf("(II) - #m-mer saving = %llu\n", diffr);
+        printf("(II)\n");
+    }
 
     if( file_save_debug ){
         SaveMiniToTxtFile_v2(o_file + ".txt", liste_mini);

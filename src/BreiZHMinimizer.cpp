@@ -56,9 +56,7 @@ int main(int argc, char *argv[])
     std::string algo = "std::sort";
 
     static struct option long_options[] = {
-            {"help",               no_argument, &help_flag,    1},
             {"help",        no_argument, 0, 'h'},
-
             {"verbose",     no_argument, 0, 'v'},
 
             {"skip-minimizer-step",     no_argument, 0, 'S'},
@@ -120,10 +118,6 @@ int main(int argc, char *argv[])
                 threads_merge = std::atoi( optarg );
                 break;
 
-            case 'h':
-                help_flag = true;
-                break;
-
             case 's':
                 algo = optarg;
                 break;
@@ -134,6 +128,14 @@ int main(int argc, char *argv[])
 
             case 'G':
                 ram_value = 1024 * std::atoi( optarg );
+                break;
+
+            case 'v':
+                verbose_flag = true;
+                break;
+
+            case 'h':
+                help_flag = true;
                 break;
 
             case '?':
@@ -199,14 +201,41 @@ int main(int argc, char *argv[])
     // (ajout de la donnée uint64_t pour la couleur). Ce n'est pas un probleme scientifique mais
     // technique, un peu plus de code a developper plus tard...
     //
-    std::vector<std::string> l_files = file_list_cpp(directory);
-    for( int i = 0; i < l_files.size(); i += 1 )
+    std::vector<std::string> t_files = file_list_cpp(directory);
+    std::vector<std::string> l_files;
+
+    for( int i = 0; i < t_files.size(); i += 1 )
     {
-        if( l_files[i].find(".DS_Store") != std::string::npos )
-            l_files.erase( l_files.begin() + i );
+        std::string t_file = t_files[i];
+        if( (skip_minimizer_step == false) &&
+                (
+                    (t_file.substr(t_file.find_last_of(".") + 1) == "lz4")   ||
+                    (t_file.substr(t_file.find_last_of(".") + 1) == "bz2")   ||
+                    (t_file.substr(t_file.find_last_of(".") + 1) == "gz")    ||
+                    (t_file.substr(t_file.find_last_of(".") + 1) == "fastx") ||
+                    (t_file.substr(t_file.find_last_of(".") + 1) == "fasta") ||
+                    (t_file.substr(t_file.find_last_of(".") + 1) == "fastq") ||
+                    (t_file.substr(t_file.find_last_of(".") + 1) == "fna")
+                )
+            ){
+            printf ("(II) accepting %s\n", t_file.c_str());
+            l_files.push_back( t_file );
+        }else if( (skip_minimizer_step == true) &&
+            (
+                    (t_file.substr(t_file.find_last_of(".") + 1) == "raw")
+            )
+            ){
+            printf ("(II) accepting %s\n", t_file.c_str());
+            l_files.push_back( t_file );
+        }else{
+            printf ("(WW) discarding %s\n", t_file.c_str());
+        }
     }
 
     std::sort(l_files.begin(), l_files.end());
+
+
+
 
     std::vector<std::string> n_files;
 
@@ -234,7 +263,7 @@ int main(int argc, char *argv[])
                         algo,
                         ram_value,
                         true,
-                        verbose_flag,
+                        false,
                         false
                 );
             }else{
@@ -328,27 +357,27 @@ int main(int argc, char *argv[])
             //
 
             n_files.push_back( o_file );
-            if     ( siz1_kb < 10 ) printf("%5d | %20s | %6lld B  ",  cnt, i_file_1.c_str(), i1_size);
-            else if( siz1_mb < 10 ) printf("%5d | %20s | %6lld KB ", cnt, i_file_1.c_str(), siz1_kb);
-            else                    printf("%5d | %20s | %6lld MB ", cnt, i_file_1.c_str(), siz1_mb);
+            if     ( siz1_kb < 10 ) printf("%6d | %14s [%5lld B ]   ",  cnt, i_file_1.c_str(), i1_size);
+            else if( siz1_mb < 10 ) printf("%6d | %14s [%5lld KB]   ", cnt, i_file_1.c_str(), siz1_kb);
+            else                    printf("%6d | %14s [%5lld MB]   ", cnt, i_file_1.c_str(), siz1_mb);
 
             //
             //
             //
-            if     ( siz2_kb < 10 ) printf("| %20s | %6lld B  | ==========> | ", i_file_2.c_str(), i2_size);
-            else if( siz2_mb < 10 ) printf("| %20s | %6lld KB | ==========> | ", i_file_2.c_str(), siz2_kb);
-            else                    printf("| %20s | %6lld MB | ==========> | ", i_file_2.c_str(), siz2_mb);
+            if     ( siz2_kb < 10 ) printf("+   %14s [%5lld B ]   == MERGE =>   ", i_file_2.c_str(), i2_size);
+            else if( siz2_mb < 10 ) printf("+   %14s [%5lld KB]   == MERGE =>   ", i_file_2.c_str(), siz2_kb);
+            else                    printf("+   %14s [%5lld MB]   == MERGE =>   ", i_file_2.c_str(), siz2_mb);
 
             //
             //
             //
-            if     ( sizo_kb < 10 ) printf("%20s | %6lld B  | ", o_file.c_str(), o_size);
-            else if( sizo_mb < 10 ) printf("%20s | %6lld KB | ", o_file.c_str(), sizo_kb);
-            else                    printf("%20s | %6lld MB | ", o_file.c_str(), sizo_mb);
+            if     ( sizo_kb < 10 ) printf("%14s [%5lld B ]  ", o_file.c_str(), o_size);
+            else if( sizo_mb < 10 ) printf("%14s [%5lld KB]  ", o_file.c_str(), sizo_kb);
+            else                    printf("%14s [%5lld MB]  ", o_file.c_str(), sizo_mb);
 
             const auto  end_file = std::chrono::system_clock::now();
             const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
-            printf(" %6.2fs\n", elapsed_file);
+            printf("in  %6.2fs\n", elapsed_file);
         }
 
         //

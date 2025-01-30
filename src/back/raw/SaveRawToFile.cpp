@@ -30,11 +30,11 @@ bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_
 //
 //
 //
-bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_hash)
-{
-    SaveRawToFile(filename, list_hash, list_hash.size());
-    return true;
-}
+    bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_hash)
+    {
+        SaveRawToFile(filename, list_hash, list_hash.size());
+        return true;
+    }
 //
 //
 //

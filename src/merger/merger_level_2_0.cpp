@@ -79,8 +79,11 @@ void merge_level_2_0(
         //
         //
         if (ndst == _oBuff_) {
-            fwrite(dest, sizeof(uint64_t), ndst, fdst);
-            ndst = 0;
+            fwrite(dest, sizeof(uint64_t), ndst - 2, fdst);
+            dest[0] = dest[_oBuff_ - 2]; // we should keep the last value in case the next
+            dest[1] = dest[_oBuff_ - 1]; // processed value is the same (should update the color)
+            ndst = 2;
+//          ndst = 0;
         }
     }
 

@@ -145,19 +145,35 @@ int main(int argc, char *argv[])
     const uint64_t p_color = 1 + (s_color / 64); // pour sauter le minimizer
     const uint64_t i_color = 1ULL << (s_color%64);
 
+    int count_e = 0;
+
     const int e_size = 1 + n_uint64_c;
+
+    printf("(II) p_color %d | p_color %d | p_color %d | \n", p_color, i_color, e_size);
+
     uint64_t buff[e_size];
     for(uint64_t i = 0; i < n_elements; i += e_size )
     {
-        if( (i%(4*1024*1024)) == 0 )
-            printf("%llu/%llu\n", i, n_elements);
+        int nbytes = fread(buff, sizeof(uint64_t), e_size, fi);
+        if( nbytes != e_size )
+        {
+            printf("(II) Oups !\n");
+        }
 
-        fread(buff, sizeof(uint64_t), e_size, fi);
         if( buff[p_color] & i_color )
         {
             fwrite(buff, sizeof(uint64_t), 1, fo);
+            count_e += 1;
+/*
+            printf("%4d : ", i/e_size);
+            for(uint64_t k = 0; k < e_size; k += 1 )
+                printf("%16.16X ", buff[k]);
+            printf("\n");
+*/
         }
     }
+
+    printf("(II) # copied minimizers : %llu\n", count_e);
 
     fclose(fi);
     fclose(fo);

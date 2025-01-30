@@ -292,7 +292,7 @@ void minimizer_processing_v3(
                     printf(" -2minv = %16.16llX (1)\n", minv);
 #endif
                 }else{
-                    for(int p = 0; p < z + 1; p += 1) {
+                    for(int p = 0; p < z; p += 1) {
                         buffer[p] = buffer[p+1];
                     }
                     buffer[z] = s_hash; // on memorise le hash du dernier m-mer
