@@ -5,7 +5,6 @@
 
 #include "minimizer/minimizer_v2.hpp"
 
-#include "./minimizer/deduplication.hpp"
 #include "front/count_file_lines.hpp"
 
 //

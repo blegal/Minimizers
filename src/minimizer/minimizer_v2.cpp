@@ -1,12 +1,10 @@
-#include "minimizer.hpp"
+#include "minimizer_v2.hpp"
 #include "deduplication.hpp"
 
 #include "../front/fastx/read_fastx_file.hpp"
 #include "../front/fastx_gz/read_fastx_gz_file.hpp"
 #include "../front/fastx_bz2/read_fastx_bz2_file.hpp"
 #include "../front/fastx_lz4/read_fastx_lz4_file.hpp"
-
-#include "../front/count_file_lines.hpp"
 
 #include "../hash/CustomMurmurHash3.hpp"
 

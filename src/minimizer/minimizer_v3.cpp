@@ -1,4 +1,4 @@
-#include "minimizer.hpp"
+#include "minimizer_v3.hpp"
 #include "deduplication.hpp"
 
 #include "../front/fastx/read_fastx_file.hpp"

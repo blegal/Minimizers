@@ -6,6 +6,7 @@
 #include "merger_level_64_n.hpp"
 #include "merger_level_2_0.hpp"
 #include "merger_level_n_p.hpp"
+#include "merger_level_s.hpp"   // -s- for special case !
 
 void merger_in(
         const std::string& ifile_1,
@@ -18,9 +19,16 @@ void merger_in(
     if( level_1 == level_2 )
     {
         //
+        // Cas SPECIAL pour me simplifier la vie lors du merge. On ajoute
+        // au fichier d'entrée une couleur
+        //
+        const int equals = !ifile_1.compare(ifile_2);
+        if( (level_1 == 0) && (equals) )
+            merge_level_s(ifile_1, o_file); // 0 couleur ne fois devient une couleur
+        //
         // On fait un merge sans ajouter de couleur dans le fichier resultat
         //
-        if( level_1 == 0 )
+        else if( level_1 == 0 )
             merge_level_0(ifile_1, ifile_2, o_file); // 0 couleur reste 0 couleur
         //
         // On fait un merge de 2 fichiers incolore et on ajoute 2 bits de couleurs dans un uint64_t

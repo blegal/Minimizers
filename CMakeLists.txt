@@ -301,6 +301,7 @@ project(merge)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/progress/progressbar.cpp
+        ./src/merger/merger_level_s.cpp
         ./src/merger/merger_level_0.cpp
         ./src/merger/merger_level_1.cpp
         ./src/merger/merger_level_2_0.cpp
@@ -361,32 +362,39 @@ project(BreiZHMinimizer)
 file(GLOB_RECURSE source_files
         ./src/BreiZHMinimizer.cpp
         ./src/progress/progressbar.cpp
+        # Merger implementations
         ./src/merger/merger_in.cpp
+        ./src/merger/merger_level_s.cpp
         ./src/merger/merger_level_0.cpp
         ./src/merger/merger_level_1.cpp
         ./src/merger/merger_level_2_0.cpp
         ./src/merger/merger_level_2_32.cpp
         ./src/merger/merger_level_64_n.cpp
         ./src/merger/merger_level_n_p.cpp
+        # Output backends
+        ./src/back/raw/SaveRawToFile.cpp
+        ./src/back/txt/SaveMiniToTxtFile.cpp
+        # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        src/back/raw/SaveRawToFile.cpp
-        ./src/back/txt/SaveMiniToTxtFile.cpp
         ./src/minimizer/deduplication.cpp
-        ./src/front/count_file_lines.cpp
-        ./src/front/fastx/count_lines_fastx.cpp
-        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
-        ./src/front/read_k_value.cpp
-        ./src/front/fastx/read_fastx_k_value.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
+        # Minimizer engines
+        ./src/minimizer/deduplication.cpp
+        ./src/minimizer/minimizer_v2.cpp
+        ./src/minimizer/minimizer_v3.cpp
         # Front-end parsers
-        ./src/front/fastx/read_fastx_file.cpp
-        ./src/front/fastx_gz/read_fastx_gz_file.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
-        #
-        ./src/minimizer/minimizer.cpp)
+        src/front/fastx/read_fastx_file.cpp
+        src/front/fastx_gz/read_fastx_gz_file.cpp
+        src/front/fastx_bz2/read_fastx_bz2_file.cpp
+        src/front/fastx_lz4/read_fastx_lz4_file.cpp
+        src/front/fastx_lz4/lz4/lz4file.c
+        src/front/fastx_lz4/lz4/lz4frame.c
+        src/front/fastx_lz4/lz4/xxhash.c
+        src/front/fastx_lz4/lz4/lz4hc.c
+        src/front/fastx_lz4/lz4/lz4.c
+    )
 add_executable(BreiZHMinimizer ${source_files})
 
 target_include_directories(BreiZHMinimizer

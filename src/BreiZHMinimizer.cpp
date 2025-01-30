@@ -7,8 +7,8 @@
 #include <sys/stat.h>
 #include <filesystem>
 
-
-#include "./minimizer/minimizer.hpp"
+#include "./minimizer/minimizer_v2.hpp"
+#include "./minimizer/minimizer_v3.hpp"
 #include "./merger/merger_in.hpp"
 //
 //  Récupère la taille en octet du fichier passé en paramètre
@@ -44,20 +44,38 @@ int main(int argc, char *argv[])
     std::string directory = "";
     std::string filename  = "";
 
-    int  verbose_flag        = 0;
+    int   verbose_flag        = 0;
     bool  skip_minimizer_step = 0;
     bool  keep_temp_files     = 0;
-    bool help_flag           = false;
-    int  threads             = 0;
+    int   help_flag           = 0;
+    int   threads_minz        = 1;
+    int   threads_merge       = 1;
+    int   ram_value           = 1024;
+    int   limited_memory      = 1;
 
-    static struct option long_options[] ={
-            {"verbose",     no_argument, 0, 'v'},
-            {"skip-minimizer-step",     no_argument, 0, 's'},
-            {"keep-temp-files",     no_argument, 0, 'k'},
+    std::string algo = "std::sort";
+
+    static struct option long_options[] = {
+            {"help",               no_argument, &help_flag,    1},
             {"help",        no_argument, 0, 'h'},
+
+            {"verbose",     no_argument, 0, 'v'},
+
+            {"skip-minimizer-step",     no_argument, 0, 'S'},
+            {"keep-temp-files",     no_argument, 0, 'k'},
+
             {"directory",       required_argument, 0, 'd'},
             {"filename",      required_argument, 0,  'f'},
+
+            {"limited-mem",              no_argument, &limited_memory,    1},
+            {"unlimited-mem",              no_argument, &limited_memory,    0},
+
             {"threads",      required_argument, 0,  't'},
+            {"threads-minz", required_argument, 0,  'm'},
+            {"threads-merge",required_argument, 0,  'g'},
+            {"sorter",      required_argument, 0, 's'},
+            {"GB",           required_argument, 0, 'G'},
+            {"MB",           required_argument, 0, 'M'},
             {0, 0, 0, 0}
     };
 
@@ -81,7 +99,7 @@ int main(int argc, char *argv[])
                 filename = optarg;
                 break;
 
-            case 's':
+            case 'S':
                 skip_minimizer_step = true;
                 break;
 
@@ -90,16 +108,36 @@ int main(int argc, char *argv[])
                 break;
 
             case 't':
-                threads = std::atoi( optarg );
-                omp_set_dynamic(0);
-                omp_set_num_threads(threads);
+                threads_minz  = std::atoi( optarg );
+                threads_merge = std::atoi( optarg );
+                break;
+
+            case 'm':
+                threads_minz  = std::atoi( optarg );
+                break;
+
+            case 'g':
+                threads_merge = std::atoi( optarg );
                 break;
 
             case 'h':
                 help_flag = true;
                 break;
 
+            case 's':
+                algo = optarg;
+                break;
+
+            case 'M':
+                ram_value = std::atoi( optarg );
+                break;
+
+            case 'G':
+                ram_value = 1024 * std::atoi( optarg );
+                break;
+
             case '?':
+                help_flag = true;
                 break;
 
             default:
@@ -122,6 +160,18 @@ int main(int argc, char *argv[])
         printf ("  -t  <number>    : threads\n");
         putchar ('\n');
         exit( EXIT_FAILURE );
+/*
+        {"skip-minimizer-step",     no_argument, 0, 'S'},
+        {"keep-temp-files",     no_argument, 0, 'k'},
+        {"directory",       required_argument, 0, 'd'},
+        {"filename",      required_argument, 0,  'f'},
+        {"limited-mem",              no_argument, &limited_memory,    1},
+        {"unlimited-mem",              no_argument, &limited_memory,    0},
+        {"threads",      required_argument, 0,  't'},
+        {"sorter",      required_argument, 0, 's'},
+        {"GB",           required_argument, 0, 'G'},
+        {"MB",           required_argument, 0, 'M'},
+*/
     }
 
 
@@ -147,6 +197,7 @@ int main(int argc, char *argv[])
     //
     if( skip_minimizer_step == false )
     {
+        omp_set_num_threads(threads_minz);
 #pragma omp parallel for
         for(int i = 0; i < l_files.size(); i += 1)
         {
@@ -155,15 +206,28 @@ int main(int argc, char *argv[])
             const uint64_t size_mb   = f_size / 1024 / 1024;
             const std::string o_file = "data_n" + std::to_string(i) + ".c0";
             /////
-            minimizer_processing(
-                     i_file,
-                     o_file,
-                    "crumsort",         // algo
-                    true,               // file_save_output,
-                    true,               // worst_case_memory,
-                    false,              // verbose_flag,
-                    false               // file_save_debug
-            );
+            if( limited_memory == true )
+            {
+                minimizer_processing_v3(
+                        i_file,
+                        o_file,
+                        algo,
+                        ram_value,
+                        true,
+                        verbose_flag,
+                        false
+                );
+            }else{
+                minimizer_processing_v2(
+                        i_file,
+                        o_file,
+                        algo,
+                        ram_value, // increase by 50% when required
+                        true,
+                        false,
+                        false
+                );
+            }
             /////
             const uint64_t o_size    = get_file_size(o_file);
             const uint64_t sizo_mb   = o_size / 1024 / 1024;
@@ -190,11 +254,18 @@ int main(int argc, char *argv[])
     {
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
         int cnt = 0;
-        while( l_files.size() >= 2 )
+//        omp_set_num_threads(threads_merge);
+//#pragma omp parallel for
+        for(int ll = 0; ll < l_files.size() - 1; ll += 2)
         {
-            const std::string i_file_1 = l_files[0]; l_files.erase( l_files.begin() );
-            const std::string i_file_2 = l_files[0]; l_files.erase( l_files.begin() );
-            const std::string o_file   = "data_n" + std::to_string(cnt) + "." + std::to_string(2 * colors) + "c";
+            const std::string i_file_1 = l_files[ll   ];
+            const std::string i_file_2 = l_files[ll + 1];
+
+            std::string o_file;
+//#pragma omp critical
+            { // a cause du cnt++
+                o_file = "data_n" + std::to_string(cnt++) + "." + std::to_string(2 * colors) + "c";
+            };
 
             const uint64_t i1_size   = get_file_size(i_file_1);
             const uint64_t siz1_kb   = i1_size / 1024;
@@ -209,11 +280,11 @@ int main(int argc, char *argv[])
             merger_in(
                     i_file_1,
                     i_file_2,
-                    o_file,
+                     o_file,
                     colors,     // les 2 fichiers ont un nombre de couleurs homogene donc
                     colors);    // on passe 2 fois le meme parametre
 
-            if( keep_temp_files == 0 )
+            if( (keep_temp_files == 0) && !((skip_minimizer_step == true) && (colors == 1)) ) // sinon on supprime nos fichier d'entrée !
             {
                 std::remove( i_file_1.c_str() ); // delete file
                 std::remove( i_file_2.c_str() ); // delete file
@@ -245,18 +316,26 @@ int main(int argc, char *argv[])
             if     ( sizo_kb < 10 ) printf("%20s | %6lld B  |\n", o_file.c_str(), o_size);
             else if( sizo_mb < 10 ) printf("%20s | %6lld KB |\n", o_file.c_str(), sizo_kb);
             else                    printf("%20s | %6lld MB |\n", o_file.c_str(), sizo_mb);
-
-            cnt += 1;
         }
 
         //
         // On regarde si des fichiers n'ont pas été traités. Cela peut arriver lorsque l'arbre de fusion
         // n'est pas équilibré. On stocke le fichier
         //
-        if( l_files.size() != 0 )
+        if( l_files.size()%2 )
         {
-            vrac_names.push_back ( l_files.front() );
-            vrac_levels.push_back( colors          );
+            vrac_names.push_back ( l_files[l_files.size()-1] );
+            vrac_levels.push_back( colors                    );
+        }
+
+        //
+        // Si c'est le dernier fichier alors on l'ajoute dans la liste des fichiers à fusionner. Si il n'y a que lui
+        // il ne se passera rien, sinon on aura une fusion complete des datasets
+        //
+        if( n_files.size() == 1 )
+        {
+            vrac_names.push_back ( n_files[0] );
+            vrac_levels.push_back( 2 * colors );
         }
 
         l_files = n_files;
@@ -265,12 +344,92 @@ int main(int argc, char *argv[])
     }
     printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
+
+
     for(int i = 0; i < vrac_names.size(); i += 1)
     {
         printf("> %5d | %20s | level = %6d ||\n", i, vrac_names[i].c_str(), vrac_levels[i]);
     }
 
     printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
+
+    if( vrac_names.size() > 1 )
+    {
+        int cnt = 0;
+        std::vector<int> vrac_real_color = vrac_levels;
+        //
+        // A t'on un cas particulier a gerer (fichier avec 0 couleur)
+        //
+        if(vrac_levels[0] == 1)
+        {
+            const std::string i_file = vrac_names[0];
+            const std::string o_file   = "data_n" + std::to_string(cnt++) + "." + std::to_string(2) + "c";
+            merger_in(i_file,i_file, o_file, 0, 0);
+            vrac_names     [0] = o_file;
+            vrac_levels    [0] =      2; // les niveaux de fusion auxquels on
+            vrac_real_color[0] =      1; // on a une seule couleur
+            printf("- %20.20s (%d) + %20.20s (%d)\n", i_file.c_str(), 0, i_file.c_str(), 0);
+            std::remove( i_file.c_str() ); // delete file
+        }
+
+        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
+
+        while( vrac_names.size() != 1 )
+        {
+            const std::string i_file_1 = vrac_names[1]; // le plus grand est tjs le second
+            const std::string i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
+            int color_1     = vrac_levels    [1];
+            int color_2     = vrac_levels    [0];
+            int r_color_1   = vrac_real_color[1];
+            int r_color_2   = vrac_real_color[0];
+            int real_color  = r_color_1 + r_color_2;
+            int merge_color = color_1 + color_2;
+
+            printf("- %20.20s (%d) + %20.20s (%d)\n", i_file_1.c_str(), r_color_1, i_file_2.c_str(), r_color_2);
+
+            if( (color_1 <= 32) && (color_2 <= 32) ){
+                color_2     = color_1;           // on uniformise
+                merge_color = color_1 + color_2; // le double du plus gros
+            }else if( color_1 >= 64 ){
+                if( color_2 < 64 ){
+                    color_2     = 64;                 // on est obligé de compter 64 meme si c moins, c'est un uint64_t
+                    merge_color = color_1 + color_2;  //
+                }else{
+                    // on ne change rien !
+                    merge_color = color_1 + color_2;  //
+                }
+            }
+
+            //
+            // On lance le processus de merging sur les 2 fichiers
+            //
+            const std::string o_file   = "data_n" + std::to_string(cnt++) + "." + std::to_string(real_color) + "c";
+            printf("  %20.20s (%d) + %20.20s (%d) ===> %20.20s (%d)\n", i_file_1.c_str(), color_1, i_file_2.c_str(), color_2, o_file.c_str(), real_color);
+            merger_in(i_file_1,i_file_2, o_file, color_1, color_2);
+            vrac_names     [1] = o_file;
+            vrac_levels    [1] = merge_color;
+            vrac_real_color[1] = real_color;
+
+            //
+            // On supprime le premier élément du tableau
+            //
+            vrac_names.erase     ( vrac_names.begin()      );
+            vrac_levels.erase    ( vrac_levels.begin()     );
+            vrac_real_color.erase( vrac_real_color.begin() );
+
+            //
+            // On supprime les fichiers source
+            //
+            std::remove( i_file_1.c_str() ); // delete file
+            std::remove( i_file_2.c_str() ); // delete file
+        }
+
+    }
+
+    for(int i = 0; i < vrac_names.size(); i += 1)
+    {
+        printf("> %5d | %20s | level = %6d ||\n", i, vrac_names[i].c_str(), vrac_levels[i]);
+    }
 
     //
     // Il faudrait que l'on gere les fichiers que l'on a mis de coté lors du processus de fusion...
