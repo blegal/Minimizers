@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <vector>
+#include <cstdint>
 #include <omp.h>
 #include <getopt.h>
 #include <string>
