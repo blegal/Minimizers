@@ -152,12 +152,30 @@ int main(int argc, char *argv[])
     {
         printf ("Usage :\n");
         printf ("./BreiZHMinimizer -d <directory to process>              [options]\n");
-        printf ("./BreiZHMinimizer -d <file with list of file to process> [options]\n");
+        printf ("./BreiZHMinimizer -f <file with list of file to process> [options] (NOT WORKING YET !)\n");
         printf ("\n");
-        printf ("Options :\n");
-        printf ("  -s : --skip-minimizer-step : \n");
-        printf ("  -k --keep-temp-files     : \n");
-        printf ("  -t  <number>    : threads\n");
+        printf ("Common options :\n");
+        printf ("  --threads <int>       (-t) : \n");
+        printf ("  --skip-minimizer-step (-s) : \n");
+        printf ("  --keep-temp-files     (-k) : \n");
+        printf ("  --output <string>     (-o) : the name of the output file that containt minimizers at the end\n");
+
+        printf ("\n");
+        printf ("Minimizer engine options :\n");
+        printf (" --sorter <string> (-s) : the name of the sorting algorithm to apply\n");
+        printf("                        + std::sort       :\n");
+        printf("                        + std_2cores      :\n");
+        printf("                        + std_4cores      :\n");
+        printf("                        + crumsort        : default\n");
+        printf("                        + crumsort_2cores :\n");
+        printf (" --sorter <string>     (-s) : \n");
+        printf (" --MB             (-M) [int]    : maximum memory usage in MBytes\n");
+        printf (" --GB             (-G) [int]    : maximum memory usage in GBytes\n");
+        printf ("\n");
+
+        printf ("Others :\n");
+        printf (" --verbose        (-v)          : display debug informations\n");
+        printf (" --help           (-h)          : display debug informations\n");
         putchar ('\n');
         exit( EXIT_FAILURE );
 /*
@@ -197,6 +215,8 @@ int main(int argc, char *argv[])
     //
     if( skip_minimizer_step == false )
     {
+        const auto start = std::chrono::system_clock::now();
+
         omp_set_num_threads(threads_minz);
 #pragma omp parallel for
         for(int i = 0; i < l_files.size(); i += 1)
@@ -231,15 +251,21 @@ int main(int argc, char *argv[])
             /////
             const uint64_t o_size    = get_file_size(o_file);
             const uint64_t sizo_mb   = o_size / 1024 / 1024;
-            printf("%5d | %20s | %6lld MB | ==========> | %20s | %6lld MB |\n", i, i_file.c_str(), size_mb, o_file.c_str(), sizo_mb);
+            if(verbose_flag == true )
+            {
+                printf("%5d | %20s | %6lld MB | ==========> | %20s | %6lld MB |\n", i, i_file.c_str(), size_mb, o_file.c_str(), sizo_mb);
+            }
             /////
             n_files.push_back( o_file );
             /////
         }
         l_files = n_files;
         n_files.clear();
-    }
 
+        const auto  end = std::chrono::system_clock::now();
+        const float elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.f;
+        printf(" - Execution time : %1.2f seconds\n", elapsed);
+    }
     //
     //
     //
@@ -249,15 +275,18 @@ int main(int argc, char *argv[])
     //
     //
     //
+    const auto start_merge = std::chrono::system_clock::now();
     int colors = 1;
     while( l_files.size() > 1 )
     {
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
+        const auto start_level = std::chrono::system_clock::now();
         int cnt = 0;
 //        omp_set_num_threads(threads_merge);
 //#pragma omp parallel for
         for(int ll = 0; ll < l_files.size() - 1; ll += 2)
         {
+            const auto start_file = std::chrono::system_clock::now();
             const std::string i_file_1 = l_files[ll   ];
             const std::string i_file_2 = l_files[ll + 1];
 
@@ -313,9 +342,13 @@ int main(int argc, char *argv[])
             //
             //
             //
-            if     ( sizo_kb < 10 ) printf("%20s | %6lld B  |\n", o_file.c_str(), o_size);
-            else if( sizo_mb < 10 ) printf("%20s | %6lld KB |\n", o_file.c_str(), sizo_kb);
-            else                    printf("%20s | %6lld MB |\n", o_file.c_str(), sizo_mb);
+            if     ( sizo_kb < 10 ) printf("%20s | %6lld B  | ", o_file.c_str(), o_size);
+            else if( sizo_mb < 10 ) printf("%20s | %6lld KB | ", o_file.c_str(), sizo_kb);
+            else                    printf("%20s | %6lld MB | ", o_file.c_str(), sizo_mb);
+
+            const auto  end_file = std::chrono::system_clock::now();
+            const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
+            printf(" %6.2fs\n", elapsed_file);
         }
 
         //
@@ -341,7 +374,14 @@ int main(int argc, char *argv[])
         l_files = n_files;
         n_files.clear();
         colors *= 2;
+        const auto  end_level = std::chrono::system_clock::now();
+        const float elapsed_level = std::chrono::duration_cast<std::chrono::milliseconds>(end_level - start_level).count() / 1000.f;
+        printf(" - Execution time : %1.2f seconds\n", elapsed_level);
+
     }
+    const auto  end_merge = std::chrono::system_clock::now();
+    const float elapsed_merge = std::chrono::duration_cast<std::chrono::milliseconds>(end_merge - start_merge).count() / 1000.f;
+    printf(" - Execution time : %1.2f seconds\n", elapsed_merge);
     printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
 

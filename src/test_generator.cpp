@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstdint>
 #include <vector>
 #include <omp.h>
 #include <getopt.h>

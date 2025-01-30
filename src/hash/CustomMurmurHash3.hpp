@@ -11,6 +11,7 @@
 // Platform-specific functions and macros
 
 // Microsoft Visual Studio
+#include <cstdint>
 
 #if defined(_MSC_VER)
 
