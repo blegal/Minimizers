@@ -16,7 +16,7 @@ void GenTestFile(std::string file, const uint64_t value, const int length)
     FILE* f = fopen(file.c_str(), "w");
 
     uint64_t data = 0;
-    fwrite(&data, si        zeof(uint64_t), 1, f);
+    fwrite(&data, sizeof(uint64_t), 1, f);
 
     for(int x = 0; x < length; x += 1)
     {
