@@ -103,9 +103,9 @@ void minimizer_processing_v2(
     // Defining counters for statistics
     //
 
-    uint32_t kmer_cnt = 0;
+//  uint32_t kmer_cnt = 0;
     int n_minizer     = 0;
-    int n_skipper     = 0;
+//  int n_skipper     = 0;
 
     std::tuple<int, bool> mTuple = reader->next_sequence(seq_value, 4096);
 
@@ -217,13 +217,13 @@ void minimizer_processing_v2(
             printf("   - pushed (%d)\n", n_minizer);
 #endif
         }else{
-            n_skipper += 1;
+//          n_skipper += 1;
 #if _debug_core_
             printf("   - skipped (%d)\n", n_minizer);
 #endif
         }
 
-        kmer_cnt += 1;
+//      kmer_cnt += 1;
 
         ////////////////////////////////////////////////////////////////////////////////////
         //
@@ -313,13 +313,13 @@ void minimizer_processing_v2(
 #if _debug_core_
                     printf("(+)  skip = | %16.16llX |\n", minv);
 #endif
-                    n_skipper += 1;
+//                  n_skipper += 1;
 #if _debug_core_
                     printf("   - skipped (%d)\n", n_minizer);
 #endif
                 }
 
-                kmer_cnt += 1; // on a traité un kmer de plus
+//              kmer_cnt += 1; // on a traité un kmer de plus
                 cnt      += 1; // on avance le pointeur dans le flux
 // DEBUG !
                 if( minv == 0 ) exit( 0 );
