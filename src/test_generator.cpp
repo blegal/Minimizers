@@ -2,6 +2,8 @@
 #include <vector>
 #include <omp.h>
 #include <getopt.h>
+#include <string>
+
 //
 //
 //
