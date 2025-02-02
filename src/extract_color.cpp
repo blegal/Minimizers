@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     {
         printf ("\n");
         printf ("Usage :\n");
-        printf ("./extract_n_colors -i <string> -c <int> -o <string> -s <int>\n");
+        printf ("./extract_color -i <string> -c <int> -o <string> -s <int>\n");
         printf ("\n");
         printf ("Options :\n");
         printf (" -i (--file)   : The raw file to analyze\n");
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
         n_uint64_c  = 1;
         n_minimizr  = n_elements / (1 + n_uint64_c);
     }else{
-        n_uint64_c  = (n_colors / 64);
+        n_uint64_c  = ((n_colors + 63) / 64);
         n_minimizr  = n_elements / (1 + n_uint64_c);
     }
 
@@ -149,8 +149,53 @@ int main(int argc, char *argv[])
 
     const int e_size = 1 + n_uint64_c;
 
-    printf("(II) p_color %d | p_color %d | p_color %d | \n", p_color, i_color, e_size);
+    auto t1 = std::chrono::high_resolution_clock::now();
 
+/*
+    printf("(II) p_color %d | p_color %d | p_color %d | \n", p_color, i_color, e_size);
+*/
+#if 1
+
+    int buff_elnt = 4096;
+    int buff_u64  = buff_elnt * e_size;
+
+    uint64_t* i_buff = new uint64_t[buff_u64];
+    uint64_t* o_buff = new uint64_t[buff_elnt];
+
+    int cnt    = 0;
+    int e_reads;
+    do{
+        e_reads = fread(i_buff, sizeof(uint64_t), buff_u64, fi); // on lit P elements
+        for(uint64_t i = 0; i < e_reads; i += e_size ) {             // pour chacun des éléments
+
+            //
+            // Le minimiszer a t'il la bonne couleur ?
+            //
+            if (i_buff[i + p_color] & i_color) {
+                o_buff[cnt++] = i_buff[i];
+                count_e      += 1;
+            }
+
+            //
+            // Doit'on flusher le buffer de sortie ?
+            //
+            if( cnt == buff_elnt ) {
+                fwrite(o_buff, sizeof(uint64_t), cnt, fo);
+                cnt = 0;
+            }
+        }
+    }while( e_reads == buff_u64 );
+
+    //
+    // On flush les données restantes
+    //
+    fwrite(o_buff, sizeof(uint64_t), cnt, fo);
+
+    delete [] i_buff;
+    delete [] o_buff;
+
+
+#else
     uint64_t buff[e_size];
     for(uint64_t i = 0; i < n_elements; i += e_size )
     {
@@ -172,8 +217,15 @@ int main(int argc, char *argv[])
 */
         }
     }
+#endif
+    printf("(II) # copied minimizers : %d\n", count_e);
 
-    printf("(II) # copied minimizers : %llu\n", count_e);
+    std::chrono::duration<double, std::milli> ms_double = (std::chrono::high_resolution_clock::now() - t1);
+    double ms_time = ms_double.count();
+    if( ms_time > 1000.0 )
+        std::cout << "Elapsed time : " << (ms_time/1000.0) << "s\n";
+    else
+        std::cout << "Elapsed time : " << ms_time << "ms\n";
 
     fclose(fi);
     fclose(fo);

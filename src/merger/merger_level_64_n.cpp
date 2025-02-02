@@ -60,9 +60,11 @@ void merge_level_64_n_t(
                     for(int c = 0; c < n_u64_per_min; c +=1)
                         dest[ndst++] = 0;
                 }else{
-                    if( ndst == 0 )
+                    if( (ndst == 0) || (ndst%(2 * n_u64_per_min + 1) != 0) )
                     {
                         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+                        printf("(EE) ndst = %d\n", ndst);
+                        printf("(EE) n_u64_per_min = %d\n", n_u64_per_min);
                         exit( EXIT_FAILURE );
                     }
 
@@ -80,9 +82,11 @@ void merge_level_64_n_t(
                     for(int c = 0; c < n_u64_per_min; c +=1)
                         dest[ndst++] = in_2[counterB + 1 + c];
                 }else{
-                    if( ndst == 0 )
+                    if( (ndst == 0) || (ndst%(2 * n_u64_per_min + 1) != 0) )
                     {
                         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+                        printf("(EE) ndst          = %d\n", ndst);
+                        printf("(EE) n_u64_per_min = %d\n", n_u64_per_min);
                         exit( EXIT_FAILURE );
                     }
                     for(int c = 0; c < n_u64_per_min; c +=1)
@@ -97,8 +101,12 @@ void merge_level_64_n_t(
         //
         //
         if (ndst == _oBuff_) {
-            fwrite(dest, sizeof(uint64_t), ndst, fdst);
+            fwrite(dest, sizeof(uint64_t), ndst - 1 - 2 * n_u64_per_min, fdst); // we should keep one element
+            //
             ndst = 0;
+            dest[ndst++] = dest[_oBuff_ - 1 - 2 * n_u64_per_min]; // we should keep the last value in case the next
+            for(int c = 0; c < (2 * n_u64_per_min); c +=1)
+                dest[ndst++] = dest[_oBuff_ - 2 * n_u64_per_min + c];
         }
     }
 

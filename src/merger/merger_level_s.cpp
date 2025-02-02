@@ -31,7 +31,7 @@ void merge_level_s(
         exit( EXIT_FAILURE );
     }
 
-    uint64_t color = 0x0000000000000000; // la 1ere couleur est '0'
+    uint64_t color = 0x0000000000000001;
     do{
         ndst      = 0;
         nElements = fread(ibuff, sizeof(uint64_t), _iBuff_, fin);

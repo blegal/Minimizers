@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
         n_uint64_c  = 1;
         n_minimizr  = n_elements / (1 + n_uint64_c);
     }else{
-        n_uint64_c  = (n_colors / 64);
+        n_uint64_c  = ((n_colors + 63) / 64);
         n_minimizr  = n_elements / (1 + n_uint64_c);
     }
 

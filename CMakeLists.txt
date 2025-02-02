@@ -29,6 +29,7 @@ option(BUILD_INFOS   "Build test programs" OFF)
 
 SET(CMAKE_CXX_STANDARD     17)
 SET(CMAKE_BUILD_TYPE  Release)
+#SET(CMAKE_BUILD_TYPE  Debug)
 
 #
 # MacOS with ARM M1/M2 processors
@@ -42,7 +43,7 @@ if(BUILD_MACOS_ARM)
     SET(CMAKE_CXX_FLAGS "-Wall")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native -mtune=native")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math -fopenmp -std=c++17")
-#    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fopenmp -std=c++17")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fopenmp -std=c++17")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flax-vector-conversions") # gcc patch
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/opt/homebrew/include") # gcc patch
 
@@ -95,8 +96,8 @@ if(BUILD_LINUX_ARM)
 
     SET(CMAKE_CXX_FLAGS "-Wall")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native -mtune=native")
-    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g3 -ffast-math")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g3 -ffast-math")
     #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_MKL_")
     #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
 
@@ -415,6 +416,19 @@ file(GLOB_RECURSE source_files
 add_executable(extract_color ${source_files})
 
 target_include_directories(extract_color
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+########################################################################################################################
+
+project(extract_all_colors)
+
+file(GLOB_RECURSE source_files
+        ./src/extract_all_colors.cpp)
+add_executable(extract_all_colors ${source_files})
+
+target_include_directories(extract_all_colors
         PUBLIC
         "${PROJECT_SOURCE_DIR}/../src/headers/"
 )

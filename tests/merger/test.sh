@@ -1,0 +1,11 @@
+../tests/merger/test_files_2/test.sh
+../tests/merger/test_files_4/test.sh
+../tests/merger/test_files_8/test.sh
+../tests/merger/test_files_16/test.sh
+../tests/merger/test_files_32/test.sh
+../tests/merger/test_files_64/test.sh
+../tests/merger/test_files_66/test.sh
+../tests/merger/test_files_128/test.sh
+../tests/merger/test_files_129/test.sh
+../tests/merger/test_files_256/test.sh
+../tests/merger/test_files_255/test.sh

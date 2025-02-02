@@ -1,264 +1,266 @@
-./BreiZHMinimizer -d ../tests/merger/test_files_256 --skip-minimizer-step
+./BreiZHMinimizer -d ../tests/merger/test_files_256 --skip-minimizer-step > /dev/null 2>&1
 
-./raw_dump    -f data_n0.256c -c 256
+./raw_dump    -f result.256c -c 256 > /dev/null 2>&1
 
-./color_stats -f data_n0.256c -c 256
+./color_stats -f result.256c -c 256 > /dev/null 2>&1
 
-/extract_color -i data_n0.256c -c 256 -o color_0 -s 0
-./extract_color -i data_n0.256c -c 256 -o color_1 -s 1
-./extract_color -i data_n0.256c -c 256 -o color_2 -s 2
-./extract_color -i data_n0.256c -c 256 -o color_3 -s 3
-./extract_color -i data_n0.256c -c 256 -o color_4 -s 4
-./extract_color -i data_n0.256c -c 256 -o color_5 -s 5
-./extract_color -i data_n0.256c -c 256 -o color_6 -s 6
-./extract_color -i data_n0.256c -c 256 -o color_7 -s 7
-./extract_color -i data_n0.256c -c 256 -o color_8 -s 8
-./extract_color -i data_n0.256c -c 256 -o color_9 -s 9
-./extract_color -i data_n0.256c -c 256 -o color_10 -s 10
-./extract_color -i data_n0.256c -c 256 -o color_11 -s 11
-./extract_color -i data_n0.256c -c 256 -o color_12 -s 12
-./extract_color -i data_n0.256c -c 256 -o color_13 -s 13
-./extract_color -i data_n0.256c -c 256 -o color_14 -s 14
-./extract_color -i data_n0.256c -c 256 -o color_15 -s 15
-./extract_color -i data_n0.256c -c 256 -o color_16 -s 16
-./extract_color -i data_n0.256c -c 256 -o color_17 -s 17
-./extract_color -i data_n0.256c -c 256 -o color_18 -s 18
-./extract_color -i data_n0.256c -c 256 -o color_19 -s 19
-./extract_color -i data_n0.256c -c 256 -o color_20 -s 20
-./extract_color -i data_n0.256c -c 256 -o color_21 -s 21
-./extract_color -i data_n0.256c -c 256 -o color_22 -s 22
-./extract_color -i data_n0.256c -c 256 -o color_23 -s 23
-./extract_color -i data_n0.256c -c 256 -o color_24 -s 24
-./extract_color -i data_n0.256c -c 256 -o color_25 -s 25
-./extract_color -i data_n0.256c -c 256 -o color_26 -s 26
-./extract_color -i data_n0.256c -c 256 -o color_27 -s 27
-./extract_color -i data_n0.256c -c 256 -o color_28 -s 28
-./extract_color -i data_n0.256c -c 256 -o color_29 -s 29
-./extract_color -i data_n0.256c -c 256 -o color_30 -s 30
-./extract_color -i data_n0.256c -c 256 -o color_31 -s 31
-./extract_color -i data_n0.256c -c 256 -o color_32 -s 32
-./extract_color -i data_n0.256c -c 256 -o color_33 -s 33
-./extract_color -i data_n0.256c -c 256 -o color_34 -s 34
-./extract_color -i data_n0.256c -c 256 -o color_35 -s 35
-./extract_color -i data_n0.256c -c 256 -o color_36 -s 36
-./extract_color -i data_n0.256c -c 256 -o color_37 -s 37
-./extract_color -i data_n0.256c -c 256 -o color_38 -s 38
-./extract_color -i data_n0.256c -c 256 -o color_39 -s 39
-./extract_color -i data_n0.256c -c 256 -o color_40 -s 40
-./extract_color -i data_n0.256c -c 256 -o color_41 -s 41
-./extract_color -i data_n0.256c -c 256 -o color_42 -s 42
-./extract_color -i data_n0.256c -c 256 -o color_43 -s 43
-./extract_color -i data_n0.256c -c 256 -o color_44 -s 44
-./extract_color -i data_n0.256c -c 256 -o color_45 -s 45
-./extract_color -i data_n0.256c -c 256 -o color_46 -s 46
-./extract_color -i data_n0.256c -c 256 -o color_47 -s 47
-./extract_color -i data_n0.256c -c 256 -o color_48 -s 48
-./extract_color -i data_n0.256c -c 256 -o color_49 -s 49
-./extract_color -i data_n0.256c -c 256 -o color_50 -s 50
-./extract_color -i data_n0.256c -c 256 -o color_51 -s 51
-./extract_color -i data_n0.256c -c 256 -o color_52 -s 52
-./extract_color -i data_n0.256c -c 256 -o color_53 -s 53
-./extract_color -i data_n0.256c -c 256 -o color_54 -s 54
-./extract_color -i data_n0.256c -c 256 -o color_55 -s 55
-./extract_color -i data_n0.256c -c 256 -o color_56 -s 56
-./extract_color -i data_n0.256c -c 256 -o color_57 -s 57
-./extract_color -i data_n0.256c -c 256 -o color_58 -s 58
-./extract_color -i data_n0.256c -c 256 -o color_59 -s 59
-./extract_color -i data_n0.256c -c 256 -o color_60 -s 60
-./extract_color -i data_n0.256c -c 256 -o color_61 -s 61
-./extract_color -i data_n0.256c -c 256 -o color_62 -s 62
-./extract_color -i data_n0.256c -c 256 -o color_63 -s 63
-./extract_color -i data_n0.256c -c 256 -o color_64 -s 64
-./extract_color -i data_n0.256c -c 256 -o color_65 -s 65
-./extract_color -i data_n0.256c -c 256 -o color_66 -s 66
-./extract_color -i data_n0.256c -c 256 -o color_67 -s 67
-./extract_color -i data_n0.256c -c 256 -o color_68 -s 68
-./extract_color -i data_n0.256c -c 256 -o color_69 -s 69
-./extract_color -i data_n0.256c -c 256 -o color_70 -s 70
-./extract_color -i data_n0.256c -c 256 -o color_71 -s 71
-./extract_color -i data_n0.256c -c 256 -o color_72 -s 72
-./extract_color -i data_n0.256c -c 256 -o color_73 -s 73
-./extract_color -i data_n0.256c -c 256 -o color_74 -s 74
-./extract_color -i data_n0.256c -c 256 -o color_75 -s 75
-./extract_color -i data_n0.256c -c 256 -o color_76 -s 76
-./extract_color -i data_n0.256c -c 256 -o color_77 -s 77
-./extract_color -i data_n0.256c -c 256 -o color_78 -s 78
-./extract_color -i data_n0.256c -c 256 -o color_79 -s 79
-./extract_color -i data_n0.256c -c 256 -o color_80 -s 80
-./extract_color -i data_n0.256c -c 256 -o color_81 -s 81
-./extract_color -i data_n0.256c -c 256 -o color_82 -s 82
-./extract_color -i data_n0.256c -c 256 -o color_83 -s 83
-./extract_color -i data_n0.256c -c 256 -o color_84 -s 84
-./extract_color -i data_n0.256c -c 256 -o color_85 -s 85
-./extract_color -i data_n0.256c -c 256 -o color_86 -s 86
-./extract_color -i data_n0.256c -c 256 -o color_87 -s 87
-./extract_color -i data_n0.256c -c 256 -o color_88 -s 88
-./extract_color -i data_n0.256c -c 256 -o color_89 -s 89
-./extract_color -i data_n0.256c -c 256 -o color_90 -s 90
-./extract_color -i data_n0.256c -c 256 -o color_91 -s 91
-./extract_color -i data_n0.256c -c 256 -o color_92 -s 92
-./extract_color -i data_n0.256c -c 256 -o color_93 -s 93
-./extract_color -i data_n0.256c -c 256 -o color_94 -s 94
-./extract_color -i data_n0.256c -c 256 -o color_95 -s 95
-./extract_color -i data_n0.256c -c 256 -o color_96 -s 96
-./extract_color -i data_n0.256c -c 256 -o color_97 -s 97
-./extract_color -i data_n0.256c -c 256 -o color_98 -s 98
-./extract_color -i data_n0.256c -c 256 -o color_99 -s 99
-./extract_color -i data_n0.256c -c 256 -o color_100 -s 100
-./extract_color -i data_n0.256c -c 256 -o color_101 -s 101
-./extract_color -i data_n0.256c -c 256 -o color_102 -s 102
-./extract_color -i data_n0.256c -c 256 -o color_103 -s 103
-./extract_color -i data_n0.256c -c 256 -o color_104 -s 104
-./extract_color -i data_n0.256c -c 256 -o color_105 -s 105
-./extract_color -i data_n0.256c -c 256 -o color_106 -s 106
-./extract_color -i data_n0.256c -c 256 -o color_107 -s 107
-./extract_color -i data_n0.256c -c 256 -o color_108 -s 108
-./extract_color -i data_n0.256c -c 256 -o color_109 -s 109
-./extract_color -i data_n0.256c -c 256 -o color_110 -s 110
-./extract_color -i data_n0.256c -c 256 -o color_111 -s 111
-./extract_color -i data_n0.256c -c 256 -o color_112 -s 112
-./extract_color -i data_n0.256c -c 256 -o color_113 -s 113
-./extract_color -i data_n0.256c -c 256 -o color_114 -s 114
-./extract_color -i data_n0.256c -c 256 -o color_115 -s 115
-./extract_color -i data_n0.256c -c 256 -o color_116 -s 116
-./extract_color -i data_n0.256c -c 256 -o color_117 -s 117
-./extract_color -i data_n0.256c -c 256 -o color_118 -s 118
-./extract_color -i data_n0.256c -c 256 -o color_119 -s 119
-./extract_color -i data_n0.256c -c 256 -o color_120 -s 120
-./extract_color -i data_n0.256c -c 256 -o color_121 -s 121
-./extract_color -i data_n0.256c -c 256 -o color_122 -s 122
-./extract_color -i data_n0.256c -c 256 -o color_123 -s 123
-./extract_color -i data_n0.256c -c 256 -o color_124 -s 124
-./extract_color -i data_n0.256c -c 256 -o color_125 -s 125
-./extract_color -i data_n0.256c -c 256 -o color_126 -s 126
-./extract_color -i data_n0.256c -c 256 -o color_127 -s 127
-./extract_color -i data_n0.256c -c 256 -o color_128 -s 128
-./extract_color -i data_n0.256c -c 256 -o color_129 -s 129
-./extract_color -i data_n0.256c -c 256 -o color_130 -s 130
-./extract_color -i data_n0.256c -c 256 -o color_131 -s 131
-./extract_color -i data_n0.256c -c 256 -o color_132 -s 132
-./extract_color -i data_n0.256c -c 256 -o color_133 -s 133
-./extract_color -i data_n0.256c -c 256 -o color_134 -s 134
-./extract_color -i data_n0.256c -c 256 -o color_135 -s 135
-./extract_color -i data_n0.256c -c 256 -o color_136 -s 136
-./extract_color -i data_n0.256c -c 256 -o color_137 -s 137
-./extract_color -i data_n0.256c -c 256 -o color_138 -s 138
-./extract_color -i data_n0.256c -c 256 -o color_139 -s 139
-./extract_color -i data_n0.256c -c 256 -o color_140 -s 140
-./extract_color -i data_n0.256c -c 256 -o color_141 -s 141
-./extract_color -i data_n0.256c -c 256 -o color_142 -s 142
-./extract_color -i data_n0.256c -c 256 -o color_143 -s 143
-./extract_color -i data_n0.256c -c 256 -o color_144 -s 144
-./extract_color -i data_n0.256c -c 256 -o color_145 -s 145
-./extract_color -i data_n0.256c -c 256 -o color_146 -s 146
-./extract_color -i data_n0.256c -c 256 -o color_147 -s 147
-./extract_color -i data_n0.256c -c 256 -o color_148 -s 148
-./extract_color -i data_n0.256c -c 256 -o color_149 -s 149
-./extract_color -i data_n0.256c -c 256 -o color_150 -s 150
-./extract_color -i data_n0.256c -c 256 -o color_151 -s 151
-./extract_color -i data_n0.256c -c 256 -o color_152 -s 152
-./extract_color -i data_n0.256c -c 256 -o color_153 -s 153
-./extract_color -i data_n0.256c -c 256 -o color_154 -s 154
-./extract_color -i data_n0.256c -c 256 -o color_155 -s 155
-./extract_color -i data_n0.256c -c 256 -o color_156 -s 156
-./extract_color -i data_n0.256c -c 256 -o color_157 -s 157
-./extract_color -i data_n0.256c -c 256 -o color_158 -s 158
-./extract_color -i data_n0.256c -c 256 -o color_159 -s 159
-./extract_color -i data_n0.256c -c 256 -o color_160 -s 160
-./extract_color -i data_n0.256c -c 256 -o color_161 -s 161
-./extract_color -i data_n0.256c -c 256 -o color_162 -s 162
-./extract_color -i data_n0.256c -c 256 -o color_163 -s 163
-./extract_color -i data_n0.256c -c 256 -o color_164 -s 164
-./extract_color -i data_n0.256c -c 256 -o color_165 -s 165
-./extract_color -i data_n0.256c -c 256 -o color_166 -s 166
-./extract_color -i data_n0.256c -c 256 -o color_167 -s 167
-./extract_color -i data_n0.256c -c 256 -o color_168 -s 168
-./extract_color -i data_n0.256c -c 256 -o color_169 -s 169
-./extract_color -i data_n0.256c -c 256 -o color_170 -s 170
-./extract_color -i data_n0.256c -c 256 -o color_171 -s 171
-./extract_color -i data_n0.256c -c 256 -o color_172 -s 172
-./extract_color -i data_n0.256c -c 256 -o color_173 -s 173
-./extract_color -i data_n0.256c -c 256 -o color_174 -s 174
-./extract_color -i data_n0.256c -c 256 -o color_175 -s 175
-./extract_color -i data_n0.256c -c 256 -o color_176 -s 176
-./extract_color -i data_n0.256c -c 256 -o color_177 -s 177
-./extract_color -i data_n0.256c -c 256 -o color_178 -s 178
-./extract_color -i data_n0.256c -c 256 -o color_179 -s 179
-./extract_color -i data_n0.256c -c 256 -o color_180 -s 180
-./extract_color -i data_n0.256c -c 256 -o color_181 -s 181
-./extract_color -i data_n0.256c -c 256 -o color_182 -s 182
-./extract_color -i data_n0.256c -c 256 -o color_183 -s 183
-./extract_color -i data_n0.256c -c 256 -o color_184 -s 184
-./extract_color -i data_n0.256c -c 256 -o color_185 -s 185
-./extract_color -i data_n0.256c -c 256 -o color_186 -s 186
-./extract_color -i data_n0.256c -c 256 -o color_187 -s 187
-./extract_color -i data_n0.256c -c 256 -o color_188 -s 188
-./extract_color -i data_n0.256c -c 256 -o color_189 -s 189
-./extract_color -i data_n0.256c -c 256 -o color_190 -s 190
-./extract_color -i data_n0.256c -c 256 -o color_191 -s 191
-./extract_color -i data_n0.256c -c 256 -o color_192 -s 192
-./extract_color -i data_n0.256c -c 256 -o color_193 -s 193
-./extract_color -i data_n0.256c -c 256 -o color_194 -s 194
-./extract_color -i data_n0.256c -c 256 -o color_195 -s 195
-./extract_color -i data_n0.256c -c 256 -o color_196 -s 196
-./extract_color -i data_n0.256c -c 256 -o color_197 -s 197
-./extract_color -i data_n0.256c -c 256 -o color_198 -s 198
-./extract_color -i data_n0.256c -c 256 -o color_199 -s 199
-./extract_color -i data_n0.256c -c 256 -o color_200 -s 200
-./extract_color -i data_n0.256c -c 256 -o color_201 -s 201
-./extract_color -i data_n0.256c -c 256 -o color_202 -s 202
-./extract_color -i data_n0.256c -c 256 -o color_203 -s 203
-./extract_color -i data_n0.256c -c 256 -o color_204 -s 204
-./extract_color -i data_n0.256c -c 256 -o color_205 -s 205
-./extract_color -i data_n0.256c -c 256 -o color_206 -s 206
-./extract_color -i data_n0.256c -c 256 -o color_207 -s 207
-./extract_color -i data_n0.256c -c 256 -o color_208 -s 208
-./extract_color -i data_n0.256c -c 256 -o color_209 -s 209
-./extract_color -i data_n0.256c -c 256 -o color_210 -s 210
-./extract_color -i data_n0.256c -c 256 -o color_211 -s 211
-./extract_color -i data_n0.256c -c 256 -o color_212 -s 212
-./extract_color -i data_n0.256c -c 256 -o color_213 -s 213
-./extract_color -i data_n0.256c -c 256 -o color_214 -s 214
-./extract_color -i data_n0.256c -c 256 -o color_215 -s 215
-./extract_color -i data_n0.256c -c 256 -o color_216 -s 216
-./extract_color -i data_n0.256c -c 256 -o color_217 -s 217
-./extract_color -i data_n0.256c -c 256 -o color_218 -s 218
-./extract_color -i data_n0.256c -c 256 -o color_219 -s 219
-./extract_color -i data_n0.256c -c 256 -o color_220 -s 220
-./extract_color -i data_n0.256c -c 256 -o color_221 -s 221
-./extract_color -i data_n0.256c -c 256 -o color_222 -s 222
-./extract_color -i data_n0.256c -c 256 -o color_223 -s 223
-./extract_color -i data_n0.256c -c 256 -o color_224 -s 224
-./extract_color -i data_n0.256c -c 256 -o color_225 -s 225
-./extract_color -i data_n0.256c -c 256 -o color_226 -s 226
-./extract_color -i data_n0.256c -c 256 -o color_227 -s 227
-./extract_color -i data_n0.256c -c 256 -o color_228 -s 228
-./extract_color -i data_n0.256c -c 256 -o color_229 -s 229
-./extract_color -i data_n0.256c -c 256 -o color_230 -s 230
-./extract_color -i data_n0.256c -c 256 -o color_231 -s 231
-./extract_color -i data_n0.256c -c 256 -o color_232 -s 232
-./extract_color -i data_n0.256c -c 256 -o color_233 -s 233
-./extract_color -i data_n0.256c -c 256 -o color_234 -s 234
-./extract_color -i data_n0.256c -c 256 -o color_235 -s 235
-./extract_color -i data_n0.256c -c 256 -o color_236 -s 236
-./extract_color -i data_n0.256c -c 256 -o color_237 -s 237
-./extract_color -i data_n0.256c -c 256 -o color_238 -s 238
-./extract_color -i data_n0.256c -c 256 -o color_239 -s 239
-./extract_color -i data_n0.256c -c 256 -o color_240 -s 240
-./extract_color -i data_n0.256c -c 256 -o color_241 -s 241
-./extract_color -i data_n0.256c -c 256 -o color_242 -s 242
-./extract_color -i data_n0.256c -c 256 -o color_243 -s 243
-./extract_color -i data_n0.256c -c 256 -o color_244 -s 244
-./extract_color -i data_n0.256c -c 256 -o color_245 -s 245
-./extract_color -i data_n0.256c -c 256 -o color_246 -s 246
-./extract_color -i data_n0.256c -c 256 -o color_247 -s 247
-./extract_color -i data_n0.256c -c 256 -o color_248 -s 248
-./extract_color -i data_n0.256c -c 256 -o color_249 -s 249
-./extract_color -i data_n0.256c -c 256 -o color_250 -s 250
-./extract_color -i data_n0.256c -c 256 -o color_251 -s 251
-./extract_color -i data_n0.256c -c 256 -o color_252 -s 252
-./extract_color -i data_n0.256c -c 256 -o color_253 -s 253
-./extract_color -i data_n0.256c -c 256 -o color_254 -s 254
+./extract_color -i result.256c -c 256 -o color_0 -s 0 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_1 -s 1 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_2 -s 2 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_3 -s 3 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_4 -s 4 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_5 -s 5 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_6 -s 6 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_7 -s 7 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_8 -s 8 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_9 -s 9 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_10 -s 10 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_11 -s 11 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_12 -s 12 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_13 -s 13 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_14 -s 14 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_15 -s 15 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_16 -s 16 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_17 -s 17 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_18 -s 18 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_19 -s 19 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_20 -s 20 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_21 -s 21 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_22 -s 22 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_23 -s 23 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_24 -s 24 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_25 -s 25 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_26 -s 26 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_27 -s 27 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_28 -s 28 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_29 -s 29 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_30 -s 30 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_31 -s 31 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_32 -s 32 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_33 -s 33 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_34 -s 34 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_35 -s 35 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_36 -s 36 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_37 -s 37 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_38 -s 38 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_39 -s 39 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_40 -s 40 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_41 -s 41 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_42 -s 42 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_43 -s 43 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_44 -s 44 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_45 -s 45 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_46 -s 46 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_47 -s 47 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_48 -s 48 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_49 -s 49 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_50 -s 50 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_51 -s 51 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_52 -s 52 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_53 -s 53 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_54 -s 54 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_55 -s 55 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_56 -s 56 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_57 -s 57 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_58 -s 58 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_59 -s 59 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_60 -s 60 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_61 -s 61 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_62 -s 62 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_63 -s 63 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_64 -s 64 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_65 -s 65 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_66 -s 66 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_67 -s 67 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_68 -s 68 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_69 -s 69 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_70 -s 70 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_71 -s 71 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_72 -s 72 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_73 -s 73 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_74 -s 74 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_75 -s 75 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_76 -s 76 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_77 -s 77 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_78 -s 78 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_79 -s 79 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_80 -s 80 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_81 -s 81 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_82 -s 82 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_83 -s 83 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_84 -s 84 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_85 -s 85 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_86 -s 86 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_87 -s 87 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_88 -s 88 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_89 -s 89 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_90 -s 90 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_91 -s 91 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_92 -s 92 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_93 -s 93 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_94 -s 94 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_95 -s 95 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_96 -s 96 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_97 -s 97 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_98 -s 98 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_99 -s 99 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_100 -s 100 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_101 -s 101 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_102 -s 102 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_103 -s 103 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_104 -s 104 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_105 -s 105 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_106 -s 106 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_107 -s 107 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_108 -s 108 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_109 -s 109 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_110 -s 110 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_111 -s 111 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_112 -s 112 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_113 -s 113 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_114 -s 114 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_115 -s 115 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_116 -s 116 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_117 -s 117 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_118 -s 118 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_119 -s 119 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_120 -s 120 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_121 -s 121 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_122 -s 122 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_123 -s 123 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_124 -s 124 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_125 -s 125 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_126 -s 126 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_127 -s 127 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_128 -s 128 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_129 -s 129 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_130 -s 130 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_131 -s 131 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_132 -s 132 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_133 -s 133 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_134 -s 134 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_135 -s 135 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_136 -s 136 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_137 -s 137 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_138 -s 138 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_139 -s 139 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_140 -s 140 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_141 -s 141 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_142 -s 142 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_143 -s 143 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_144 -s 144 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_145 -s 145 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_146 -s 146 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_147 -s 147 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_148 -s 148 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_149 -s 149 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_150 -s 150 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_151 -s 151 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_152 -s 152 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_153 -s 153 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_154 -s 154 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_155 -s 155 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_156 -s 156 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_157 -s 157 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_158 -s 158 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_159 -s 159 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_160 -s 160 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_161 -s 161 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_162 -s 162 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_163 -s 163 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_164 -s 164 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_165 -s 165 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_166 -s 166 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_167 -s 167 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_168 -s 168 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_169 -s 169 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_170 -s 170 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_171 -s 171 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_172 -s 172 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_173 -s 173 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_174 -s 174 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_175 -s 175 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_176 -s 176 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_177 -s 177 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_178 -s 178 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_179 -s 179 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_180 -s 180 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_181 -s 181 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_182 -s 182 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_183 -s 183 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_184 -s 184 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_185 -s 185 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_186 -s 186 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_187 -s 187 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_188 -s 188 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_189 -s 189 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_190 -s 190 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_191 -s 191 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_192 -s 192 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_193 -s 193 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_194 -s 194 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_195 -s 195 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_196 -s 196 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_197 -s 197 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_198 -s 198 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_199 -s 199 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_200 -s 200 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_201 -s 201 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_202 -s 202 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_203 -s 203 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_204 -s 204 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_205 -s 205 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_206 -s 206 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_207 -s 207 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_208 -s 208 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_209 -s 209 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_210 -s 210 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_211 -s 211 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_212 -s 212 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_213 -s 213 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_214 -s 214 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_215 -s 215 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_216 -s 216 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_217 -s 217 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_218 -s 218 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_219 -s 219 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_220 -s 220 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_221 -s 221 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_222 -s 222 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_223 -s 223 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_224 -s 224 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_225 -s 225 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_226 -s 226 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_227 -s 227 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_228 -s 228 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_229 -s 229 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_230 -s 230 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_231 -s 231 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_232 -s 232 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_233 -s 233 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_234 -s 234 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_235 -s 235 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_236 -s 236 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_237 -s 237 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_238 -s 238 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_239 -s 239 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_240 -s 240 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_241 -s 241 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_242 -s 242 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_243 -s 243 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_244 -s 244 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_245 -s 245 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_246 -s 246 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_247 -s 247 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_248 -s 248 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_249 -s 249 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_250 -s 250 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_251 -s 251 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_252 -s 252 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_253 -s 253 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_254 -s 254 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_254 -s 254 > /dev/null 2>&1
+./extract_color -i result.256c -c 256 -o color_255 -s 255 > /dev/null 2>&1
 
 diff color_0 ../tests/merger/test_files_256/testf_000.raw
 diff color_1 ../tests/merger/test_files_256/testf_001.raw
@@ -515,3 +517,4 @@ diff color_251 ../tests/merger/test_files_256/testf_251.raw
 diff color_252 ../tests/merger/test_files_256/testf_252.raw
 diff color_253 ../tests/merger/test_files_256/testf_253.raw
 diff color_254 ../tests/merger/test_files_256/testf_254.raw
+diff color_255 ../tests/merger/test_files_256/testf_255.raw
