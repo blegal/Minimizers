@@ -11,11 +11,7 @@
 #include "./minimizer/minimizer_v3.hpp"
 #include "./merger/merger_in.hpp"
 
-void error_section   (){ printf("\033[1;31m"); }
-void warning_section (){ printf("\033[1;33m"); }
-void info_section    (){ printf("\033[0;32m"); }
-void debug_section   (){ printf("\033[0;35m"); }
-void reset_section   (){ printf("\033[0m");    }
+#include "./tools/colors.hpp"
 
 
 //
@@ -292,6 +288,9 @@ int main(int argc, char *argv[])
     //
     if( skip_minimizer_step == false )
     {
+        uint64_t in_mbytes = 0;
+        uint64_t ou_mbytes = 0;
+
         printf("(II) Generating minimizers from DNA - %d thread(s)\n", threads_minz);
 
         const auto start = std::chrono::steady_clock::now();
@@ -310,6 +309,7 @@ int main(int argc, char *argv[])
             const uint64_t f_size    = get_file_size(i_file);
             const uint64_t size_mb   = f_size / 1024 / 1024;
             const std::string o_file = "data_n" + to_number(i, (int)l_files.size()) + ".c0";
+            in_mbytes += size_mb;
             /////
             if( limited_memory == true )
                 minimizer_processing_v3(i_file, o_file, algo, ram_value, true, false, false);
@@ -318,6 +318,7 @@ int main(int argc, char *argv[])
             /////
             const uint64_t o_size    = get_file_size(o_file);
             const uint64_t sizo_mb   = o_size / 1024 / 1024;
+            ou_mbytes += sizo_mb;
             if(verbose_flag == true )
             {
                 printf("%5d | %20s | %6lld MB | ==========> | %20s | %6lld MB |\n", i, i_file.c_str(), size_mb, o_file.c_str(), sizo_mb);
@@ -333,6 +334,10 @@ int main(int argc, char *argv[])
 
         const auto  end = std::chrono::steady_clock::now();
         const float elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.f;
+        printf("(II) - Information loaded from files : %6d MB\n", (int)(in_mbytes));
+        printf("(II)   Information wrote to files    : %6d MB\n", (int)(ou_mbytes));
+        printf("(II) - Information throughput (in)   : %6d MB/s\n", (int)((float)(in_mbytes) / elapsed));
+        printf("(II)   Information throughput (out)  : %6d MB/s\n", (int)((float)(ou_mbytes) / elapsed));
         printf("(II) - Execution time : %1.2f seconds\n", elapsed);
         printf("(II)\n");
     }
@@ -355,7 +360,7 @@ int main(int argc, char *argv[])
         if( verbose_flag )
             printf("(II)   - Merging %4zu files with %4d color(s)\n", l_files.size(), colors);
         else{
-            printf("(II)   - Merging %4zu files with %4d color(s)  - ", l_files.size(), colors);
+            printf("(II)   - Merging %4zu files | %4d color(s) | ", l_files.size(), colors);
             fflush(stdout);
         }
         const auto start_merge = std::chrono::steady_clock::now();
@@ -364,6 +369,9 @@ int main(int argc, char *argv[])
             printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
         n_files.resize( l_files.size() / 2 ); // pur éviter le push_back qui semble OpenMP unsafe !
+
+        uint64_t in_mbytes = 0; // pour calculer les debits
+        uint64_t ou_mbytes = 0; // pour calculer les debits
 
         int cnt = 0;
 #pragma omp parallel for
@@ -382,6 +390,9 @@ int main(int argc, char *argv[])
             const uint64_t siz2_kb   = i2_size / 1024;
             const uint64_t siz2_mb   = siz2_kb / 1024;
 
+            in_mbytes += siz1_mb;
+            in_mbytes += siz2_mb;
+
 //            printf("| %20s | + | %20s | %d |\n", i_file_1.c_str(), i_file_2.c_str(), colors);
 
             merger_in( i_file_1, i_file_2, o_file, colors, colors);    // couleurs homogenes
@@ -396,6 +407,8 @@ int main(int argc, char *argv[])
             const uint64_t o_size    = get_file_size(o_file);
             const uint64_t sizo_kb   = o_size  / 1024;
             const uint64_t sizo_mb   = sizo_kb / 1024;
+
+            ou_mbytes += siz2_mb;
 
             //
             //
@@ -428,10 +441,16 @@ int main(int argc, char *argv[])
 
         const auto  end_merge = std::chrono::steady_clock::now();
         const float elapsed_file = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_merge - start_merge).count() / 1000.f;
-        if( verbose_flag )
-            printf("(II)     + Step done in %6.2f seconds\n", elapsed_file);
-        else
-            printf("%6.2f seconds\n", elapsed_file);
+        if( verbose_flag ){
+            const float d_in = (float)in_mbytes / elapsed_file;
+            const float d_ou = (float)ou_mbytes / elapsed_file;
+            printf("(II)     + Step done in %6.2f seconds | in: %6d MB/s | out: %6d |\n", elapsed_file, (int)d_in, (int)d_ou);
+        }
+        else{
+            const float d_in = (float)in_mbytes / elapsed_file;
+            const float d_ou = (float)ou_mbytes / elapsed_file;
+            printf("%6.2f seconds | in: %6d MB/s | out: %6d]\n", elapsed_file, (int)d_in, (int)d_ou);
+        }
 
         //
         // On trie les fichiers par ordre alphabetique car sinon pour reussir a faire le lien entre couleur et
@@ -454,7 +473,9 @@ int main(int argc, char *argv[])
         {
             vrac_names.push_back ( l_files[l_files.size()-1] );
             vrac_levels.push_back( colors                    );
-            printf("'II) - Keeping (%s) file for later processing...\n", vrac_names.back().c_str());
+            warning_section();
+            printf("(II)     > Keeping (%s) file for later processing...\n", vrac_names.back().c_str());
+            reset_section();
         }
 
         //

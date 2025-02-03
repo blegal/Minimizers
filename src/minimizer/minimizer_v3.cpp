@@ -327,8 +327,9 @@ void minimizer_processing_v3(
 
                         file_list.push_back( t_file );
 
-                        printf("flushed on SSD drive [%s]\n", t_file.c_str());
-
+#if _debug_mode_
+                        printf("[Minimizer_v3] Flushing data to SSD drive [%s, %d]\n", __FILE__, __LINE__);
+#endif
                         //
                         // ATTENTION PATCH tres pratique mais compliqué à comprendre... Pour éviter d'avoir un doublon
                         // on ne copie pas le dernier minimizer maintenant. On le laisse en début de tableau pour avoir
@@ -396,22 +397,27 @@ void minimizer_processing_v3(
     //
     if( file_list.size() != 0 )
     {
-        printf("boucle de fusion !\n");
+#if _debug_mode_
+        printf("[Minimizer_v3] Executing fine merging loop [%s, %d]\n", __FILE__, __LINE__);
+#endif
+
         //
         // On flush le dernier lot de données avant de débuter la fusion (c plus homogène)
         //
-        SaveRawToFile(o_file + ".non-sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
+//      SaveRawToFile(o_file + ".non-sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
 
         std::string t_file = o_file + "." + std::to_string( file_list.size() );
         crumsort_prim( liste_mini.data(), n_minizer, 9 /*uint64*/ );
 
-        SaveRawToFile(o_file + ".sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
+//      SaveRawToFile(o_file + ".sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
 
         int n_elements = VectorDeduplication(liste_mini, n_minizer);
         SaveRawToFile(t_file, liste_mini, n_elements);
 
         file_list.push_back( t_file );
-        printf("flushed on SSD drive [%s]\n", t_file.c_str());
+#if _debug_mode_
+        printf("[Minimizer_v3] - Flushed to SSD drive [%s, %d]\n", __FILE__, __LINE__);
+#endif
 
         int name_c = file_list.size();
         while(file_list.size() > 1)
@@ -425,7 +431,9 @@ void minimizer_processing_v3(
             file_list.push_back( t_file );
         }
 
-        std::cout << "renaming(" << file_list[0] << ") => " << o_file << std::endl;
+#if _debug_mode_
+        printf("[Minimizer_v3] - Renaming final file to %s [%s, %d]\n", o_file.c_str(), __FILE__, __LINE__);
+#endif
         std::rename(file_list[file_list.size()-1].c_str(), o_file.c_str());
 
         delete reader;

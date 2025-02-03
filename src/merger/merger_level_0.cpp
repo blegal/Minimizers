@@ -5,8 +5,7 @@ void merge_level_0(
         const std::string& ifile_2,
         const std::string& o_file)
 {
-    std::cout << "merging(" << ifile_1 << ", " << ifile_2 << ") => " << o_file << std::endl;
-
+//    std::cout << "merging(" << ifile_1 << ", " << ifile_2 << ") => " << o_file << std::endl;
 
     const int64_t _iBuff_ = 64 * 1024;
     const int64_t _oBuff_ = _iBuff_;

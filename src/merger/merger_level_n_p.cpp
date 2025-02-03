@@ -10,13 +10,13 @@ void merge_level_n_p_t(
     const int n_u64_per_min_1 = level_1 / 64; // En entrée de la fonction
     const int n_u64_per_min_2 = level_2 / 64; // En entrée de la fonction
 
-    const int64_t _iBuffA_ = (1 +     n_u64_per_min_1) * 1024;
-    const int64_t _iBuffB_ = (1 +     n_u64_per_min_2) * 1024;
-    const int64_t _oBuff_  = (1 + 3 * n_u64_per_min_1) * 1024;
+    const int64_t _iBuffA_ = (1 + n_u64_per_min_1                  ) * 1024;
+    const int64_t _iBuffB_ = (1 +                   n_u64_per_min_2) * 1024;
+    const int64_t _oBuff_  = (1 + n_u64_per_min_1 + n_u64_per_min_2) * 1024;
 
     uint64_t *in_1 = new uint64_t[_iBuffA_];
     uint64_t *in_2 = new uint64_t[_iBuffB_];
-    uint64_t *dest = new uint64_t[_oBuff_ + n_u64_per_min_1]; // LEVEL 1 est la valeur la plus grande donc pas besoin de faire un max
+    uint64_t *dest = new uint64_t[_oBuff_ ];
 
     int64_t nElementsA = 0; // nombre d'éléments chargés en mémoire
     int64_t nElementsB = 0; // nombre d'éléments chargés en mémoire
@@ -62,9 +62,13 @@ void merge_level_n_p_t(
                     for(int c = 0; c < n_u64_per_min_2; c +=1)
                         dest[ndst++] = 0;
                 }else{
-                    if( ndst == 0 )
+                    if( (ndst == 0) || (ndst%(n_u64_per_min_1 + n_u64_per_min_2 + 1) != 0) )
                     {
                         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+                        printf("(EE) ndst            : %d\n", (int)ndst);
+                        printf("(EE) n_u64_per_min_1 : %d\n", n_u64_per_min_1);
+                        printf("(EE) n_u64_per_min_2 : %d\n", n_u64_per_min_2);
+
                         exit( EXIT_FAILURE );
                     }
                     // on recopie notre couleur (A) dans la sortie
@@ -81,9 +85,12 @@ void merge_level_n_p_t(
                     for(int c = 0; c < n_u64_per_min_2; c +=1)
                         dest[ndst++] = in_2[counterB + 1 + c];
                 }else{
-                    if( ndst == 0 )
+                    if( (ndst == 0) || (ndst%(n_u64_per_min_1 + n_u64_per_min_2 + 1) != 0) )
                     {
                         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+                        printf("(EE) ndst            : %d\n", (int)ndst);
+                        printf("(EE) n_u64_per_min_1 : %d\n", n_u64_per_min_1);
+                        printf("(EE) n_u64_per_min_2 : %d\n", n_u64_per_min_2);
                         exit( EXIT_FAILURE );
                     }
                     for(int c = 0; c < n_u64_per_min_2; c +=1)
@@ -98,8 +105,16 @@ void merge_level_n_p_t(
         // On flush le buffer en écriture
         //
         if (ndst >= _oBuff_) { // ATTENTION (>=) car on n'est pas tjs multiple
-            fwrite(dest, sizeof(uint64_t), ndst, fdst);
+            fwrite(dest, sizeof(uint64_t), ndst - 1 - n_u64_per_min_1 - n_u64_per_min_2, fdst); // we should keep one element
+            //
             ndst = 0;
+            dest[ndst++] = dest[_oBuff_ - 1 - n_u64_per_min_1 - n_u64_per_min_2]; // we should keep the last value in case the next
+            for(int c = 0; c < n_u64_per_min_1; c +=1)
+                dest[ndst++] = dest[_oBuff_ - n_u64_per_min_1 - n_u64_per_min_2 + c];
+            for(int c = 0; c < n_u64_per_min_2; c +=1)
+                dest[ndst++] = dest[_oBuff_ - n_u64_per_min_2 + c];
+            //fwrite(dest, sizeof(uint64_t), ndst, fdst);
+            //ndst = 0;
         }
     }
 

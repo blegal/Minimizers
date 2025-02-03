@@ -39,7 +39,6 @@ int main(int argc, char *argv[])
             {"input",        required_argument, 0, 'i'},
             {"output",       required_argument, 0,  'o'},
             {"n_colors",       required_argument, 0,  'c'},
-            {"s_color",      required_argument, 0,  's'},
             {0, 0, 0, 0}
     };
 
@@ -138,7 +137,7 @@ int main(int argc, char *argv[])
         FILE* fo = fopen( filen.c_str(), "w" );
         if( fo == NULL )
         {
-            printf("(EE) An error corrured while openning the file (%s)\n", o_file.c_str());
+            printf("(EE) An error corrured while openning the file (%s)\n", filen.c_str());
             printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
             exit( EXIT_FAILURE );
         }
