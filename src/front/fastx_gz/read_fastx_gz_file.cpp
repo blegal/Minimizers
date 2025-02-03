@@ -1,4 +1,5 @@
 #include "read_fastx_gz_file.hpp"
+#include "../../tools/colors.hpp"
 //
 //
 //
@@ -28,19 +29,30 @@ read_fastx_gz_file::read_fastx_gz_file(const std::string filen)
     n_data = gzread(streaz, buffer, buff_size * sizeof(char));
 
     if( n_data == Z_STREAM_END ) {
+        error_section();
+        printf("(EE) Z_STREAM_END\n");
         // cela signifie juste que l'on a atteint la fin du fichier !
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( n_data == Z_STREAM_ERROR ) {
-        printf("(DD) Z_STREAM_ERROR\n");
+        error_section();
+        printf("(EE) Z_STREAM_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( n_data == Z_DATA_ERROR ) {
+        error_section();
         printf("(DD) Z_DATA_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( n_data == Z_NEED_DICT ) {
+        error_section();
         printf("(DD) Z_NEED_DICT\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( n_data == Z_MEM_ERROR ) {
+        error_section();
         printf("(DD) Z_MEM_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }
 
@@ -220,20 +232,31 @@ bool read_fastx_gz_file::reload()
         buffer[i - c_ptr] = buffer[i];
     }
 //      int nread = fread(buffer + reste, sizeof(char), buff_size - reste, f);
-    int n_data = gzread(streaz, buffer + reste, (buff_size - reste) * sizeof(char));
+    n_data = gzread(streaz, buffer + reste, (buff_size - reste) * sizeof(char));
     if( n_data == Z_STREAM_END ) {
+//      warning_section();
+//      printf("(EE) Z_STREAM_END\n");
+//      reset_section();
         no_more_load = true;
     }else if( n_data == Z_STREAM_ERROR ) {
-        printf("(DD) Z_STREAM_ERROR\n");
+        error_section();
+        printf("(EE) Z_STREAM_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( n_data == Z_DATA_ERROR ) {
-        printf("(DD) Z_DATA_ERROR\n");
+        error_section();
+        printf("(EE) Z_DATA_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( n_data == Z_NEED_DICT ) {
-        printf("(DD) Z_NEED_DICT\n");
+        error_section();
+        printf("(EE) Z_NEED_DICT\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( n_data == Z_MEM_ERROR ) {
-        printf("(DD) Z_MEM_ERROR\n");
+        error_section();
+        printf("(EE) Z_MEM_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }
 
