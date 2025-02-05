@@ -447,3 +447,16 @@ target_include_directories(color_stats
 )
 
 ########################################################################################################################
+
+project(color_sorter)
+
+file(GLOB_RECURSE source_files
+        ./src/color_sorter.cpp)
+add_executable(color_sorter ${source_files})
+
+target_include_directories(color_sorter
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+########################################################################################################################

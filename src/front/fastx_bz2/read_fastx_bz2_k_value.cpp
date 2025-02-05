@@ -59,7 +59,8 @@ int read_fastx_bz2_k_value(std::string filename)
             printf("(DD) BZ_MEM_ERROR\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_DATA_ERROR_MAGIC ) {
-            printf("(DD) BZ_DATA_ERROR_MAGIC\n");
+            printf("(EE) An error happens during BZ2_bzRead\n");
+            printf("(EE) BZ_DATA_ERROR_MAGIC\n");
             exit(EXIT_FAILURE);
         }else if( bzerror == BZ_DATA_ERROR ) {
             printf("(DD) BZ_DATA_ERROR\n");

@@ -1,4 +1,5 @@
 #include "read_fastx_lz4_file.hpp"
+#include "../../tools/colors.hpp"
 //
 //
 //
@@ -13,22 +14,28 @@ read_fastx_lz4_file::read_fastx_lz4_file(const std::string filen)
     stream = fopen( filen.c_str(), "r" );
     if( stream == NULL )
     {
+        error_section();
         printf("(EE) File does not exist (%s))\n", filen.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        reset_section();
         exit( EXIT_FAILURE );
     }
 
     LZ4F_errorCode_t ret = LZ4F_readOpen(&lz4fRead, stream);
     if (LZ4F_isError(ret)) {
+        error_section();
         printf("(EE) LZ4F_readOpen error: %s\n", LZ4F_getErrorName(ret));
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        reset_section();
         exit( EXIT_FAILURE );
     }
 
     n_data = LZ4F_read (lz4fRead, buffer, buff_size * sizeof(char) );
     if (LZ4F_isError(ret)) {
+        error_section();
         printf("(EE) LZ4F_read error: %s\n", LZ4F_getErrorName(ret));
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        reset_section();
         exit( EXIT_FAILURE );
     }
 }
@@ -194,8 +201,10 @@ bool read_fastx_lz4_file::reload()
 
     LZ4F_errorCode_t nread = LZ4F_read (lz4fRead, buffer + reste, (buff_size - reste) * sizeof(char) );
     if (LZ4F_isError(nread)) {
+        error_section();
         printf("(EE) LZ4F_read error: %s\n", LZ4F_getErrorName(nread));
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        reset_section();
         exit( EXIT_FAILURE );
     }
 

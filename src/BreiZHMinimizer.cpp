@@ -281,6 +281,16 @@ int main(int argc, char *argv[])
     printf("(II) - Number of selected   files : %zu\n", l_files.size());
     printf("(II)\n");
 
+    if( l_files.size() == 0 )
+    {
+        error_section();
+        printf("(EE) The provided directory does not contain valid file(s) \n");
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        reset_section();
+        exit( EXIT_FAILURE );
+    }
+
+
     std::vector<std::string> n_files;
 
     //

@@ -1,5 +1,6 @@
 #include "read_fastx_bz2_file.hpp"
 #include <bzlib.h>
+#include "../../tools/colors.hpp"
 //
 //
 //
@@ -14,57 +15,103 @@ read_fastx_bz2_file::read_fastx_bz2_file(const std::string filen)
     stream = fopen( filen.c_str(), "r" );
     if( stream == NULL )
     {
+        error_section();
         printf("(EE) File does not exist (%s))\n", filen.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        reset_section();
         exit( EXIT_FAILURE );
     }
 
     int bzerror = 0;
     streaz = BZ2_bzReadOpen( &bzerror, stream, 0, 0, 0, 0 );
     if( bzerror != BZ_OK ) {
+        error_section();
         printf("(EE) An error happens during BZ2_bzReadOpen\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }
 
     n_data = BZ2_bzRead ( &bzerror, streaz, buffer, buff_size * sizeof(char) );
-
     if( bzerror == BZ_STREAM_END ) {
         // cela signifie juste que l'on a atteint la fin du fichier !
         // exit(EXIT_FAILURE);
     }else if( bzerror == BZ_UNEXPECTED_EOF ) {
-        printf("(DD) BZ_UNEXPECTED_EOF\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_UNEXPECTED_EOF\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_CONFIG_ERROR ) {
-        printf("(DD) BZ_CONFIG_ERROR\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_CONFIG_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_SEQUENCE_ERROR ) {
-        printf("(DD) BZ_SEQUENCE_ERROR\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_SEQUENCE_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_PARAM_ERROR ) {
-        printf("(DD) BZ_PARAM_ERROR\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_PARAM_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_MEM_ERROR ) {
-        printf("(DD) BZ_MEM_ERROR\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_MEM_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_DATA_ERROR_MAGIC ) {
-        printf("(DD) BZ_DATA_ERROR_MAGIC\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_DATA_ERROR_MAGIC\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_DATA_ERROR ) {
-        printf("(DD) BZ_DATA_ERROR\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_DATA_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_IO_ERROR ) {
-        printf("(DD) BZ_IO_ERROR\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_IO_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_UNEXPECTED_EOF ) {
-        printf("(DD) BZ_UNEXPECTED_EOF\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_UNEXPECTED_EOF\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_OUTBUFF_FULL ) {
-        printf("(DD) BZ_OUTBUFF_FULL\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        printf("(EE) BZ_OUTBUFF_FULL\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror != BZ_OK ) {
-        printf("(EE) An error happens during BZ2_bzRead\n");
+        error_section();
+        printf("(EE) An error happens during BZ2_bzRead (%s)\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         printf("(EE) buff_size = %d\n", buff_size);
         printf("(EE) n_data    = %d\n", n_data);
+        reset_section();
         exit(EXIT_FAILURE);
     }
 
@@ -234,39 +281,61 @@ bool read_fastx_bz2_file::reload()
     if( bzerror == BZ_STREAM_END ) {
         no_more_load = true;
     }else if( bzerror == BZ_UNEXPECTED_EOF ) {
+        error_section();
         printf("(DD) BZ_UNEXPECTED_EOF\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_CONFIG_ERROR ) {
+        error_section();
         printf("(DD) BZ_CONFIG_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_SEQUENCE_ERROR ) {
+        error_section();
         printf("(DD) BZ_SEQUENCE_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_PARAM_ERROR ) {
+        error_section();
         printf("(DD) BZ_PARAM_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_MEM_ERROR ) {
+        error_section();
         printf("(DD) BZ_MEM_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_DATA_ERROR_MAGIC ) {
+        error_section();
         printf("(DD) BZ_DATA_ERROR_MAGIC\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_DATA_ERROR ) {
+        error_section();
         printf("(DD) BZ_DATA_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_IO_ERROR ) {
+        error_section();
         printf("(DD) BZ_IO_ERROR\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_UNEXPECTED_EOF ) {
+        error_section();
         printf("(DD) BZ_UNEXPECTED_EOF\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror == BZ_OUTBUFF_FULL ) {
+        error_section();
         printf("(DD) BZ_OUTBUFF_FULL\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }else if( bzerror != BZ_OK ) {
+        error_section();
         printf("(EE) An error happens during BZ2_bzRead\n");
         printf("(EE) buff_size - reste = %d\n", buff_size - reste);
         printf("(EE) nread             = %d\n", nread);
+        reset_section();
         exit(EXIT_FAILURE);
     }
     no_more_load |= ( n_data != buff_size ); // a t'on atteint la fin du fichier ?

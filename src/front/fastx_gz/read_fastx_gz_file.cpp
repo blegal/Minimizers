@@ -14,15 +14,19 @@ read_fastx_gz_file::read_fastx_gz_file(const std::string filen)
     stream = fopen( filen.c_str(), "r" );
     if( stream == NULL )
     {
+        error_section();
         printf("(EE) File does not exist (%s))\n", filen.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        reset_section();
         exit( EXIT_FAILURE );
     }
 
     int gzerror = 0;
     streaz = gzdopen(fileno(stream), "r");
     if( streaz == NULL ) {
+        error_section();
         printf("(EE) An error happens during gzdopen\n");
+        reset_section();
         exit(EXIT_FAILURE);
     }
 

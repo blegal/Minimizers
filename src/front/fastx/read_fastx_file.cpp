@@ -1,4 +1,5 @@
 #include "read_fastx_file.hpp"
+#include "../../tools/colors.hpp"
 //
 //
 //
@@ -13,8 +14,10 @@ read_fastx_file::read_fastx_file(const std::string filen)
     f = fopen( filen.c_str(), "r" );
     if( f == NULL )
     {
+        error_section();
         printf("(EE) File does not exist (%s))\n", filen.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        reset_section();
         exit( EXIT_FAILURE );
     }
     n_data = fread(buffer, sizeof(char), buff_size, f);
@@ -196,14 +199,9 @@ bool read_fastx_file::reload()
         buffer[i - c_ptr] = buffer[i];
     }
     int nread = fread(buffer + reste, sizeof(char), buff_size - reste, f);
-//        printf("[%6d] ASKED        : %d\n", n_lines, buff_size - reste);
-//        printf("[%6d] READ         : %d\n", n_lines, nread);
     no_more_load = ( n_data != buff_size ); // a t'on atteint la fin du fichier ?
-//        printf("[%6d] no_more_load : %d\n", n_lines, no_more_load);
     c_ptr        = 0;                       // on remet a zero le pointeur de lecture
     n_data       = nread + reste;           // on met a jour le nombre de données dans le buffer
-//        printf("[%6d] n_data       : %d\n", n_lines, n_data);
-//        printf("[%6d] END OF DATA RELOADING !\n", n_lines);
     return true;
 }
 //
