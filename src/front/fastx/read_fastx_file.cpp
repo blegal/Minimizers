@@ -198,7 +198,7 @@ bool read_fastx_file::reload()
     {
         buffer[i - c_ptr] = buffer[i];
     }
-    int nread = fread(buffer + reste, sizeof(char), buff_size - reste, f);
+    const int nread = fread(buffer + reste, sizeof(char), buff_size - reste, f);
     no_more_load = ( n_data != buff_size ); // a t'on atteint la fin du fichier ?
     c_ptr        = 0;                       // on remet a zero le pointeur de lecture
     n_data       = nread + reste;           // on met a jour le nombre de données dans le buffer

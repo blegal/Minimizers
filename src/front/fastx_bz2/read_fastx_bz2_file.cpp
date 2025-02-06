@@ -292,8 +292,8 @@ bool read_fastx_bz2_file::reload()
     }
 
     int bzerror = 0;
-    int n_len = (buff_size - reste);
-    int nread = BZ2_bzRead ( &bzerror, streaz, buffer + reste, n_len * sizeof(char) );
+    const int n_len = (buff_size - reste);
+    const int nread = BZ2_bzRead ( &bzerror, streaz, buffer + reste, n_len * sizeof(char) );
     if( bzerror == BZ_STREAM_END ) {
         no_more_load = true;
     }else if( bzerror == BZ_UNEXPECTED_EOF ) {

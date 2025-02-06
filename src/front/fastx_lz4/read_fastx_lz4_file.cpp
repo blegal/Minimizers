@@ -215,8 +215,8 @@ bool read_fastx_lz4_file::reload()
         buffer[i - c_ptr] = buffer[i];
     }
 
-    int n_len = (buff_size - reste);
-    LZ4F_errorCode_t nread = LZ4F_read (lz4fRead, buffer + reste, n_len * sizeof(char) );
+    const int n_len = (buff_size - reste);
+    const LZ4F_errorCode_t nread = LZ4F_read (lz4fRead, buffer + reste, n_len * sizeof(char) );
     if (LZ4F_isError(nread)) {
         error_section();
         printf("(EE) LZ4F_read error: %s\n", LZ4F_getErrorName(nread));
