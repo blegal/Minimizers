@@ -38,6 +38,22 @@ read_fastx_lz4_file::read_fastx_lz4_file(const std::string filen)
         reset_section();
         exit( EXIT_FAILURE );
     }
+
+    //
+    // Les fichiers fasta sont normalement équipé d'une en-tete que l'on peut directement
+    // skipper...
+    //
+    if( (buffer[c_ptr] == '>') || (buffer[c_ptr] == '+') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '>') )
+    {
+        for(int i = c_ptr; i < n_data; i += 1) {
+            if (buffer[i] == '\n')
+            {
+                c_ptr = i + 1; // on se positionne sur le 1er caractere de la prochaine ligne
+                break;
+            }
+        }
+    }
+    // Fin de skip du premier commentaire
 }
 //
 //

@@ -10,8 +10,8 @@
 read_fastx_gz_file::read_fastx_gz_file(const std::string filen)
 {
     buffer = new char[buff_size];
-
     stream = fopen( filen.c_str(), "r" );
+
     if( stream == NULL )
     {
         error_section();
@@ -21,7 +21,6 @@ read_fastx_gz_file::read_fastx_gz_file(const std::string filen)
         exit( EXIT_FAILURE );
     }
 
-    int gzerror = 0;
     streaz = gzdopen(fileno(stream), "r");
     if( streaz == NULL ) {
         error_section();
@@ -35,7 +34,6 @@ read_fastx_gz_file::read_fastx_gz_file(const std::string filen)
     if( n_data == Z_STREAM_END ) {
         error_section();
         printf("(EE) Z_STREAM_END\n");
-        // cela signifie juste que l'on a atteint la fin du fichier !
         reset_section();
         exit(EXIT_FAILURE);
     }else if( n_data == Z_STREAM_ERROR ) {
@@ -153,6 +151,8 @@ bool read_fastx_gz_file::next_sequence(char* n_kmer)
 //
 std::tuple<int, bool> read_fastx_gz_file::next_sequence(char* n_kmer, int buffer_size, const bool _internal_)
 {
+//    if( counter == 40 )
+//        printf("n_lines = %d\n", n_lines);
     //
     // Le fichier est fini, donc rien à faire
     //
@@ -164,6 +164,7 @@ std::tuple<int, bool> read_fastx_gz_file::next_sequence(char* n_kmer, int buffer
     //
     // On cherche le caractere de fin de ligne
     //
+//    printf("recherche fin de ligne\n");
     int pos_nline = -1;
     for(int i = c_ptr; i < n_data; i += 1)
     {
@@ -173,6 +174,7 @@ std::tuple<int, bool> read_fastx_gz_file::next_sequence(char* n_kmer, int buffer
             break;
         }
     }
+//    printf("fin de recherche fin de ligne\n");
 
     //
     // Le buffer se termine t'il avant que l'on ai recontré un char fin de ligne
@@ -196,11 +198,13 @@ std::tuple<int, bool> read_fastx_gz_file::next_sequence(char* n_kmer, int buffer
     bool new_seq = (buffer[c_ptr] == '>') || (buffer[c_ptr] == '+') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '=');
     if( new_seq == true )
     {
+//      printf("on skippe des commentaires ! (%d)\n", c_ptr);
         c_ptr      = pos_nline + 1;
         file_ended = (c_ptr >= n_data) && (n_data != buff_size);
         return next_sequence(n_kmer, buffer_size, true);
     }
 
+//    printf("debut de copie des elements\n");
     int cnt = 0;                                        // On recoipie les données que l'on souhaite
     while( buffer[c_ptr] != '\n' )                      // transmettre a la fonction appelante
     {
@@ -210,6 +214,8 @@ std::tuple<int, bool> read_fastx_gz_file::next_sequence(char* n_kmer, int buffer
     c_ptr      += 1;                                    // pour des raison de compatibilité (strlen)
 
     n_lines    += 1;
+
+//    printf("fin de copie des elements\n");
 
     //
     // on detecte le moment ou l'on arrive a la fin du fichier
@@ -235,11 +241,12 @@ bool read_fastx_gz_file::reload()
     {
         buffer[i - c_ptr] = buffer[i];
     }
-//      int nread = fread(buffer + reste, sizeof(char), buff_size - reste, f);
-    n_data = gzread(streaz, buffer + reste, (buff_size - reste) * sizeof(char));
+
+    const int read_req = (buff_size - reste);
+    int nread = n_data = gzread(streaz, buffer + reste,  read_req * sizeof(char));
     if( n_data == Z_STREAM_END ) {
 //      warning_section();
-//      printf("(EE) Z_STREAM_END\n");
+        printf("(EE) Z_STREAM_END\n");
 //      reset_section();
         no_more_load = true;
     }else if( n_data == Z_STREAM_ERROR ) {
@@ -264,9 +271,9 @@ bool read_fastx_gz_file::reload()
         exit(EXIT_FAILURE);
     }
 
-    no_more_load |= ( n_data != buff_size ); // a t'on atteint la fin du fichier ?
+    no_more_load |= ( nread != read_req ); // a t'on atteint la fin du fichier ?
     c_ptr        = 0;                       // on remet a zero le pointeur de lecture
-    n_data       = n_data + reste;           // on met a jour le nombre de données dans le buffer
+    n_data       = nread + reste;           // on met a jour le nombre de données dans le buffer
     return true;
 }
 //

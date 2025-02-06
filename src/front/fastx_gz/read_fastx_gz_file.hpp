@@ -20,7 +20,7 @@ private:
     bool file_ended    = false;
     FILE*   stream;
     gzFile  streaz;
-
+    
 public:
      read_fastx_gz_file(const std::string filen);
     ~read_fastx_gz_file();

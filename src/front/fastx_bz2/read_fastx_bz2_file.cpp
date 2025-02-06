@@ -115,6 +115,21 @@ read_fastx_bz2_file::read_fastx_bz2_file(const std::string filen)
         exit(EXIT_FAILURE);
     }
 
+    //
+    // Les fichiers fasta sont normalement équipé d'une en-tete que l'on peut directement
+    // skipper...
+    //
+    if( (buffer[c_ptr] == '>') || (buffer[c_ptr] == '+') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '>') )
+    {
+        for(int i = c_ptr; i < n_data; i += 1) {
+            if (buffer[i] == '\n')
+            {
+                c_ptr = i + 1; // on se positionne sur le 1er caractere de la prochaine ligne
+                break;
+            }
+        }
+    }
+    // Fin de skip du premier commentaire
 }
 //
 //
@@ -275,7 +290,7 @@ bool read_fastx_bz2_file::reload()
     {
         buffer[i - c_ptr] = buffer[i];
     }
-//      int nread = fread(buffer + reste, sizeof(char), buff_size - reste, f);
+
     int bzerror = 0;
     int nread = BZ2_bzRead ( &bzerror, streaz, buffer + reste, (buff_size - reste) * sizeof(char) );
     if( bzerror == BZ_STREAM_END ) {

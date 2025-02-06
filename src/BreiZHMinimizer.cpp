@@ -50,6 +50,17 @@ std::string to_number(int value, const int maxv)
 //
 std::vector<std::string> file_list_cpp(const std::string path, std::string ext = ".fastx")
 {
+    struct stat path_stat;
+    stat(path.c_str(), &path_stat);
+    if( (path_stat.st_mode & S_IFDIR) == 0)
+    {
+        error_section();
+        printf("(EE) The provided path is not a directory (%s)\n", path.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        reset_section();
+        exit( EXIT_FAILURE );
+    }
+
     std::vector<std::string> paths;
     for (const auto& entry : std::filesystem::directory_iterator(path))
     {
@@ -59,6 +70,27 @@ std::vector<std::string> file_list_cpp(const std::string path, std::string ext =
     return paths;
 }
 
+std::string shorten(const std::string fname, const int length)
+{
+    //
+    // Removing file path
+    //
+    int name_pos       = fname.find_last_of("/");
+    std::string nstr   = fname;
+    if( name_pos != std::string::npos )
+        nstr  = fname.substr(name_pos + 1);
+/*
+    if( nstr.size() > length ){
+        int suffix_pos     = nstr.find_last_of(".");
+        std::string suffix = nstr.substr(suffix_pos);
+        int prefix_length = length - suffix.size() - 3;
+        return nstr.substr(0,prefix_length) + ".." + suffix;
+    }else{
+        return nstr;
+    }
+*/
+    return nstr;
+}
 
 int main(int argc, char *argv[])
 {
@@ -302,6 +334,10 @@ int main(int argc, char *argv[])
         uint64_t ou_mbytes = 0;
 
         printf("(II) Generating minimizers from DNA - %d thread(s)\n", threads_minz);
+        if( limited_memory == true )
+            printf("(II) - Limited memory mode : true\n");
+        else
+            printf("(II) - Limited memory mode : false\n");
 
         const auto start = std::chrono::steady_clock::now();
 
@@ -315,24 +351,43 @@ int main(int argc, char *argv[])
 #pragma omp parallel for default(shared)
         for(int i = 0; i < l_files.size(); i += 1)
         {
+            const auto start_mzr = std::chrono::steady_clock::now();
+
+            //
+            // On mesure la taille des fichiers d'entrée
+            //
             const std::string i_file = l_files[i];
             const uint64_t f_size    = get_file_size(i_file);
             const uint64_t size_mb   = f_size / 1024 / 1024;
             const std::string o_file = "data_n" + to_number(i, (int)l_files.size()) + ".c0";
             in_mbytes += size_mb;
+
             /////
             if( limited_memory == true )
                 minimizer_processing_v3(i_file, o_file, algo, ram_value, true, false, false);
             else
                 minimizer_processing_v2(i_file, o_file, algo, ram_value, true, false, false);
             /////
+
+
+            //
+            // On mesure la taille du fichier de sortie
+            //
             const uint64_t o_size    = get_file_size(o_file);
             const uint64_t sizo_mb   = o_size / 1024 / 1024;
             ou_mbytes += sizo_mb;
             if(verbose_flag == true )
             {
-                printf("%5d | %20s | %6lld MB | ==========> | %20s | %6lld MB |\n", i, i_file.c_str(), size_mb, o_file.c_str(), sizo_mb);
+                //
+                // Mesure du temps d'execution
+                //
+                const auto  end_mzr = std::chrono::steady_clock::now();
+                const float e_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_mzr - start_mzr).count() / 1000.f;
+                std::string nname = shorten(i_file, 32);
+                printf("%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, nname.c_str(), size_mb, o_file.c_str(), sizo_mb, e_time);
+
             }
+
             /////
             n_files[i] = o_file; // on stocke le nom du fichier que l'on vient de produire
             /////
