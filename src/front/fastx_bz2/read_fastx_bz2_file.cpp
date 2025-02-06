@@ -292,7 +292,8 @@ bool read_fastx_bz2_file::reload()
     }
 
     int bzerror = 0;
-    int nread = BZ2_bzRead ( &bzerror, streaz, buffer + reste, (buff_size - reste) * sizeof(char) );
+    int n_len = (buff_size - reste);
+    int nread = BZ2_bzRead ( &bzerror, streaz, buffer + reste, n_len * sizeof(char) );
     if( bzerror == BZ_STREAM_END ) {
         no_more_load = true;
     }else if( bzerror == BZ_UNEXPECTED_EOF ) {
@@ -353,9 +354,9 @@ bool read_fastx_bz2_file::reload()
         reset_section();
         exit(EXIT_FAILURE);
     }
-    no_more_load |= ( n_data != buff_size ); // a t'on atteint la fin du fichier ?
-    c_ptr        = 0;                       // on remet a zero le pointeur de lecture
-    n_data       = nread + reste;           // on met a jour le nombre de données dans le buffer
+    no_more_load |= ( n_len != nread ); // a t'on atteint la fin du fichier ?
+    c_ptr        = 0;                   // on remet a zero le pointeur de lecture
+    n_data       = nread + reste;       // on met a jour le nombre de données dans le buffer
     return true;
 }
 //
