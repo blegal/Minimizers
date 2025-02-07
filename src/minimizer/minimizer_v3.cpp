@@ -415,6 +415,13 @@ void minimizer_processing_v3(
         SaveRawToFile(t_file, liste_mini, n_elements);
 
         file_list.push_back( t_file );
+
+        //
+        // On relache la memoire que l'on avait alouée car elle ne nous sert plus à rien
+        //
+        liste_mini.clear();
+        liste_mini.resize( 16 );
+
 #if _debug_mode_
         printf("[Minimizer_v3] - Flushed to SSD drive [%s, %d]\n", __FILE__, __LINE__);
 #endif
