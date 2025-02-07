@@ -115,6 +115,8 @@ int main(int argc, char *argv[])
     int   ram_value           = 1024;
     int   limited_memory      = 1;
 
+    int   file_limit          = 65536;
+
     std::string algo = "std::sort";
 
     static struct option long_options[] = {
@@ -131,6 +133,7 @@ int main(int argc, char *argv[])
             {"limited-mem",              no_argument, &limited_memory,    1},
             {"unlimited-mem",              no_argument, &limited_memory,    0},
 
+            {"max-files",      required_argument, 0,  'x'},
             {"threads",      required_argument, 0,  't'},
             {"threads-minz", required_argument, 0,  'm'},
             {"threads-merge",required_argument, 0,  'g'},
@@ -184,6 +187,10 @@ int main(int argc, char *argv[])
 
             case 'g':
                 threads_merge = std::atoi( optarg );
+                break;
+
+            case 'x':
+                file_limit = std::atoi( optarg );
                 break;
 
             case 's':
@@ -322,9 +329,22 @@ int main(int argc, char *argv[])
         exit( EXIT_FAILURE );
     }
 
+    //
+    // On limite le nombre de fichiers a traiter, utile lors des phases de debug
+    // pour ne pas avoir a traiter tous les fichiers d'un repo
+    //
+    if ( l_files.size() > file_limit ) {
+        warning_section();
+        printf ("(WW) Reducing the number of files to process (file_limit = %d)\n", file_limit);
+        reset_section();
+        while (l_files.size() > file_limit) {
+            l_files.pop_back();
+        }
+    }
+
+
 
     std::vector<std::string> n_files;
-
     //
     //
     //
