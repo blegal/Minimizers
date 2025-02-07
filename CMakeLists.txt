@@ -363,6 +363,11 @@ project(BreiZHMinimizer)
 file(GLOB_RECURSE source_files
         ./src/BreiZHMinimizer.cpp
         ./src/progress/progressbar.cpp
+        # File readers
+        ./src/files/bz2/file_bz2_reader.cpp
+        ./src/files/gz/file_gz_reader.cpp
+        ./src/files/lz4/file_lz4_reader.cpp
+        ./src/files/raw/file_raw_reader.cpp
         # Merger implementations
         ./src/merger/merger_in.cpp
         ./src/merger/merger_level_s.cpp
