@@ -215,7 +215,8 @@ bool read_fastx_lz4_file::reload()
         buffer[i - c_ptr] = buffer[i];
     }
 
-    LZ4F_errorCode_t nread = LZ4F_read (lz4fRead, buffer + reste, (buff_size - reste) * sizeof(char) );
+    const int n_len = (buff_size - reste);
+    const LZ4F_errorCode_t nread = LZ4F_read (lz4fRead, buffer + reste, n_len * sizeof(char) );
     if (LZ4F_isError(nread)) {
         error_section();
         printf("(EE) LZ4F_read error: %s\n", LZ4F_getErrorName(nread));
@@ -224,7 +225,7 @@ bool read_fastx_lz4_file::reload()
         exit( EXIT_FAILURE );
     }
 
-    no_more_load |= ( n_data != buff_size ); // a t'on atteint la fin du fichier ?
+    no_more_load |= ( n_len != nread ); // a t'on atteint la fin du fichier ?
     c_ptr        = 0;                       // on remet a zero le pointeur de lecture
     n_data       = nread + reste;           // on met a jour le nombre de données dans le buffer
     return true;
