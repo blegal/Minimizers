@@ -396,7 +396,9 @@ file(GLOB_RECURSE source_files
         src/front/fastx_lz4/lz4/lz4hc.c
         src/front/fastx_lz4/lz4/lz4.c
     )
-add_executable(BreiZHMinimizer ${source_files})
+add_executable(BreiZHMinimizer ${source_files}
+        src/tools/file_stats.cpp
+        src/tools/file_stats.hpp)
 
 target_include_directories(BreiZHMinimizer
         PUBLIC
