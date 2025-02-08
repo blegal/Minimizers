@@ -12,8 +12,8 @@ public:
      file_raw_reader(const char*       filen);
     ~file_raw_reader();
 
-    virtual bool isOpen () = 0;
-    virtual bool isClose() = 0;
-    virtual bool is_eof()  = 0;
-    virtual int  read   (char* buffer, int eSize, int eCount) = 0;
+    virtual bool isOpen ();
+    virtual bool isClose();
+    virtual bool is_eof ();
+    virtual int  read   (char* buffer, int eSize, int eCount);
 };

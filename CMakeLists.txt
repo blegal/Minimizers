@@ -368,6 +368,7 @@ file(GLOB_RECURSE source_files
         ./src/files/gz/file_gz_reader.cpp
         ./src/files/lz4/file_lz4_reader.cpp
         ./src/files/raw/file_raw_reader.cpp
+        ./src/files/file_reader_library.cpp
         # Merger implementations
         ./src/merger/merger_in.cpp
         ./src/merger/merger_level_s.cpp
