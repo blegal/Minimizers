@@ -70,7 +70,7 @@ bool file_gz_reader::isOpen ()
 //
 bool file_gz_reader::isClose()
 {
-    return (!is_open) || (!stream_open);
+    return !isOpen();
 }
 //
 //
