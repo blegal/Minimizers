@@ -356,6 +356,7 @@ int main(int argc, char *argv[])
         //
         n_files.resize( l_files.size() );
 
+        int counter = 0;
         omp_set_num_threads(threads_minz);
 #pragma omp parallel for default(shared)
         for(int i = 0; i < l_files.size(); i += 1)
@@ -392,7 +393,8 @@ int main(int argc, char *argv[])
                 const auto  end_mzr = std::chrono::steady_clock::now();
                 const float e_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_mzr - start_mzr).count() / 1000.f;
                 std::string nname = shorten(i_file.name, 32);
-                printf("%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, nname.c_str(), i_file.size_mb, o_file.name.c_str(), i_file.size_mb, e_time);
+                counter += 1;
+                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, l_files.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, e_time);
 
             }
 
