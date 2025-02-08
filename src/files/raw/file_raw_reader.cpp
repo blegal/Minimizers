@@ -54,7 +54,7 @@ bool file_raw_reader::isOpen ()
 //
 bool file_raw_reader::isClose()
 {
-    return (!is_open);
+    return !isOpen();
 }
 //
 //

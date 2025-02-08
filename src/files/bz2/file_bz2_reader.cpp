@@ -73,7 +73,7 @@ bool file_bz2_reader::isOpen ()
 //
 bool file_bz2_reader::isClose()
 {
-    return (!is_open) || (!stream_open);
+    return !isOpen();
 }
 //
 //

@@ -67,7 +67,7 @@ bool file_lz4_reader::isOpen ()
 //
 bool file_lz4_reader::isClose()
 {
-    return (!is_open) || (!stream_open);
+    return !isOpen();
 }
 //
 //
