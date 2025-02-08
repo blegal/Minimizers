@@ -170,7 +170,7 @@ std::tuple<int, bool> read_fastx_file::next_sequence(char* n_kmer, int buffer_si
         n_kmer[cnt++] = buffer[c_ptr++];
     }
     n_kmer[cnt] = 0;                                    // On rajoute un caractere fin de string
-    c_ptr      += 1;                                    // pour des raison de compatibilité (strlen)
+    c_ptr      += 1;                                    // pour des raisons de compatibilité (strlen)
 
     n_lines    += 1;
 

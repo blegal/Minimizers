@@ -18,9 +18,11 @@ file_stats::file_stats(const std::string filen)
         exit( EXIT_FAILURE );
     }
 
+    const uint64_t kilo = 1024;
     size_bytes = file_status.st_size;
-    size_mb    = size_bytes / 1024;
-    size_mb    = size_kb    / 1024;
+    size_kb    = size_bytes / kilo;
+    size_mb    = size_kb    / kilo;
+//  printf("file %s %8ld bytes = %8ld kb = %8ld mb\n", name.c_str(), size_bytes, size_kb, size_mb);
 }
 
 void file_stats::printf_size() const
