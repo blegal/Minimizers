@@ -104,9 +104,6 @@ void process(const std::string& ifile, const std::string& ofile, int n_colors)
 
     ////////////////////////////////////////////////////////////////////////////////////
 
-//    const int n_buff_mini = ((64 * 1024 * 1024) / e_size); // 64 Mbytes
-//    const int buffer_size = n_buff_mini * e_size;
-
     FILE* fi = fopen( ifile.c_str(), "r" );
     if( fi == NULL )
     {
