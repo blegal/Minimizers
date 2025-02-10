@@ -1,5 +1,7 @@
 #include "read_fastx_file.hpp"
 #include "../../tools/colors.hpp"
+#include <cstdint>
+#include <array>
 //
 //
 //
@@ -21,6 +23,8 @@ read_fastx_file::read_fastx_file(const std::string filen)
         exit( EXIT_FAILURE );
     }
     n_data = fread(buffer, sizeof(char), buff_size, f);
+
+    no_more_load = ( n_data != buff_size ); //TODO: smaller file than buffer
 
     //
     // Les fichiers fasta sont normalement équipé d'une en-tete que l'on peut directement
@@ -115,73 +119,72 @@ bool read_fastx_file::next_sequence(char* n_kmer)
 //
 std::tuple<int, bool> read_fastx_file::next_sequence(char* n_kmer, int buffer_size, const bool _internal_)
 {
-    //
-    // Le fichier est fini, donc rien à faire
-    //
-    if( file_ended == true )
+    
+    if( file_ended == true || is_eof())
     {
         return {0, true}; // aucun octet n'est disponible
     }
 
-    //
-    // On cherche le caractere de fin de ligne
-    //
-    int pos_nline = -1;
-    for(int i = c_ptr; i < n_data; i += 1)
-    {
-        if(buffer[i] == '\n')
-        {
-            pos_nline = i; // il n'y a rien derniere donc c'est OK
-            break;
+    //last time left on header, find next sequence and recurse over it
+    if (buffer[c_ptr] == '>' || buffer[c_ptr] == '+' || buffer[c_ptr] == '@' || buffer[c_ptr] == '='){
+        for(int i = c_ptr; i < n_data; i += 1) {
+            if (buffer[i] == '\n') {
+                c_ptr      = i + 1;
+                return next_sequence(n_kmer, buffer_size, true);
+            }
+        }
+        reload(); //buffer ended inside header
+        for(int i = c_ptr; i < n_data; i += 1) {
+            if (buffer[i] == '\n') {
+                c_ptr      = i + 1;
+                return next_sequence(n_kmer, buffer_size, true);
+            }
         }
     }
 
-    //
-    // Le buffer se termine t'il avant que l'on ai recontré un char fin de ligne
-    //
-    if( pos_nline == -1 )                               // On n'a pas trouvé de retour à la ligne
-    {                                                   // avec des données dedans
-        if( is_eof() == true )
-            return {0, false};                          // on est arrivé au bout du fichier
-        if( reload() == true ){
-            return next_sequence(n_kmer, buffer_size);  // apres le rechargement on a des données à lire
-        }else{
-            return {0, false};                          // on est arrivé au bout du fichier
+    //last time left on N, go to next char and recurse over it
+    if (!(buffer[c_ptr] == 'A') && !(buffer[c_ptr] == 'a') && 
+        !(buffer[c_ptr] == 'C') && !(buffer[c_ptr] == 'c') && 
+        !(buffer[c_ptr] == 'G') && !(buffer[c_ptr] == 'g') && 
+        !(buffer[c_ptr] == 'T') && !(buffer[c_ptr] == 't') && 
+        !(buffer[c_ptr] == 'U') && !(buffer[c_ptr] == 'u')){
+            c_ptr      += 1; //TODO: look for first non intrus
+            return next_sequence(n_kmer, buffer_size, true);
+    }
+
+    //classic loop, add nucleotides to seq until header or 'N'
+    int cnt = 0;
+    while (cnt < buffer_size){
+        if (c_ptr >= n_data){ //check buffer empty ?
+            file_ended = !reload();
+            if (file_ended) return {cnt, _internal_};
         }
+        
+        //verify correct char
+        if (buffer[c_ptr] == 'A' || buffer[c_ptr] == 'a' || 
+            buffer[c_ptr] == 'C' || buffer[c_ptr] == 'c' || 
+            buffer[c_ptr] == 'G' || buffer[c_ptr] == 'g' || 
+            buffer[c_ptr] == 'T' || buffer[c_ptr] == 't' || 
+            buffer[c_ptr] == 'U' || buffer[c_ptr] == 'u'){
+            n_kmer[cnt++] = buffer[c_ptr++];
+        }
+
+        //ignore newlines
+        else if (buffer[c_ptr] == '\n'){
+            c_ptr += 1;
+            continue;
+        }
+
+        //found a header 
+        else if (buffer[c_ptr] == '>' || buffer[c_ptr] == '+' || buffer[c_ptr] == '@' || buffer[c_ptr] == '='){
+            return {cnt, _internal_};
+
+        //found an intruder, or eof
+        } else {
+            return {cnt, _internal_};
+        }
+        
     }
-
-    //
-    // On se trouve en début d'une ligne du fichier on doit donc
-    // regarder si cette ligne c'est un commentaire ou une sequence de nucléotides.
-    // Si c'est un commentaire alors on passe a la ligne suivante (appel recursif)
-    //
-    bool new_seq = (buffer[c_ptr] == '>') || (buffer[c_ptr] == '+') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '=');
-    if( new_seq == true )
-    {
-        c_ptr      = pos_nline + 1;
-        file_ended = (c_ptr >= n_data) && (n_data != buff_size);
-        return next_sequence(n_kmer, buffer_size, true);
-    }
-
-
-    int cnt = 0;                                        // On recoipie les données que l'on souhaite
-    while( buffer[c_ptr] != '\n' )                      // transmettre a la fonction appelante
-    {
-        n_kmer[cnt++] = buffer[c_ptr++];
-    }
-    n_kmer[cnt] = 0;                                    // On rajoute un caractere fin de string
-    c_ptr      += 1;                                    // pour des raison de compatibilité (strlen)
-
-    n_lines    += 1;
-
-    //
-    // on detecte le moment ou l'on arrive a la fin du fichier
-    //
-    file_ended = (c_ptr == n_data) && (n_data != buff_size);
-
-    //
-    // On indique que la ligne actuelle est la continuité de la séquence précédente
-    //
     return {cnt, _internal_};
 }
 //
@@ -191,17 +194,12 @@ std::tuple<int, bool> read_fastx_file::next_sequence(char* n_kmer, int buffer_si
 //
 //
 //
-bool read_fastx_file::reload()
-{
-    int reste = n_data - c_ptr;
-    for(int i = c_ptr; i < n_data; i += 1)  // on fait vieillir les données qui n'ont pas encore été consommées
-    {
-        buffer[i - c_ptr] = buffer[i];
-    }
-    const int nread = fread(buffer + reste, sizeof(char), buff_size - reste, f);
-    no_more_load = ( n_data != buff_size ); // a t'on atteint la fin du fichier ?
-    c_ptr        = 0;                       // on remet a zero le pointeur de lecture
-    n_data       = nread + reste;           // on met a jour le nombre de données dans le buffer
+
+bool read_fastx_file::reload(){
+    n_data = fread(buffer, sizeof(char), buff_size, f);
+    if (n_data == 0) return false;
+    no_more_load = (n_data != buff_size);
+    c_ptr        = 0; 
     return true;
 }
 //
@@ -213,7 +211,7 @@ bool read_fastx_file::reload()
 //
 bool read_fastx_file::is_eof()
 {
-    if( (no_more_load == true) && (c_ptr == n_data) )
+    if( (no_more_load == true) && (c_ptr >= n_data) )
         return true;
     return false;
 }

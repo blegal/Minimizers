@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
 option(BUILD_MACOS_INTEL "Build test programs" OFF)
-option(BUILD_MACOS_ARM   "Build test programs" ON)
-option(BUILD_LINUX_INTEL "Build test programs" OFF)
+option(BUILD_MACOS_ARM   "Build test programs" OFF)
+option(BUILD_LINUX_INTEL "Build test programs" ON)
 option(BUILD_LINUX_ARM   "Build test programs" OFF)
 
 option(ENABLE_LTO    "Build test programs" OFF)
@@ -257,6 +257,56 @@ target_link_libraries(min_sorter_v3 pthread)
 target_link_libraries(min_sorter_v3 bz2)
 target_link_libraries(min_sorter_v3 z)
 target_link_libraries(min_sorter_v3 curses)
+
+
+########################################################################################################################
+
+project(min_sorter_v4)
+
+file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
+        ./src/progress/progressbar.cpp
+        # sorting algorithms
+        ./src/sorting/std_4cores/std_4cores.cpp
+        ./src/sorting/std_2cores/std_2cores.cpp
+        ./src/sorting/crumsort/crumsort.cpp
+        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
+        ./src/minimizer/deduplication.cpp
+        ./src/minimizer/minimizer_v4.cpp
+        src/back/raw/SaveRawToFile.cpp
+        ./src/back/txt/SaveMiniToTxtFile.cpp
+        # Front-end parsers
+        src/front/fastx/read_fastx_file.cpp
+        src/front/fastx_gz/read_fastx_gz_file.cpp
+        src/front/fastx_bz2/read_fastx_bz2_file.cpp
+        src/front/fastx_lz4/read_fastx_lz4_file.cpp
+        src/front/fastx_lz4/lz4/lz4file.c
+        src/front/fastx_lz4/lz4/lz4frame.c
+        src/front/fastx_lz4/lz4/xxhash.c
+        src/front/fastx_lz4/lz4/lz4hc.c
+        src/front/fastx_lz4/lz4/lz4.c
+        # Line counters
+        ./src/front/count_file_lines.cpp
+        ./src/front/fastx/count_lines_fastx.cpp
+        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
+        # sequence size estimator
+        ./src/merger/merger_level_0.cpp
+        ./src/front/read_k_value.cpp
+        ./src/front/fastx/read_fastx_k_value.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
+        # main
+        ./src/min_sorter_v4.cpp)
+
+add_executable(min_sorter_v4 ${source_files})
+
+target_include_directories(min_sorter_v4
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+
+target_link_libraries(min_sorter_v4 pthread)
+target_link_libraries(min_sorter_v4 bz2)
+target_link_libraries(min_sorter_v4 z)
+target_link_libraries(min_sorter_v4 curses)
 
 ########################################################################################################################
 
