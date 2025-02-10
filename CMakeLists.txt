@@ -28,8 +28,8 @@ option(BUILD_INFOS   "Build test programs" OFF)
 #endif()
 
 SET(CMAKE_CXX_STANDARD     17)
-SET(CMAKE_BUILD_TYPE  Release)
-#SET(CMAKE_BUILD_TYPE  Debug)
+#SET(CMAKE_BUILD_TYPE  Release)
+SET(CMAKE_BUILD_TYPE  Debug)
 
 #
 # MacOS with ARM M1/M2 processors
@@ -42,8 +42,8 @@ if(BUILD_MACOS_ARM)
 
     SET(CMAKE_CXX_FLAGS "-Wall")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native -mtune=native")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math -fopenmp -std=c++17")
-    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fopenmp -std=c++17")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math -fopenmp -std=c++17")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fopenmp -std=c++17")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flax-vector-conversions") # gcc patch
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/opt/homebrew/include") # gcc patch
 
@@ -364,10 +364,10 @@ file(GLOB_RECURSE source_files
         ./src/BreiZHMinimizer.cpp
         ./src/progress/progressbar.cpp
         # File readers
-        ./src/files/bz2/file_bz2_reader.cpp
-        ./src/files/gz/file_gz_reader.cpp
-        ./src/files/lz4/file_lz4_reader.cpp
-        ./src/files/raw/file_raw_reader.cpp
+        src/files/bz2/reader/file_bz2_reader.cpp
+        src/files/gz/reader/file_gz_reader.cpp
+        src/files/lz4/reader/file_lz4_reader.cpp
+        src/files/raw/reader/file_raw_reader.cpp
         ./src/files/file_reader_library.cpp
         # Merger implementations
         ./src/merger/merger_in.cpp
@@ -378,6 +378,7 @@ file(GLOB_RECURSE source_files
         ./src/merger/merger_level_2_32.cpp
         ./src/merger/merger_level_64_n.cpp
         ./src/merger/merger_level_n_p.cpp
+        ./src/merger/merger_n_files.cpp
         # Output backends
         ./src/back/raw/SaveRawToFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
@@ -401,6 +402,8 @@ file(GLOB_RECURSE source_files
         src/front/fastx_lz4/lz4/xxhash.c
         src/front/fastx_lz4/lz4/lz4hc.c
         src/front/fastx_lz4/lz4/lz4.c
+        # tools
+        ./src/tools/CTimer.cpp
     )
 add_executable(BreiZHMinimizer ${source_files}
         src/tools/file_stats.cpp
@@ -446,6 +449,23 @@ target_include_directories(extract_all_colors
 project(color_stats)
 
 file(GLOB_RECURSE source_files
+        # input file support
+        ./src/files/file_reader_library.cpp
+        ./src/files/raw/reader/file_raw_reader.cpp
+        ./src/files/bz2/reader/file_bz2_reader.cpp
+        ./src/files/lz4/reader/file_lz4_reader.cpp
+        ./src/files/gz/reader/file_gz_reader.cpp
+        # The LZ4 library source codes
+        ./src/front/fastx/read_fastx_file.cpp
+        ./src/front/fastx_gz/read_fastx_gz_file.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
+        ./src/front/fastx_lz4/read_fastx_lz4_file.cpp
+        ./src/front/fastx_lz4/lz4/lz4file.c
+        ./src/front/fastx_lz4/lz4/lz4frame.c
+        ./src/front/fastx_lz4/lz4/xxhash.c
+        ./src/front/fastx_lz4/lz4/lz4hc.c
+        ./src/front/fastx_lz4/lz4/lz4.c
+        # Front-end parsers
         ./src/color_stats.cpp)
 add_executable(color_stats ${source_files})
 
@@ -453,6 +473,8 @@ target_include_directories(color_stats
         PUBLIC
         "${PROJECT_SOURCE_DIR}/../src/headers/"
 )
+target_link_libraries(color_stats z)
+target_link_libraries(color_stats bz2)
 
 ########################################################################################################################
 
@@ -466,5 +488,47 @@ target_include_directories(color_sorter
         PUBLIC
         "${PROJECT_SOURCE_DIR}/../src/headers/"
 )
+
+########################################################################################################################
+
+project(merge_all)
+
+file(GLOB_RECURSE source_files
+        ./src/tools/file_stats.cpp
+        ./src/merger/merger_n_files.cpp
+        ./src/tools/CTimer.cpp
+        # input file support
+        ./src/files/file_reader_library.cpp
+        ./src/files/raw/reader/file_raw_reader.cpp
+        ./src/files/bz2/reader/file_bz2_reader.cpp
+        ./src/files/lz4/reader/file_lz4_reader.cpp
+        ./src/files/gz/reader/file_gz_reader.cpp
+        # output file support
+        ./src/files/file_writer_library.cpp
+        ./src/files/raw/writer/file_raw_writer.cpp
+        ./src/files/lz4/writer/file_lz4_writer.cpp
+        ./src/files/gz/writer/file_gz_writer.cpp
+        ./src/files/bz2/writer/file_bz2_writer.cpp
+
+        # Front-end parsers
+        ./src/front/fastx/read_fastx_file.cpp
+        ./src/front/fastx_gz/read_fastx_gz_file.cpp
+        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
+        ./src/front/fastx_lz4/read_fastx_lz4_file.cpp
+        ./src/front/fastx_lz4/lz4/lz4file.c
+        ./src/front/fastx_lz4/lz4/lz4frame.c
+        ./src/front/fastx_lz4/lz4/xxhash.c
+        ./src/front/fastx_lz4/lz4/lz4hc.c
+        ./src/front/fastx_lz4/lz4/lz4.c
+        # The main file
+        ./src/merge_all.cpp)
+add_executable(merge_all ${source_files})
+
+target_include_directories(merge_all
+        PUBLIC
+        "${PROJECT_SOURCE_DIR}/../src/headers/"
+)
+target_link_libraries(merge_all z)
+target_link_libraries(merge_all bz2)
 
 ########################################################################################################################

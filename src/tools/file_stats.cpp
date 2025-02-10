@@ -22,12 +22,11 @@ file_stats::file_stats(const std::string filen)
     size_bytes = file_status.st_size;
     size_kb    = size_bytes / kilo;
     size_mb    = size_kb    / kilo;
-//  printf("file %s %8ld bytes = %8ld kb = %8ld mb\n", name.c_str(), size_bytes, size_kb, size_mb);
 }
 
 void file_stats::printf_size() const
 {
-    if     ( size_kb < 10 ) printf("%14s [%5ld B ]   ", name.c_str(), size_bytes);
-    else if( size_mb < 10 ) printf("%14s [%5ld KB]   ", name.c_str(), size_kb);
-    else                    printf("%14s [%5ld MB]   ", name.c_str(), size_mb);
+    if     ( size_kb < 10 ) printf("%14s [%5llu B ]   ", name.c_str(), size_bytes);
+    else if( size_mb < 10 ) printf("%14s [%5llu KB]   ", name.c_str(), size_kb);
+    else                    printf("%14s [%5llu MB]   ", name.c_str(), size_mb);
 }

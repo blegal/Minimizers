@@ -11,6 +11,8 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+#include "./files/file_reader_library.hpp"
+
 uint64_t get_file_size(const std::string& filen) {
     struct stat file_status;
     if (stat(filen.c_str(), &file_status) < 0) {
@@ -93,13 +95,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const uint64_t size_bytes  = get_file_size(ifile);
-    const uint64_t n_elements  = size_bytes / sizeof(uint64_t);
-
     ////////////////////////////////////////////////////////////////////////////////////
-
-    uint64_t n_minimizr;
-    uint64_t n_uint64_c;
 
     if ( (optind < argc) || (help_flag == true) || (ifile.size() == 0) || (n_colors < 0) )
     {
@@ -118,31 +114,36 @@ int main(int argc, char *argv[]) {
     // On estime les parametres qui vont être employés par la suite
     //
 
+//  uint64_t n_minimizr;
+    uint64_t n_uint64_c;
     if( n_colors < 64  ){
         n_uint64_c  = 1;
-        n_minimizr  = n_elements / (1 + n_uint64_c);
+//      n_minimizr  = n_elements / (1 + n_uint64_c);
     }else{
         n_uint64_c  = ((n_colors + 63) / 64);
-        n_minimizr  = n_elements / (1 + n_uint64_c);
+//      n_minimizr  = n_elements / (1 + n_uint64_c);
     }
+//  const uint64_t size_bytes  = get_file_size(ifile);
+//  const uint64_t n_elements  = size_bytes / sizeof(uint64_t);
 
-    const int scale = 1 + n_uint64_c;
-
-    printf("(II) file size in bytes  : %llu\n", size_bytes);
-    printf("(II) # uint64_t elements : %llu\n", n_elements);
-    printf("(II) # minimizers        : %llu\n", n_minimizr);
-    printf("(II) # of colors         : %llu\n", n_colors  );
-    printf("(II) # uint64_t/colors   : %llu\n", n_uint64_c);
+    const int eSize = 1 + n_uint64_c;
 
     ////////////////////////////////////////////////////////////////////////////////////
 
-    const int n_buff_mini = ((64 * 1024 * 1024) / scale);
-    const int buffer_size = n_buff_mini * scale;
+    const int n_buff_mini = ((64 * 1024 * 1024) / eSize); // On dimentionne la taille du buffer interne
+    const int buffer_size = n_buff_mini * eSize;          // a grosso modo 64 MB de memoire
 
+    //
+    // Allocation du buffer en memoire
+    //
     std::vector<uint64_t> liste( buffer_size );
 
-    FILE* f = fopen( ifile.c_str(), "r" );
-    if( f == NULL )
+    //
+    // On ouvre un fichier "virtuel" pour acceder aux informations compressées ou pas
+    //
+    file_reader* reader = file_reader_library::allocate( ifile );
+//  FILE* f = fopen( ifile.c_str(), "r" );
+    if( reader->is_open() == false )
     {
         printf("(EE) An error corrured while openning the file (%s)\n", ifile.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
@@ -152,7 +153,6 @@ int main(int argc, char *argv[]) {
     //
     // On cree le vecteur qui va nous permettre de calculer l'histogramme
     //
-
     std::vector<uint64_t> histo( n_colors + 1 );
     for(int i = 0; i < histo.size(); i += 1)
     {
@@ -164,15 +164,15 @@ int main(int argc, char *argv[]) {
     //
     auto t1 = std::chrono::high_resolution_clock::now();
 
-    bool stop = false;
-    while( stop == false )
+    uint64_t n_elements = 0;
+    while( reader->is_eof() == false )
     {
         //
         // on precharge un sous ensemble de données
         //
-        const int n_reads = fread(liste.data(), sizeof(uint64_t), buffer_size, f);
+        const int n_reads  = reader->read((char*)liste.data(), sizeof(uint64_t), buffer_size);
         const int elements = n_reads / (1 + n_uint64_c);
-        stop = (n_reads != buffer_size);
+        n_elements        += n_reads;
 
         //
         // On parcours l'ensemble des minimizer que l'on a chargé
@@ -185,14 +185,30 @@ int main(int argc, char *argv[]) {
             int colors = 0;
             for(int c = 0; c < n_uint64_c; c += 1)
             {
-                uint64_t value = liste[scale * m + 1 + c];
+                uint64_t value = liste[eSize * m + 1 + c];
                 colors += popcount_u64_builtin(value);
             }
             histo[colors] += 1;
         }
     }
 
-    fclose(f);
+    //
+    //
+    //
+
+    reader->close();
+    delete reader;
+
+    //
+    // On va afficher l'ensemble des données issues de l'histo
+    //
+    const uint64_t size_bytes = sizeof(uint64_t) * n_elements;
+    const uint64_t n_minimizr = n_elements / eSize;
+    printf("(II) file size in bytes  : %llu\n", size_bytes);
+    printf("(II) # uint64_t elements : %llu\n", n_elements);
+    printf("(II) # minimizers        : %llu\n", n_minimizr);
+    printf("(II) # of colors         : %llu\n", n_colors  );
+    printf("(II) # uint64_t/colors   : %llu\n", n_uint64_c);
 
     //
     // On va afficher l'ensemble des données issues de l'histo

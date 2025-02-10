@@ -1,5 +1,5 @@
 #include "file_lz4_reader.hpp"
-#include "../../tools/colors.hpp"
+#include "../../../tools/colors.hpp"
 //
 //
 //
@@ -12,14 +12,13 @@ file_lz4_reader::file_lz4_reader(const std::string& filen)
     //
     // Ouverture du fichier en mode lecture !
     //
-    stream = fopen( filen.c_str(), "r" );
+    stream = fopen( filen.c_str(), "rb" );
     if( stream == NULL )
     {
         printf("(EE) File does not exist (%s))\n", filen.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
-    is_open     = true; // file
 
     //
     // Ouverture du stream LZ4 en mode lecture !
@@ -30,8 +29,8 @@ file_lz4_reader::file_lz4_reader(const std::string& filen)
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
-    stream_open = true;
-    is_oef      = false;
+    is_fopen = true; // file
+    is_foef  = false;
 }
 //
 //
@@ -42,10 +41,8 @@ file_lz4_reader::file_lz4_reader(const std::string& filen)
 //
 file_lz4_reader::~file_lz4_reader()
 {
-    if( stream_open )
-        LZ4F_readClose(lz4fRead);
-    if( is_open )
-        fclose( stream );
+    if( is_open() == true )
+        close();
 }
 //
 //
@@ -54,20 +51,9 @@ file_lz4_reader::~file_lz4_reader()
 //
 //
 //
-bool file_lz4_reader::isOpen ()
+bool file_lz4_reader::is_open ()
 {
-    return is_open && stream_open;
-}
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-bool file_lz4_reader::isClose()
-{
-    return !isOpen();
+    return is_fopen;
 }
 //
 //
@@ -78,7 +64,7 @@ bool file_lz4_reader::isClose()
 //
 bool file_lz4_reader::is_eof()
 {
-    return is_oef;
+    return is_foef;
 }
 //
 //
@@ -97,8 +83,21 @@ int  file_lz4_reader::read(char* buffer, int eSize, int eCount)
         reset_section();
         exit( EXIT_FAILURE );
     }
-    is_oef |= ( (eCount * eSize) != nread ); // a t'on atteint la fin du fichier ?
-    return nread;
+    is_foef |= ( (eCount * eSize) != nread ); // a t'on atteint la fin du fichier ?
+    return (nread / eSize); // nombre d'éléments lu et NON PAS le nombre de bytes !
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+void file_lz4_reader::close()
+{
+    LZ4F_readClose(lz4fRead);
+    fclose( stream );
+    is_fopen = false;
 }
 //
 //

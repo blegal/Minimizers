@@ -12,6 +12,7 @@
 #include "./merger/merger_in.hpp"
 
 #include "./tools/colors.hpp"
+#include "./tools/CTimer.hpp"
 #include "./tools/file_stats.hpp"
 
 std::string to_number(int value, const int maxv)
@@ -83,7 +84,8 @@ std::string shorten(const std::string fname, const int length)
 
 int main(int argc, char *argv[])
 {
-    const auto prog_start = std::chrono::steady_clock::now();
+    CTimer timer_full( true );
+//  const auto prog_start = std::chrono::steady_clock::now();
 
     //
     //
@@ -348,7 +350,8 @@ int main(int argc, char *argv[])
         else
             printf("(II) - Limited memory mode : false\n");
 
-        const auto start = std::chrono::steady_clock::now();
+        CTimer minzr_timer( true );
+//      const auto start = std::chrono::steady_clock::now();
 
         //
         // On predimentionne le vecteur de sortie car on connait sa taille. Cela evite les
@@ -361,7 +364,8 @@ int main(int argc, char *argv[])
 #pragma omp parallel for default(shared)
         for(int i = 0; i < l_files.size(); i += 1)
         {
-            const auto start_mzr = std::chrono::steady_clock::now();
+//            const auto start_mzr = std::chrono::steady_clock::now();
+            CTimer minimizer_t( true );
 
             //
             // On mesure la taille des fichiers d'entrée
@@ -390,11 +394,11 @@ int main(int argc, char *argv[])
                 //
                 // Mesure du temps d'execution
                 //
-                const auto  end_mzr = std::chrono::steady_clock::now();
-                const float e_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_mzr - start_mzr).count() / 1000.f;
+//              const auto  end_mzr = std::chrono::steady_clock::now();
+//              const float e_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_mzr - start_mzr).count() / 1000.f;
                 std::string nname = shorten(i_file.name, 32);
                 counter += 1;
-                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, l_files.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, e_time);
+                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, l_files.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
 
             }
 
@@ -405,10 +409,13 @@ int main(int argc, char *argv[])
         l_files = n_files;
         n_files.clear();
 
+        //
+        //
+        //
         std::sort(l_files.begin(), l_files.end());
 
-        const auto  end = std::chrono::steady_clock::now();
-        const float elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.f;
+//        const auto  end = std::chrono::steady_clock::now();
+        const float elapsed = minzr_timer.get_time_sec();
         printf("(II) - Information loaded from files : %6d MB\n", (int)(in_mbytes));
         printf("(II)   Information wrote to files    : %6d MB\n", (int)(ou_mbytes));
         printf("(II) - Information throughput (in)   : %6d MB/s\n", (int)((float)(in_mbytes) / elapsed));
@@ -566,10 +573,13 @@ int main(int argc, char *argv[])
     if( verbose_flag )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
+    //
+    //
+    //
     if( vrac_names.size() > 1 )
     {
         printf("(II) Comb-based merging of sorted minimizer files\n");
-        const auto start_merge_2nd = std::chrono::steady_clock::now();
+        CTimer timer_merge( true );
 
         int cnt = 0;
         //
@@ -603,7 +613,7 @@ int main(int argc, char *argv[])
             int r_color_1   = vrac_real_color[1];
             int r_color_2   = vrac_real_color[0];
             int real_color  = r_color_1 + r_color_2;
-            int merge_color = color_1 + color_2;
+            int merge_color =   color_1   + color_2;
 
             printf("- %20.20s (%d) + %20.20s (%d)\n", i_file_1.c_str(), r_color_1, i_file_2.c_str(), r_color_2);
 
@@ -646,16 +656,17 @@ int main(int argc, char *argv[])
                 std::remove( i_file_2.c_str() ); // delete file
             }
         }
-        const auto  end_merge_2nd = std::chrono::steady_clock::now();
-        const float elapsed_merge_2nd = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_merge_2nd - start_merge_2nd).count() / 1000.f;
-        printf("(II) - Execution time : %1.2f seconds\n", elapsed_merge_2nd);
+//      const auto  end_merge_2nd = std::chrono::steady_clock::now();
+//      const float elapsed_merge_2nd = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_merge_2nd - start_merge_2nd).count() / 1000.f;
+        printf("(II) - Execution time : %1.2f seconds\n", timer_merge.get_time_sec());
         printf("(II)\n");
     }
 
+    //
+    //
+    //
     if( vrac_names.size() == 1 )
     {
-//      printf("> %5d | %20s | level = %6d ||\n", 0, vrac_names[0].c_str(), vrac_levels[0]);
-
         const std::string file   = vrac_names[0]; // le plus grand est tjs le second
         const int real_color     = vrac_real_color[0];
         const std::string o_file = file_out + "." + std::to_string(real_color) + "c";
@@ -670,10 +681,8 @@ int main(int argc, char *argv[])
     //
     // Il faudrait que l'on gere les fichiers que l'on a mis de coté lors du processus de fusion...
     //
-    const auto  prog_end = std::chrono::steady_clock::now();
-    const float total_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(prog_end - prog_start).count() / 1000.f;
     printf("(II)\n");
-    printf("(II) - Total execution time : %1.2f seconds\n", total_time);
+    printf("(II) - Total execution time : %1.2f seconds\n", timer_full.get_time_sec());
 
     return 0;
 }

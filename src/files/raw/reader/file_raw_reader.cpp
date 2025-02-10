@@ -1,5 +1,5 @@
 #include "file_raw_reader.hpp"
-#include "../../tools/colors.hpp"
+#include "../../../tools/colors.hpp"
 //
 //
 //
@@ -19,8 +19,8 @@ file_raw_reader::file_raw_reader(const std::string& filen)
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
-    is_open     = true; // file
-    is_oef      = false;
+    is_fopen     = true;
+    is_foef      = false;
 }
 //
 //
@@ -31,8 +31,8 @@ file_raw_reader::file_raw_reader(const std::string& filen)
 //
 file_raw_reader::~file_raw_reader()
 {
-    if( is_open )
-        fclose( stream );
+    if( is_open() == true )
+        close();
 }
 //
 //
@@ -41,20 +41,9 @@ file_raw_reader::~file_raw_reader()
 //
 //
 //
-bool file_raw_reader::isOpen ()
+bool file_raw_reader::is_open ()
 {
-    return is_open;
-}
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-bool file_raw_reader::isClose()
-{
-    return !isOpen();
+    return is_fopen;
 }
 //
 //
@@ -65,7 +54,7 @@ bool file_raw_reader::isClose()
 //
 bool file_raw_reader::is_eof()
 {
-    return is_oef;
+    return is_foef;
 }
 //
 //
@@ -77,8 +66,20 @@ bool file_raw_reader::is_eof()
 int  file_raw_reader::read(char* buffer, int eSize, int eCount)
 {
     const int nread = fread(buffer, eSize, eCount, stream);
-    is_oef    = ( nread != eCount); // a t'on atteint la fin du fichier ?
+    is_foef         = ( nread != eCount); // a t'on atteint la fin du fichier ?
     return nread; // nombre d'éléments de taille eSize
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+void file_raw_reader::close()
+{
+    fclose( stream );
+    is_fopen = false;
 }
 //
 //

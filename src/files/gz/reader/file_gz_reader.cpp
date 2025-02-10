@@ -1,5 +1,5 @@
 #include "file_gz_reader.hpp"
-#include "../../tools/colors.hpp"
+#include "../../../tools/colors.hpp"
 //
 //
 //
@@ -9,32 +9,17 @@
 //
 file_gz_reader::file_gz_reader(const std::string& filen)
 {
-    //
-    // Ouverture du fichier en mode lecture !
-    //
-    stream = fopen( filen.c_str(), "r" );
-    if( stream == NULL )
+    gzfp = gzopen(filen.c_str(), "rb");
+    if( gzfp == NULL )
     {
         error_section();
-        printf("(EE) File does not exist (%s))\n", filen.c_str());
+        printf("(EE) It is impossible to open the file (%s))\n", filen.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         reset_section();
         exit( EXIT_FAILURE );
     }
-    is_open     = true; // file
-
-    //
-    // Ouverture du stream LZ4 en mode lecture !
-    //
-    streaz = gzdopen(fileno(stream), "r");
-    if( streaz == NULL ) {
-        error_section();
-        printf("(EE) An error happens during gzdopen\n");
-        reset_section();
-        exit(EXIT_FAILURE);
-    }
-    stream_open = true;
-    is_oef      = false;
+    is_fopen = true;
+    is_foef  = false;
 }
 //
 //
@@ -45,10 +30,8 @@ file_gz_reader::file_gz_reader(const std::string& filen)
 //
 file_gz_reader::~file_gz_reader()
 {
-    if( stream_open )
-        gzclose(streaz);
-    if( is_open )
-        fclose( stream );
+    if( is_open() == true )
+        close();
 }
 //
 //
@@ -57,20 +40,9 @@ file_gz_reader::~file_gz_reader()
 //
 //
 //
-bool file_gz_reader::isOpen ()
+bool file_gz_reader::is_open ()
 {
-    return is_open && stream_open;
-}
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-bool file_gz_reader::isClose()
-{
-    return !isOpen();
+    return is_fopen;
 }
 //
 //
@@ -81,7 +53,7 @@ bool file_gz_reader::isClose()
 //
 bool file_gz_reader::is_eof()
 {
-    return is_oef;
+    return is_foef;
 }
 //
 //
@@ -92,9 +64,9 @@ bool file_gz_reader::is_eof()
 //
 int file_gz_reader::read(char* buffer, int eSize, int eCount)
 {
-    const int n_data = gzread(streaz, buffer,  eSize * eCount);
+    const int n_data = gzread(gzfp, buffer,  eSize * eCount);
     if( n_data == Z_STREAM_END ) {
-        is_oef = true;
+        is_foef = true;
     }else if( n_data == Z_STREAM_ERROR ) {
         error_section();
         printf("(EE) Z_STREAM_ERROR\n");
@@ -117,8 +89,20 @@ int file_gz_reader::read(char* buffer, int eSize, int eCount)
         exit(EXIT_FAILURE);
     }
 
-    is_oef |= ( (eCount * eSize) != n_data ); // a t'on atteint la fin du fichier ?
-    return n_data;
+    is_foef |= ( (eCount * eSize) != n_data ); // a t'on atteint la fin du fichier ?
+    return (n_data / eSize); // nombre d'éléments lu et NON PAS le nombre de bytes !
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+void file_gz_reader::close()
+{
+    gzclose(gzfp);
+    is_fopen = false;
 }
 //
 //

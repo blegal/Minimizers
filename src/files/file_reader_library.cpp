@@ -1,8 +1,8 @@
 #include "file_reader_library.hpp"
-#include "bz2/file_bz2_reader.hpp"
-#include "gz/file_gz_reader.hpp"
-#include "lz4/file_lz4_reader.hpp"
-#include "raw/file_raw_reader.hpp"
+#include "bz2/reader/file_bz2_reader.hpp"
+#include "gz/reader/file_gz_reader.hpp"
+#include "lz4/reader/file_lz4_reader.hpp"
+#include "raw/reader/file_raw_reader.hpp"
 
 file_reader* file_reader_library::allocate(const std::string& i_file)
 {
@@ -22,21 +22,17 @@ file_reader* file_reader_library::allocate(const std::string& i_file)
     {
         reader = new file_lz4_reader(i_file);
     }
-    else if(
-            (i_file.substr(i_file.find_last_of(".") + 1) == "fastx") ||
-            (i_file.substr(i_file.find_last_of(".") + 1) == "fasta") ||
-            (i_file.substr(i_file.find_last_of(".") + 1) == "fastq") ||
-            (i_file.substr(i_file.find_last_of(".") + 1) == "fna")
-            )
+    else
     {
         reader = new file_raw_reader(i_file);
     }
+/*
     else
     {
         printf("(EE) File extension is not supported (%s)\n", i_file.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
-
+*/
     return reader;
 }
