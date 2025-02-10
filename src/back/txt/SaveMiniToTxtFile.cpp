@@ -66,7 +66,7 @@ bool SaveMiniToTxtFile_v2(const std::string filename, const std::vector<uint64_t
     printf("(II)\n");
     printf("(II) Saving minimizer data set in [%s]\n", filename.c_str());
     const int n_lines = list_hash.size();
-    progressbar *progress = progressbar_new("Saving minimizer values (TXT)", 100);
+    //progressbar *progress = progressbar_new("Saving minimizer values (TXT)", 100);
     double start_time = omp_get_wtime();
 
     std::string n_file = filename;
@@ -113,8 +113,8 @@ bool SaveMiniToTxtFile_v2(const std::string filename, const std::vector<uint64_t
             cnt = 0;
         }
 
-        if( y%prog_step == 0)
-            progressbar_inc(progress);
+        //if( y%prog_step == 0)
+        //    progressbar_inc(progress);
     }
 
     //
@@ -129,7 +129,7 @@ bool SaveMiniToTxtFile_v2(const std::string filename, const std::vector<uint64_t
     fclose( f );
     double end_time = omp_get_wtime();
 
-    progressbar_finish(progress);
+    //progressbar_finish(progress);
 
     printf("(II) - Execution time    = %f\n", end_time - start_time);
     return true;
