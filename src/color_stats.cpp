@@ -114,17 +114,12 @@ int main(int argc, char *argv[]) {
     // On estime les parametres qui vont être employés par la suite
     //
 
-//  uint64_t n_minimizr;
     uint64_t n_uint64_c;
     if( n_colors < 64  ){
         n_uint64_c  = 1;
-//      n_minimizr  = n_elements / (1 + n_uint64_c);
     }else{
         n_uint64_c  = ((n_colors + 63) / 64);
-//      n_minimizr  = n_elements / (1 + n_uint64_c);
     }
-//  const uint64_t size_bytes  = get_file_size(ifile);
-//  const uint64_t n_elements  = size_bytes / sizeof(uint64_t);
 
     const int eSize = 1 + n_uint64_c;
 
@@ -142,7 +137,6 @@ int main(int argc, char *argv[]) {
     // On ouvre un fichier "virtuel" pour acceder aux informations compressées ou pas
     //
     file_reader* reader = file_reader_library::allocate( ifile );
-//  FILE* f = fopen( ifile.c_str(), "r" );
     if( reader->is_open() == false )
     {
         printf("(EE) An error corrured while openning the file (%s)\n", ifile.c_str());
