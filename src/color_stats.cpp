@@ -1,17 +1,13 @@
 #include <cstdio>
-#include <cstdlib>
-#include <fstream>
 #include <vector>
-#include <chrono>
 #include <algorithm>
 #include <iostream>
 #include <omp.h>
-#include <sstream>
 #include <getopt.h>
 #include <sys/stat.h>
-#include <dirent.h>
 
 #include "./files/file_reader_library.hpp"
+#include "./tools/CTimer.hpp"
 
 uint64_t get_file_size(const std::string& filen) {
     struct stat file_status;
@@ -51,6 +47,8 @@ inline uint64_t popcount_u64_builtin(const uint64_t val)
 }
 
 int main(int argc, char *argv[]) {
+
+    CTimer time_m(true);
 
     std::string ifile;
     uint64_t n_colors = 0;
@@ -156,8 +154,6 @@ int main(int argc, char *argv[]) {
     //
     // On parcours l'ensemble des minimisers
     //
-    auto t1 = std::chrono::high_resolution_clock::now();
-
     uint64_t n_elements = 0;
     while( reader->is_eof() == false )
     {
@@ -225,9 +221,7 @@ int main(int argc, char *argv[]) {
 
     printf("+------+------------+--------+---------+\n");
 
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> ms_double = t2 - t1;
-    double ms_time = ms_double.count();
+    double ms_time = time_m.get_time_ms();
     if( ms_time > 1000.0 )
         std::cout << "Elapsed time : " << (ms_time/1000.0) << "s\n";
     else
