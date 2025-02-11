@@ -12,18 +12,8 @@
 #include "./merger/merger_in.hpp"
 
 #include "./tools/colors.hpp"
-
-
-//
-//  Récupère la taille en octet du fichier passé en paramètre
-//
-uint64_t get_file_size(const std::string& filen) {
-    struct stat file_status;
-    if (stat(filen.c_str(), &file_status) < 0) {
-        return 0;
-    }
-    return file_status.st_size;
-}
+#include "./tools/CTimer.hpp"
+#include "./tools/file_stats.hpp"
 
 std::string to_number(int value, const int maxv)
 {
@@ -94,7 +84,8 @@ std::string shorten(const std::string fname, const int length)
 
 int main(int argc, char *argv[])
 {
-    const auto prog_start = std::chrono::steady_clock::now();
+    CTimer timer_full( true );
+//  const auto prog_start = std::chrono::steady_clock::now();
 
     //
     //
@@ -359,7 +350,8 @@ int main(int argc, char *argv[])
         else
             printf("(II) - Limited memory mode : false\n");
 
-        const auto start = std::chrono::steady_clock::now();
+        CTimer minzr_timer( true );
+//      const auto start = std::chrono::steady_clock::now();
 
         //
         // On predimentionne le vecteur de sortie car on connait sa taille. Cela evite les
@@ -367,58 +359,63 @@ int main(int argc, char *argv[])
         //
         n_files.resize( l_files.size() );
 
+        int counter = 0;
         omp_set_num_threads(threads_minz);
 #pragma omp parallel for default(shared)
         for(int i = 0; i < l_files.size(); i += 1)
         {
-            const auto start_mzr = std::chrono::steady_clock::now();
+//            const auto start_mzr = std::chrono::steady_clock::now();
+            CTimer minimizer_t( true );
 
             //
             // On mesure la taille des fichiers d'entrée
             //
-            const std::string i_file = l_files[i];
-            const uint64_t f_size    = get_file_size(i_file);
-            const uint64_t size_mb   = f_size / 1024 / 1024;
-            const std::string o_file = "data_n" + to_number(i, (int)l_files.size()) + ".c0";
-            in_mbytes += size_mb;
+            const file_stats i_file( l_files[i] );
+            const std::string t_file = "data_n" + to_number(i, (int)l_files.size()) + ".c0";
+            in_mbytes += i_file.size_mb;
 
             /////
             if( limited_memory == true )
-                minimizer_processing_v3(i_file, o_file, algo, ram_value, true, false, false);
+                minimizer_processing_v3(i_file.name, t_file, algo, ram_value, true, false, false);
             else
-                minimizer_processing_v2(i_file, o_file, algo, ram_value, true, false, false);
+                minimizer_processing_v2(i_file.name, t_file, algo, ram_value, true, false, false);
             /////
 
 
             //
             // On mesure la taille du fichier de sortie
             //
-            const uint64_t o_size    = get_file_size(o_file);
-            const uint64_t sizo_mb   = o_size / 1024 / 1024;
-            ou_mbytes += sizo_mb;
+            const file_stats o_file(t_file);
+//          const uint64_t o_size    = get_file_size(t_file);
+//          const uint64_t sizo_mb   = o_size / 1024 / 1024;
+            ou_mbytes += o_file.size_mb;
             if(verbose_flag == true )
             {
                 //
                 // Mesure du temps d'execution
                 //
-                const auto  end_mzr = std::chrono::steady_clock::now();
-                const float e_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_mzr - start_mzr).count() / 1000.f;
-                std::string nname = shorten(i_file, 32);
-                printf("%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, nname.c_str(), size_mb, o_file.c_str(), sizo_mb, e_time);
+//              const auto  end_mzr = std::chrono::steady_clock::now();
+//              const float e_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_mzr - start_mzr).count() / 1000.f;
+                std::string nname = shorten(i_file.name, 32);
+                counter += 1;
+                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, l_files.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
 
             }
 
             /////
-            n_files[i] = o_file; // on stocke le nom du fichier que l'on vient de produire
+            n_files[i] = o_file.name; // on stocke le nom du fichier que l'on vient de produire
             /////
         }
         l_files = n_files;
         n_files.clear();
 
+        //
+        //
+        //
         std::sort(l_files.begin(), l_files.end());
 
-        const auto  end = std::chrono::steady_clock::now();
-        const float elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.f;
+//        const auto  end = std::chrono::steady_clock::now();
+        const float elapsed = minzr_timer.get_time_sec();
         printf("(II) - Information loaded from files : %6d MB\n", (int)(in_mbytes));
         printf("(II)   Information wrote to files    : %6d MB\n", (int)(ou_mbytes));
         printf("(II) - Information throughput (in)   : %6d MB/s\n", (int)((float)(in_mbytes) / elapsed));
@@ -463,59 +460,37 @@ int main(int argc, char *argv[])
         for(int ll = 0; ll < l_files.size() - 1; ll += 2)
         {
             const auto start_file = std::chrono::steady_clock::now();
-            const std::string i_file_1 = l_files[ll   ];
-            const std::string i_file_2 = l_files[ll + 1];
-            const std::string o_file   = "data_n" + to_number(ll/2, l_files.size()/2) + "." + std::to_string(2 * colors) + "c";
+            const file_stats i_file_1( l_files[ll    ] );
+            const file_stats i_file_2( l_files[ll + 1] );
+            const std::string t_file   = "data_n" + to_number(ll/2, l_files.size()/2) + "." + std::to_string(2 * colors) + "c";
 
-            const uint64_t i1_size   = get_file_size(i_file_1);
-            const uint64_t siz1_kb   = i1_size / 1024;
-            const uint64_t siz1_mb   = siz1_kb / 1024;
+            in_mbytes += i_file_1.size_mb;
+            in_mbytes += i_file_2.size_mb;
 
-            const uint64_t i2_size   = get_file_size(i_file_2);
-            const uint64_t siz2_kb   = i2_size / 1024;
-            const uint64_t siz2_mb   = siz2_kb / 1024;
-
-            in_mbytes += siz1_mb;
-            in_mbytes += siz2_mb;
-
-//            printf("| %20s | + | %20s | %d |\n", i_file_1.c_str(), i_file_2.c_str(), colors);
-
-            merger_in( i_file_1, i_file_2, o_file, colors, colors);    // couleurs homogenes
+            merger_in( i_file_1.name, i_file_2.name, t_file, colors, colors);    // couleurs homogenes
 
             if(
                     (keep_merge_files == false) && !((skip_minimizer_step || keep_minimizer_files) && (colors == 1)) ) // sinon on supprime nos fichier d'entrée !
             {
-                std::remove( i_file_1.c_str() ); // delete file
-                std::remove( i_file_2.c_str() ); // delete file
+                std::remove( i_file_1.name.c_str() ); // delete file
+                std::remove( i_file_2.name.c_str() ); // delete file
             }
 
-            const uint64_t o_size    = get_file_size(o_file);
-            const uint64_t sizo_kb   = o_size  / 1024;
-            const uint64_t sizo_mb   = sizo_kb / 1024;
-
-            ou_mbytes += siz2_mb;
+            const file_stats o_file( t_file );
+            ou_mbytes += o_file.size_mb;
 
             //
             //
             //
-            //n_files.push_back( o_file );
-            n_files[ll/2] = o_file;
+            n_files[ll/2] = o_file.name;
 
             if(verbose_flag == true ){
-                if     ( siz1_kb < 10 ) printf("%6d | %14s [%5lld B ]   ", cnt, i_file_1.c_str(), i1_size);
-                else if( siz1_mb < 10 ) printf("%6d | %14s [%5lld KB]   ", cnt, i_file_1.c_str(), siz1_kb);
-                else                    printf("%6d | %14s [%5lld MB]   ", cnt, i_file_1.c_str(), siz1_mb);
-                //
-                if     ( siz2_kb < 10 ) printf("+   %14s [%5lld B ]   == MERGE =>   ", i_file_2.c_str(), i2_size);
-                else if( siz2_mb < 10 ) printf("+   %14s [%5lld KB]   == MERGE =>   ", i_file_2.c_str(), siz2_kb);
-                else                    printf("+   %14s [%5lld MB]   == MERGE =>   ", i_file_2.c_str(), siz2_mb);
-                //
-                if     ( sizo_kb < 10 ) printf("%14s [%5lld B ]  ", o_file.c_str(), o_size);
-                else if( sizo_mb < 10 ) printf("%14s [%5lld KB]  ", o_file.c_str(), sizo_kb);
-                else                    printf("%14s [%5lld MB]  ", o_file.c_str(), sizo_mb);
-            }
-
-            if(verbose_flag == true ){
+                printf("%6d |", cnt);
+                i_file_1.printf_size();
+                printf("   +   ");
+                i_file_2.printf_size();
+                printf("   == MERGE =>   ");
+                o_file.printf_size();
                 const auto  end_file = std::chrono::steady_clock::now();
                 const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
                 printf("in  %6.2fs\n", elapsed_file);
@@ -598,10 +573,13 @@ int main(int argc, char *argv[])
     if( verbose_flag )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
+    //
+    //
+    //
     if( vrac_names.size() > 1 )
     {
         printf("(II) Comb-based merging of sorted minimizer files\n");
-        const auto start_merge_2nd = std::chrono::steady_clock::now();
+        CTimer timer_merge( true );
 
         int cnt = 0;
         //
@@ -635,7 +613,7 @@ int main(int argc, char *argv[])
             int r_color_1   = vrac_real_color[1];
             int r_color_2   = vrac_real_color[0];
             int real_color  = r_color_1 + r_color_2;
-            int merge_color = color_1 + color_2;
+            int merge_color =   color_1   + color_2;
 
             printf("- %20.20s (%d) + %20.20s (%d)\n", i_file_1.c_str(), r_color_1, i_file_2.c_str(), r_color_2);
 
@@ -678,16 +656,17 @@ int main(int argc, char *argv[])
                 std::remove( i_file_2.c_str() ); // delete file
             }
         }
-        const auto  end_merge_2nd = std::chrono::steady_clock::now();
-        const float elapsed_merge_2nd = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_merge_2nd - start_merge_2nd).count() / 1000.f;
-        printf("(II) - Execution time : %1.2f seconds\n", elapsed_merge_2nd);
+//      const auto  end_merge_2nd = std::chrono::steady_clock::now();
+//      const float elapsed_merge_2nd = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_merge_2nd - start_merge_2nd).count() / 1000.f;
+        printf("(II) - Execution time : %1.2f seconds\n", timer_merge.get_time_sec());
         printf("(II)\n");
     }
 
+    //
+    //
+    //
     if( vrac_names.size() == 1 )
     {
-//      printf("> %5d | %20s | level = %6d ||\n", 0, vrac_names[0].c_str(), vrac_levels[0]);
-
         const std::string file   = vrac_names[0]; // le plus grand est tjs le second
         const int real_color     = vrac_real_color[0];
         const std::string o_file = file_out + "." + std::to_string(real_color) + "c";
@@ -702,10 +681,8 @@ int main(int argc, char *argv[])
     //
     // Il faudrait que l'on gere les fichiers que l'on a mis de coté lors du processus de fusion...
     //
-    const auto  prog_end = std::chrono::steady_clock::now();
-    const float total_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(prog_end - prog_start).count() / 1000.f;
     printf("(II)\n");
-    printf("(II) - Total execution time : %1.2f seconds\n", total_time);
+    printf("(II) - Total execution time : %1.2f seconds\n", timer_full.get_time_sec());
 
     return 0;
 }

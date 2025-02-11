@@ -243,7 +243,7 @@ bool read_fastx_gz_file::reload()
     }
 
     const int read_req = (buff_size - reste);
-    const int nread = n_data = gzread(streaz, buffer + reste,  read_req * sizeof(char));
+    const int nread = gzread(streaz, buffer + reste,  read_req * sizeof(char));
     if( n_data == Z_STREAM_END ) {
 //      warning_section();
         printf("(EE) Z_STREAM_END\n");

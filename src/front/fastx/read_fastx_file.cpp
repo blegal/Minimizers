@@ -155,39 +155,25 @@ std::tuple<int, bool> read_fastx_file::next_sequence(char* n_kmer, int buffer_si
             return next_sequence(n_kmer, buffer_size, true);
     }
 
-    //classic loop, add nucleotides to seq until header or 'N'
-    int cnt = 0;
-    while (cnt < buffer_size){
-        if (c_ptr >= n_data){ //check buffer empty ?
-            file_ended = !reload();
-            if (file_ended) return {cnt, _internal_};
-        }
-        
-        //verify correct char
-        if (buffer[c_ptr] == 'A' || buffer[c_ptr] == 'a' || 
-            buffer[c_ptr] == 'C' || buffer[c_ptr] == 'c' || 
-            buffer[c_ptr] == 'G' || buffer[c_ptr] == 'g' || 
-            buffer[c_ptr] == 'T' || buffer[c_ptr] == 't' || 
-            buffer[c_ptr] == 'U' || buffer[c_ptr] == 'u'){
-            n_kmer[cnt++] = buffer[c_ptr++];
-        }
 
-        //ignore newlines
-        else if (buffer[c_ptr] == '\n'){
-            c_ptr += 1;
-            continue;
-        }
-
-        //found a header 
-        else if (buffer[c_ptr] == '>' || buffer[c_ptr] == '+' || buffer[c_ptr] == '@' || buffer[c_ptr] == '='){
-            return {cnt, _internal_};
-
-        //found an intruder, or eof
-        } else {
-            return {cnt, _internal_};
-        }
-        
+    int cnt = 0;                                        // On recoipie les données que l'on souhaite
+    while( buffer[c_ptr] != '\n' )                      // transmettre a la fonction appelante
+    {
+        n_kmer[cnt++] = buffer[c_ptr++];
     }
+    n_kmer[cnt] = 0;                                    // On rajoute un caractere fin de string
+    c_ptr      += 1;                                    // pour des raisons de compatibilité (strlen)
+
+    n_lines    += 1;
+
+    //
+    // on detecte le moment ou l'on arrive a la fin du fichier
+    //
+    file_ended = (c_ptr == n_data) && (n_data != buff_size);
+
+    //
+    // On indique que la ligne actuelle est la continuité de la séquence précédente
+    //
     return {cnt, _internal_};
 }
 //
