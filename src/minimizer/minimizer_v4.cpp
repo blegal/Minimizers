@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#include "../front/fastx/read_fastx_file.hpp"
+#include "../front/fastx/read_fastx_file_no_N.hpp"
 #include "../front/fastx_gz/read_fastx_gz_file.hpp"
 #include "../front/fastx_bz2/read_fastx_bz2_file.hpp"
 #include "../front/fastx_lz4/read_fastx_lz4_file.hpp"
@@ -88,7 +88,7 @@ void minimizer_processing_v4(
             (i_file.substr(i_file.find_last_of(".") + 1) == "fna")
             )
     {
-        reader = new read_fastx_file(i_file);
+        reader = new read_fastx_file_no_N(i_file);
     }
     else
     {
@@ -157,10 +157,12 @@ void minimizer_processing_v4(
             current_mmer &= mask;
             cur_inv_mmer >>= 2;
             cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (mmer - 1))); // cf Yoann
+            /* std::cerr << "i " << cnt << " ptr_kmer[cnt] " << ptr_kmer[cnt] << " encoded " << encoded << "\n";
+            std::cerr << "\tcurrent_mmer " << current_mmer << "\n\tcur_inv_mmer " << cur_inv_mmer << "\n"; */
             cnt          += 1;
         }
 
-
+        
         // PREMIER K-MER
         uint64_t minv = UINT64_MAX;
         for(int m_pos = 0; m_pos <= z; m_pos += 1)
@@ -172,11 +174,16 @@ void minimizer_processing_v4(
             current_mmer &= mask;
             cur_inv_mmer >>= 2;
             cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (mmer - 1))); // cf Yoann
-
+            
             const uint64_t canon  = (current_mmer < cur_inv_mmer) ? current_mmer : cur_inv_mmer;
 
             uint64_t tab[2];
             CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
+
+            /* std::cerr << "i " << cnt << " ptr_kmer[cnt] " << ptr_kmer[cnt] << " encoded " << encoded << "\n";
+            std::cerr << "\tcurrent_mmer " << current_mmer << "\n\tcur_inv_mmer " << cur_inv_mmer << "\n\t chosen " << canon << "\n";
+            std::cerr << "\t hash : " << tab[0] << "\n"; */
+
             const uint64_t s_hash = tab[0];
             buffer[m_pos]         = s_hash; // on memorise le hash du mmer
             minv                  = (s_hash < minv) ? s_hash : minv;
@@ -186,13 +193,15 @@ void minimizer_processing_v4(
         //1st kmer done
         if( n_minizer == 0 ){
             liste_mini[n_minizer++] = minv;
+            //std::cerr << "\t\t\t ======== > pushed " << minv << "\n"; 
         }else if( liste_mini[n_minizer-1] != minv ){
             liste_mini[n_minizer++] = minv;
+            //std::cerr << "\t\t\t ======== > pushed " << minv << "\n"; 
         }else{
             n_skipper += 1;
         }
 
-
+        int cntt = 31;
         //ALL OTHER KMERS
         int kmerStartIdx  = 1;
         int nELements     = std::get<0>(mTuple) - kmer + 1;
@@ -202,6 +211,7 @@ void minimizer_processing_v4(
         {
             for(int k_pos = kmerStartIdx; k_pos < nELements; k_pos += 1) // On traite le reste des k-mers
             {
+                cntt++;
                 const uint64_t encoded = ((ptr_kmer[cnt] >> 1) & 0b11); // conversion ASCII => 2bits (Yoann)
                 current_mmer <<= 2;                                     // fonctionne pour les MAJ et les MIN
                 current_mmer |= encoded;
@@ -213,6 +223,12 @@ void minimizer_processing_v4(
 
                 uint64_t tab[2];
                 CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
+
+                /* std::cerr << "i " << cnt << " ptr_kmer[cnt] " << ptr_kmer[cnt] << " encoded " << encoded << "\n";
+                std::cerr << "\tcurrent_mmer " << current_mmer << "\n\tcur_inv_mmer " << cur_inv_mmer << "\n\t chosen " << canon << "\n";
+                std::cerr << "\t hash : " << tab[0] << "\n"; */
+
+
                 const uint64_t s_hash = tab[0];
                 minv                  = (s_hash < minv) ? s_hash : minv;
 
@@ -235,6 +251,7 @@ void minimizer_processing_v4(
 
                 if( liste_mini[n_minizer-1] != minv ){
                     liste_mini[n_minizer++] = minv;
+                    //std::cerr << "\t\t\t ======== > pushed " << minv << "\n"; 
 
                     if( n_minizer >= (max_in_ram - 2) )
                     {
@@ -265,6 +282,7 @@ void minimizer_processing_v4(
             }
 
             // On lance le chargement du buffer suivant
+            //std::cerr << "i " << cntt << "\n";
             mTuple        = reader->next_sequence(seq_value, 4096);
             kmerStartIdx  = 0;
             nELements     = std::get<0>(mTuple);
@@ -316,6 +334,10 @@ void minimizer_processing_v4(
 
     if( file_save_debug ){
         SaveMiniToTxtFile_v2(o_file + ".non-sorted-v2.txt", liste_mini);
+    }
+
+    if( file_save_output ){
+        SaveRawToFile(o_file + "_unsorted", liste_mini);
     }
 
     if( verbose_flag == true ) {

@@ -1,4 +1,4 @@
-#include "read_fastx_file.hpp"
+#include "read_fastx_file_no_N.hpp"
 #include "../../tools/colors.hpp"
 #include <cstdint>
 #include <array>
@@ -9,7 +9,7 @@
 //
 //
 //
-read_fastx_file::read_fastx_file(const std::string filen)
+read_fastx_file_no_N::read_fastx_file_no_N(const std::string filen)
 {
     buffer = new char[buff_size];
 
@@ -50,7 +50,7 @@ read_fastx_file::read_fastx_file(const std::string filen)
 //
 //
 //
-read_fastx_file::~read_fastx_file()
+read_fastx_file_no_N::~read_fastx_file_no_N()
 {
     delete[] buffer;
     fclose( f );
@@ -62,7 +62,7 @@ read_fastx_file::~read_fastx_file()
 //
 //
 //
-bool read_fastx_file::next_sequence(char* n_kmer)
+bool read_fastx_file_no_N::next_sequence(char* n_kmer)
 {
     if( file_ended == true )
     {
@@ -117,7 +117,7 @@ bool read_fastx_file::next_sequence(char* n_kmer)
 //
 //
 //
-std::tuple<int, bool> read_fastx_file::next_sequence(char* n_kmer, int buffer_size, const bool _internal_)
+std::tuple<int, bool> read_fastx_file_no_N::next_sequence(char* n_kmer, int buffer_size, const bool _internal_)
 {
     
     if( file_ended == true || is_eof())
@@ -198,7 +198,7 @@ std::tuple<int, bool> read_fastx_file::next_sequence(char* n_kmer, int buffer_si
 //
 //
 
-bool read_fastx_file::reload(){
+bool read_fastx_file_no_N::reload(){
     n_data = fread(buffer, sizeof(char), buff_size, f);
     if (n_data == 0) return false;
     no_more_load = (n_data != buff_size);
@@ -212,7 +212,7 @@ bool read_fastx_file::reload(){
 //
 //
 //
-bool read_fastx_file::is_eof()
+bool read_fastx_file_no_N::is_eof()
 {
     if( (no_more_load == true) && (c_ptr >= n_data) )
         return true;
