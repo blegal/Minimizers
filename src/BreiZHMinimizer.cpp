@@ -9,6 +9,7 @@
 
 #include "./minimizer/minimizer_v2.hpp"
 #include "./minimizer/minimizer_v3.hpp"
+#include "./minimizer/minimizer_v4.hpp"
 #include "./merger/merger_in.hpp"
 
 #include "./tools/colors.hpp"
@@ -376,7 +377,7 @@ int main(int argc, char *argv[])
 
             /////
             if( limited_memory == true )
-                minimizer_processing_v3(i_file.name, t_file, algo, ram_value, true, false, false);
+                minimizer_processing_v4(i_file.name, t_file, algo, ram_value, true, false, false);
             else
                 minimizer_processing_v2(i_file.name, t_file, algo, ram_value, true, false, false);
             /////

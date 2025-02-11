@@ -157,8 +157,6 @@ void minimizer_processing_v4(
             current_mmer &= mask;
             cur_inv_mmer >>= 2;
             cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (mmer - 1))); // cf Yoann
-            /* std::cerr << "i " << cnt << " ptr_kmer[cnt] " << ptr_kmer[cnt] << " encoded " << encoded << "\n";
-            std::cerr << "\tcurrent_mmer " << current_mmer << "\n\tcur_inv_mmer " << cur_inv_mmer << "\n"; */
             cnt          += 1;
         }
 
@@ -180,10 +178,6 @@ void minimizer_processing_v4(
             uint64_t tab[2];
             CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
 
-            /* std::cerr << "i " << cnt << " ptr_kmer[cnt] " << ptr_kmer[cnt] << " encoded " << encoded << "\n";
-            std::cerr << "\tcurrent_mmer " << current_mmer << "\n\tcur_inv_mmer " << cur_inv_mmer << "\n\t chosen " << canon << "\n";
-            std::cerr << "\t hash : " << tab[0] << "\n"; */
-
             const uint64_t s_hash = tab[0];
             buffer[m_pos]         = s_hash; // on memorise le hash du mmer
             minv                  = (s_hash < minv) ? s_hash : minv;
@@ -193,10 +187,8 @@ void minimizer_processing_v4(
         //1st kmer done
         if( n_minizer == 0 ){
             liste_mini[n_minizer++] = minv;
-            //std::cerr << "\t\t\t ======== > pushed " << minv << "\n"; 
         }else if( liste_mini[n_minizer-1] != minv ){
             liste_mini[n_minizer++] = minv;
-            //std::cerr << "\t\t\t ======== > pushed " << minv << "\n"; 
         }else{
             n_skipper += 1;
         }
@@ -224,11 +216,6 @@ void minimizer_processing_v4(
                 uint64_t tab[2];
                 CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
 
-                /* std::cerr << "i " << cnt << " ptr_kmer[cnt] " << ptr_kmer[cnt] << " encoded " << encoded << "\n";
-                std::cerr << "\tcurrent_mmer " << current_mmer << "\n\tcur_inv_mmer " << cur_inv_mmer << "\n\t chosen " << canon << "\n";
-                std::cerr << "\t hash : " << tab[0] << "\n"; */
-
-
                 const uint64_t s_hash = tab[0];
                 minv                  = (s_hash < minv) ? s_hash : minv;
 
@@ -251,7 +238,6 @@ void minimizer_processing_v4(
 
                 if( liste_mini[n_minizer-1] != minv ){
                     liste_mini[n_minizer++] = minv;
-                    //std::cerr << "\t\t\t ======== > pushed " << minv << "\n"; 
 
                     if( n_minizer >= (max_in_ram - 2) )
                     {
@@ -282,7 +268,6 @@ void minimizer_processing_v4(
             }
 
             // On lance le chargement du buffer suivant
-            //std::cerr << "i " << cntt << "\n";
             mTuple        = reader->next_sequence(seq_value, 4096);
             kmerStartIdx  = 0;
             nELements     = std::get<0>(mTuple);
@@ -334,10 +319,6 @@ void minimizer_processing_v4(
 
     if( file_save_debug ){
         SaveMiniToTxtFile_v2(o_file + ".non-sorted-v2.txt", liste_mini);
-    }
-
-    if( file_save_output ){
-        SaveRawToFile(o_file + "_unsorted", liste_mini);
     }
 
     if( verbose_flag == true ) {
@@ -393,13 +374,6 @@ void minimizer_processing_v4(
     if( file_save_output ){
         SaveRawToFile(o_file, liste_mini);
     }
-
-    //for (uint64_t minmer : liste_mini) std::cerr << minmer << "\n";
-    
-
-    std::cerr << "Number of mmer: " << n_minizer << "\n";
-    std::cerr << "Number of kmer: " << kmer_cnt << "\n";
-    std::cerr << "Number of skips (same minmer for consecutive kmers): " << n_skipper << "\n";
 
     delete reader;
 

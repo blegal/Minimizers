@@ -126,7 +126,7 @@ endif ()
 project(min_sorter)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
+        #./src/progress/progressbar.cpp
         # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
@@ -166,7 +166,7 @@ target_link_libraries(min_sorter curses)
 project(min_sorter_v2)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
+        #./src/progress/progressbar.cpp
         # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
@@ -214,7 +214,7 @@ target_link_libraries(min_sorter_v2 curses)
 project(min_sorter_v3)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
+        #./src/progress/progressbar.cpp
         # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
@@ -264,7 +264,7 @@ target_link_libraries(min_sorter_v3 curses)
 project(min_sorter_v4)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
+        #./src/progress/progressbar.cpp
         # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
@@ -313,7 +313,7 @@ target_link_libraries(min_sorter_v4 curses)
 project(min_sorter_ref)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
+        #./src/progress/progressbar.cpp
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
@@ -351,7 +351,7 @@ target_link_libraries(min_sorter_ref curses)
 project(merge)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
+        #./src/progress/progressbar.cpp
         ./src/merger/merger_level_s.cpp
         ./src/merger/merger_level_0.cpp
         ./src/merger/merger_level_1.cpp
@@ -412,7 +412,7 @@ project(BreiZHMinimizer)
 
 file(GLOB_RECURSE source_files
         ./src/BreiZHMinimizer.cpp
-        ./src/progress/progressbar.cpp
+        ##./src/progress/progressbar.cpp
         # File readers
         src/files/bz2/reader/file_bz2_reader.cpp
         src/files/gz/reader/file_gz_reader.cpp
@@ -442,8 +442,10 @@ file(GLOB_RECURSE source_files
         ./src/minimizer/deduplication.cpp
         ./src/minimizer/minimizer_v2.cpp
         ./src/minimizer/minimizer_v3.cpp
+        ./src/minimizer/minimizer_v4.cpp
         # Front-end parsers
         src/front/fastx/read_fastx_file.cpp
+        src/front/fastx/read_fastx_file_no_N.cpp
         src/front/fastx_gz/read_fastx_gz_file.cpp
         src/front/fastx_bz2/read_fastx_bz2_file.cpp
         src/front/fastx_lz4/read_fastx_lz4_file.cpp
@@ -496,6 +498,7 @@ target_include_directories(extract_all_colors
 
 ########################################################################################################################
 
+#[===[
 project(color_stats)
 
 file(GLOB_RECURSE source_files
@@ -525,6 +528,7 @@ target_include_directories(color_stats
 )
 target_link_libraries(color_stats z)
 target_link_libraries(color_stats bz2)
+]===]
 
 ########################################################################################################################
 
