@@ -126,7 +126,6 @@ endif ()
 project(min_sorter)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        #./src/progress/progressbar.cpp
         # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
@@ -159,14 +158,12 @@ target_include_directories(min_sorter
 target_link_libraries(min_sorter pthread)
 target_link_libraries(min_sorter z)
 target_link_libraries(min_sorter bz2)
-target_link_libraries(min_sorter curses)
 
 ########################################################################################################################
 
 project(min_sorter_v2)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        #./src/progress/progressbar.cpp
         # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
@@ -207,14 +204,12 @@ target_include_directories(min_sorter_v2
 target_link_libraries(min_sorter_v2 pthread)
 target_link_libraries(min_sorter_v2 bz2)
 target_link_libraries(min_sorter_v2 z)
-target_link_libraries(min_sorter_v2 curses)
 
 ########################################################################################################################
 
 project(min_sorter_v3)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        #./src/progress/progressbar.cpp
         # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
@@ -256,7 +251,6 @@ target_include_directories(min_sorter_v3
 target_link_libraries(min_sorter_v3 pthread)
 target_link_libraries(min_sorter_v3 bz2)
 target_link_libraries(min_sorter_v3 z)
-target_link_libraries(min_sorter_v3 curses)
 
 
 ########################################################################################################################
@@ -264,7 +258,6 @@ target_link_libraries(min_sorter_v3 curses)
 project(min_sorter_v4)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        #./src/progress/progressbar.cpp
         # sorting algorithms
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
@@ -306,14 +299,12 @@ target_include_directories(min_sorter_v4
 target_link_libraries(min_sorter_v4 pthread)
 target_link_libraries(min_sorter_v4 bz2)
 target_link_libraries(min_sorter_v4 z)
-target_link_libraries(min_sorter_v4 curses)
 
 ########################################################################################################################
 
 project(min_sorter_ref)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        #./src/progress/progressbar.cpp
         ./src/sorting/std_4cores/std_4cores.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
@@ -344,14 +335,12 @@ target_include_directories(min_sorter_ref
 target_link_libraries(min_sorter_ref pthread)
 target_link_libraries(min_sorter_ref bz2)
 target_link_libraries(min_sorter_ref z)
-target_link_libraries(min_sorter_ref curses)
 
 ########################################################################################################################
 
 project(merge)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        #./src/progress/progressbar.cpp
         ./src/merger/merger_level_s.cpp
         ./src/merger/merger_level_0.cpp
         ./src/merger/merger_level_1.cpp
@@ -371,7 +360,6 @@ target_include_directories(merge
 target_link_libraries(merge pthread)
 target_link_libraries(merge bz2)
 target_link_libraries(merge z)
-target_link_libraries(merge curses)
 
 ########################################################################################################################
 
@@ -412,7 +400,6 @@ project(BreiZHMinimizer)
 
 file(GLOB_RECURSE source_files
         ./src/BreiZHMinimizer.cpp
-        ##./src/progress/progressbar.cpp
         # File readers
         src/files/bz2/reader/file_bz2_reader.cpp
         src/files/gz/reader/file_gz_reader.cpp
@@ -466,7 +453,6 @@ target_include_directories(BreiZHMinimizer
         "${PROJECT_SOURCE_DIR}/../src/headers/"
 )
 
-target_link_libraries(BreiZHMinimizer curses)
 target_link_libraries(BreiZHMinimizer z)
 target_link_libraries(BreiZHMinimizer bz2)
 
@@ -498,7 +484,7 @@ target_include_directories(extract_all_colors
 
 ########################################################################################################################
 
-#[===[
+
 project(color_stats)
 
 file(GLOB_RECURSE source_files
@@ -528,7 +514,6 @@ target_include_directories(color_stats
 )
 target_link_libraries(color_stats z)
 target_link_libraries(color_stats bz2)
-]===]
 
 ########################################################################################################################
 
