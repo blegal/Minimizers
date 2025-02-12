@@ -9,8 +9,6 @@
 #include <sstream>
 #include <getopt.h>
 
-#include "progress/progressbar.h"
-
 #include "front/fastx/read_fastx_file.hpp"
 #include "front/fastx_bz2/read_fastx_bz2_file.hpp"
 
@@ -198,13 +196,6 @@ void minimizer_processing(
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
-
-    progressbar *progress;
-
-    if( verbose_flag == true ) {
-        progress = progressbar_new("Loading k-mers", 100);
-    }
-    const int prog_step = n_lines / 100;
 
     //
     // Allocating the output memory buffer
@@ -458,11 +449,6 @@ void minimizer_processing(
         }
 
         /////////////////////////////////////////////////////////////////////////////////////
-        if( verbose_flag == true ) {
-            if (l_number % prog_step == 0)
-                progressbar_inc(progress);
-        }
-        /////////////////////////////////////////////////////////////////////////////////////
     }
 
     printf("(II) n_minizer         : %10d\n", n_minizer        );
@@ -470,10 +456,7 @@ void minimizer_processing(
     liste_mini.resize(n_minizer);
     printf("(II) liste_mini.size() : %10d\n", liste_mini.size());
     /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progressbar_finish(progress);
-    }
-    /////////////////////////////////////////////////////////////////////////////////////
+
 
     if( verbose_flag == true ) {
         printf("(II) Number of ADN sequences  : %10d\n", n_lines);
@@ -500,9 +483,7 @@ void minimizer_processing(
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progress = progressbar_new("Sorting the minimizer values", 1);
-    }
+
     /////////////////////////////////////////////////////////////////////////////////////
 
     double start_time = omp_get_wtime();
@@ -532,10 +513,7 @@ void minimizer_processing(
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progressbar_inc   (progress);
-        progressbar_finish(progress);
-    }
+
     /////////////////////////////////////////////////////////////////////////////////////
 
     //
@@ -557,19 +535,11 @@ void minimizer_processing(
         printf("(II) Vector deduplication step\n");
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progress = progressbar_new("Processing", 1);
-    }
+
     /////////////////////////////////////////////////////////////////////////////////////
 
     VectorDeduplication( liste_mini );
 
-    /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progressbar_inc   (progress);
-        progressbar_finish(progress);
-    }
     /////////////////////////////////////////////////////////////////////////////////////
 
     if( file_save_debug ){

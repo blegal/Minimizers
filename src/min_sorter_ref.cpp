@@ -4,7 +4,6 @@
 #include <omp.h>
 #include <getopt.h>
 
-#include "progress/progressbar.h"
 #include "hash/CustomMurmurHash3.hpp"
 
 #include "front/fastx/read_fastx_file.hpp"
@@ -255,9 +254,6 @@ int main(int argc, char* argv[])
 
     read_fastx_file fasta_ifile(i_file);
 
-    progressbar *progress = progressbar_new("Loading k-mers",100);
-    const int prog_step = n_lines / 100;
-
     //
     // For all the lines in the file => load and convert
     //
@@ -359,12 +355,7 @@ int main(int argc, char* argv[])
             kmer_cnt += 1;
 
         } // fin de boucle sur les k-mers
-
-        if( l_number%prog_step == 0)
-            progressbar_inc(progress);
     }
-
-    progressbar_finish(progress);
 
     printf("(II) Number of ADN sequences  : %d\n",     n_lines);
     printf("(II) Number of k-mer          : %u\n",     kmer_cnt);

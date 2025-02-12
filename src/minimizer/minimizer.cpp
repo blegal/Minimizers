@@ -1,8 +1,6 @@
 #include "minimizer.hpp"
 #include "deduplication.hpp"
 
-#include "../progress/progressbar.h"
-
 #include "../front/fastx/read_fastx_file.hpp"
 #include "../front/fastx_bz2/read_fastx_bz2_file.hpp"
 
@@ -107,12 +105,6 @@ void minimizer_processing(
         exit( EXIT_FAILURE );
     }
 
-    progressbar *progress;
-
-    if( verbose_flag == true ) {
-        progress = progressbar_new("Loading k-mers", 100);
-    }
-    const int prog_step = n_lines / 100;
 
     //
     // For all the lines in the file => load and convert
@@ -345,20 +337,11 @@ void minimizer_processing(
         // trié...
 
         /////////////////////////////////////////////////////////////////////////////////////
-        if( verbose_flag == true ) {
-            if (l_number % prog_step == 0)
-                progressbar_inc(progress);
-        }
-        /////////////////////////////////////////////////////////////////////////////////////
     }
 
 
     liste_mini.resize(n_minizer);
 
-    /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progressbar_finish(progress);
-    }
     /////////////////////////////////////////////////////////////////////////////////////
 
     if( verbose_flag == true ) {
@@ -385,10 +368,6 @@ void minimizer_processing(
         printf("(II) - Number of samples = %ld\n", liste_mini.size());
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progress = progressbar_new("Sorting the minimizer values", 1);
-    }
     /////////////////////////////////////////////////////////////////////////////////////
 
     double start_time = omp_get_wtime();
@@ -418,11 +397,6 @@ void minimizer_processing(
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progressbar_inc   (progress);
-        progressbar_finish(progress);
-    }
-    /////////////////////////////////////////////////////////////////////////////////////
 
     //
     // En regle général on save le résultat sauf lorsque l'on fait du benchmarking
@@ -444,18 +418,9 @@ void minimizer_processing(
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progress = progressbar_new("Processing", 1);
-    }
-    /////////////////////////////////////////////////////////////////////////////////////
 
     VectorDeduplication( liste_mini );
-
-    /////////////////////////////////////////////////////////////////////////////////////
-    if( verbose_flag == true ) {
-        progressbar_inc   (progress);
-        progressbar_finish(progress);
-    }
+    
     /////////////////////////////////////////////////////////////////////////////////////
 
     if( file_save_debug ){
