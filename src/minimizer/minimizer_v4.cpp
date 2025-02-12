@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "../front/fastx/read_fastx_file_no_N.hpp"
-#include "../front/fastx_gz/read_fastx_gz_file.hpp"
+#include "../front/fastx_gz/read_fastx_gz_file_no_N.hpp"
 #include "../front/fastx_bz2/read_fastx_bz2_file.hpp"
 #include "../front/fastx_lz4/read_fastx_lz4_file.hpp"
 
@@ -75,7 +75,7 @@ void minimizer_processing_v4(
     }
     else if (i_file.substr(i_file.find_last_of(".") + 1) == "gz")
     {
-        reader = new read_fastx_gz_file(i_file);
+        reader = new read_fastx_gz_file_no_N(i_file);
     }
     else if (i_file.substr(i_file.find_last_of(".") + 1) == "lz4")
     {
@@ -193,7 +193,6 @@ void minimizer_processing_v4(
             n_skipper += 1;
         }
 
-        int cntt = 31;
         //ALL OTHER KMERS
         int kmerStartIdx  = 1;
         int nELements     = std::get<0>(mTuple) - kmer + 1;
@@ -203,7 +202,6 @@ void minimizer_processing_v4(
         {
             for(int k_pos = kmerStartIdx; k_pos < nELements; k_pos += 1) // On traite le reste des k-mers
             {
-                cntt++;
                 const uint64_t encoded = ((ptr_kmer[cnt] >> 1) & 0b11); // conversion ASCII => 2bits (Yoann)
                 current_mmer <<= 2;                                     // fonctionne pour les MAJ et les MIN
                 current_mmer |= encoded;

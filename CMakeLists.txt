@@ -269,7 +269,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
         # Front-end parsers
         src/front/fastx/read_fastx_file_no_N.cpp
-        src/front/fastx_gz/read_fastx_gz_file.cpp
+        src/front/fastx_gz/read_fastx_gz_file_no_N.cpp
         src/front/fastx_bz2/read_fastx_bz2_file.cpp
         src/front/fastx_lz4/read_fastx_lz4_file.cpp
         src/front/fastx_lz4/lz4/lz4file.c
@@ -434,6 +434,7 @@ file(GLOB_RECURSE source_files
         src/front/fastx/read_fastx_file.cpp
         src/front/fastx/read_fastx_file_no_N.cpp
         src/front/fastx_gz/read_fastx_gz_file.cpp
+        src/front/fastx_gz/read_fastx_gz_file_no_N.cpp
         src/front/fastx_bz2/read_fastx_bz2_file.cpp
         src/front/fastx_lz4/read_fastx_lz4_file.cpp
         src/front/fastx_lz4/lz4/lz4file.c
