@@ -18,9 +18,9 @@ private:
     int n_lines        = 0;
     bool no_more_load  = false;
     bool file_ended    = false;
-    FILE*   stream;
-    gzFile  streaz;
-    
+
+    gzFile  gzfp;
+
 public:
      read_fastx_gz_file(const std::string filen);
     ~read_fastx_gz_file();

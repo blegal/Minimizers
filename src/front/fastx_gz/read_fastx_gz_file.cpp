@@ -10,27 +10,18 @@
 read_fastx_gz_file::read_fastx_gz_file(const std::string filen)
 {
     buffer = new char[buff_size];
-    stream = fopen( filen.c_str(), "r" );
 
-    if( stream == NULL )
+    gzfp = gzopen(filen.c_str(), "rb");
+    if( gzfp == NULL )
     {
         error_section();
-        printf("(EE) File does not exist (%s))\n", filen.c_str());
+        printf("(EE) It is impossible to open the file (%s))\n", filen.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         reset_section();
         exit( EXIT_FAILURE );
     }
 
-    streaz = gzdopen(fileno(stream), "r");
-    if( streaz == NULL ) {
-        error_section();
-        printf("(EE) An error happens during gzdopen\n");
-        reset_section();
-        exit(EXIT_FAILURE);
-    }
-
-    n_data = gzread(streaz, buffer, buff_size * sizeof(char));
-
+    n_data = gzread(gzfp, buffer, buff_size * sizeof(char));
     if( n_data == Z_STREAM_END ) {
         error_section();
         printf("(EE) Z_STREAM_END\n");
@@ -84,8 +75,7 @@ read_fastx_gz_file::read_fastx_gz_file(const std::string filen)
 read_fastx_gz_file::~read_fastx_gz_file()
 {
     delete[] buffer;
-    gzclose(streaz);
-    fclose ( stream );
+    gzclose(gzfp);
 }
 //
 //
@@ -243,7 +233,7 @@ bool read_fastx_gz_file::reload()
     }
 
     const int read_req = (buff_size - reste);
-    const int nread = gzread(streaz, buffer + reste,  read_req * sizeof(char));
+    const int nread = gzread(gzfp, buffer + reste,  read_req * sizeof(char));
     if( n_data == Z_STREAM_END ) {
 //      warning_section();
         printf("(EE) Z_STREAM_END\n");
