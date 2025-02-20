@@ -65,7 +65,7 @@ read_fastx_gz_file_no_N::read_fastx_gz_file_no_N(const std::string filen)
 
     no_more_load = ( n_data != buff_size );
 
-    if( (buffer[c_ptr] == '>') || (buffer[c_ptr] == '+') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '>') )
+    if ((buffer[c_ptr] == '>') || (buffer[c_ptr] == '@'))
     {
         for(int i = c_ptr; i < n_data; i += 1) {
             if (buffer[i] == '\n')
@@ -163,21 +163,44 @@ std::tuple<int, bool> read_fastx_gz_file_no_N::next_sequence(char* n_kmer, int b
     
 
     //last time left on header, find next sequence and recurse over it
-    if (buffer[c_ptr] == '>' || buffer[c_ptr] == '+' || buffer[c_ptr] == '@' || buffer[c_ptr] == '='){
+    if ((buffer[c_ptr] == '>') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '+'))
+    {
+        //start looking for newline in remaining buffer
         for(int i = c_ptr; i < n_data; i += 1) {
             if (buffer[i] == '\n') {
                 c_ptr      = i + 1;
+
+                if (buffer[c_ptr] == '+'){ //skip fastq quality line
+                    c_ptr += n_qualities;
+                    if (c_ptr >= n_data && !reload()){
+                        return {0, _internal_};
+                        //nothing after quality line
+                    }
+                } 
+
                 return next_sequence(n_kmer, buffer_size, true);
             }
         }
-        reload(); //buffer ended inside header
+
+        //didnt find it yet ? reload buffer and start looking again
+        reload();
         for(int i = c_ptr; i < n_data; i += 1) {
             if (buffer[i] == '\n') {
                 c_ptr      = i + 1;
+
+                if (buffer[c_ptr] == '+'){ //skip fastq quality line
+                    c_ptr += n_qualities;
+                    if (c_ptr >= n_data && !reload()){
+                        return {0, _internal_};
+                        //nothing after quality line
+                    }
+                } 
+
                 return next_sequence(n_kmer, buffer_size, true);
             }
         }
     }
+
 
     //last time left on N, go to next char and recurse over it
     if (!(buffer[c_ptr] == 'A') && !(buffer[c_ptr] == 'a') && 
@@ -186,6 +209,7 @@ std::tuple<int, bool> read_fastx_gz_file_no_N::next_sequence(char* n_kmer, int b
         !(buffer[c_ptr] == 'T') && !(buffer[c_ptr] == 't') && 
         !(buffer[c_ptr] == 'U') && !(buffer[c_ptr] == 'u')){
             c_ptr      += 1; //TODO: look for first non intrus
+            n_qualities += 1; //'N' have qualities aswell
             return next_sequence(n_kmer, buffer_size, true);
     }
 
@@ -204,6 +228,7 @@ std::tuple<int, bool> read_fastx_gz_file_no_N::next_sequence(char* n_kmer, int b
             buffer[c_ptr] == 'T' || buffer[c_ptr] == 't' || 
             buffer[c_ptr] == 'U' || buffer[c_ptr] == 'u'){
             n_kmer[cnt++] = buffer[c_ptr++];
+            n_qualities += 1;
         }
 
         //ignore newlines
@@ -233,10 +258,11 @@ std::tuple<int, bool> read_fastx_gz_file_no_N::next_sequence(char* n_kmer, int b
 //
 bool read_fastx_gz_file_no_N::reload()
 {
+    c_ptr        -= n_data; //skip reste of buffer in case of jump
     n_data = gzread(streaz, buffer,  buff_size * sizeof(char));
     if (n_data == 0) return false;
     no_more_load = (n_data != buff_size);
-    c_ptr        = 0; 
+    
     return true;
 }
 //

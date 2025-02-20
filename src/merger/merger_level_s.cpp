@@ -7,7 +7,7 @@ void merge_level_s(
     std::cout << "merging(" << i_file << ") with nothing => " << o_file << std::endl;
 
     const int64_t _iBuff_ = 64 * 1024;
-    const int64_t _oBuff_ = _iBuff_;
+    const int64_t _oBuff_ = 2 * _iBuff_; // une donnée input + 1 couleur => 2x
 
     uint64_t* ibuff = new uint64_t[_iBuff_];
     uint64_t* obuff = new uint64_t[_oBuff_];

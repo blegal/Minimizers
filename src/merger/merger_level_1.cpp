@@ -5,7 +5,6 @@ void merge_level_1(
         const std::string& ifile_2,
         const std::string& o_file)
 {
-
     const int64_t _iBuff_ = 64 * 1024;
     const int64_t _oBuff_ = 2 * _iBuff_; // 2 fois plus grand car on insere les couleurs
 
@@ -51,26 +50,18 @@ void merge_level_1(
             const uint64_t v2 = in_2[counterB];
 
             if (v1 < v2) {
-                if (v1 != last_value){
-                    dest[ndst++] = v1;
-                    dest[ndst++] = colorDocA;
-//                    printf("un (%3llu, %3llu)...\n", v1, v2);
-                }else{
-                    dest[ndst-1] |= colorDocA;
-//                    printf("ici %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
-                }
-                last_value = v1;
-                counterA  += 1;
+                dest[ndst++] = v1;
+                dest[ndst++] = colorDocA;
+                counterA  += 1;  
+            } else if (v1 > v2) {
+                dest[ndst++] = v2;
+                dest[ndst++] = colorDocB;
+                counterB  += 1;
             } else {
-                if (v2 != last_value){
-                    dest[ndst++] = v2;
-                    dest[ndst++] = colorDocB;
-//                    printf("deux (%3llu, %3llu)...\n", v1, v2);
-                }else{
-                    dest[ndst-1] |= colorDocB;
-//                    printf("la %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
-                }
-                last_value = v2;
+                dest[ndst++] = v1;
+                dest[ndst++] = colorDocA;
+                dest[ndst-1] |= colorDocB;
+                counterA  += 1;
                 counterB  += 1;
             }
         }
@@ -84,44 +75,6 @@ void merge_level_1(
             dest[1] = dest[_oBuff_ - 1]; // processed value is the same (should update the color)
             ndst = 2;
 //          ndst = 0;
-        }
-    }
-
-
-    //
-    // Il faut absolument faire un check pour verifier qu'il n'y a pas de redondance dans le flux
-    // qui n'est pas encore vide sinon on aura un doublon lors du flush !
-    //
-    if (nElementsA == 0) {
-        const uint64_t v2 = in_2[counterB];
-        if (v2 == last_value) {
-            dest[ndst - 1] |= colorDocB;
-            counterB += 1;
-        }
-    }else if (nElementsB == 0) {
-        const uint64_t v1 = in_1[counterA];
-        if (v1 == last_value){
-            dest[ndst-1] |= colorDocA;
-            counterA  += 1;
-        }
-    }
-
-
-    //
-    // Il faut absolument faire un check pour verifier qu'il n'y a pas de redondance dans le flux
-    // qui n'est pas encore vide sinon on aura un doublon lors du flush !
-    //
-    if (nElementsA == 0) {
-        const uint64_t v2 = in_2[counterB];
-        if (v2 == last_value) {
-            dest[ndst - 1] |= colorDocB;
-            counterB += 1;
-        }
-    }else if (nElementsB == 0) {
-        const uint64_t v1 = in_1[counterA];
-        if (v1 == last_value){
-            dest[ndst-1] |= colorDocA;
-            counterA  += 1;
         }
     }
 

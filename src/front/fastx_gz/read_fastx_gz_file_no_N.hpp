@@ -15,6 +15,7 @@ private:
     char* buffer;
     int n_data   = 0;
     int c_ptr    = 0;
+    int n_qualities = 0;
     int n_lines        = 0;
     bool no_more_load  = false;
     bool file_ended    = false;
