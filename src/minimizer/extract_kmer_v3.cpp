@@ -1,5 +1,5 @@
 #include "minimizer_v3.hpp"
-#include "deduplication.hpp"
+#include "../kmer_list/kmer_counter.hpp"
 
 #include "../front/fastx/read_fastx_file.hpp"
 #include "../front/fastx_gz/read_fastx_gz_file.hpp"
@@ -17,13 +17,20 @@
 #include "../sorting/std_4cores/std_4cores.hpp"
 #include "../sorting/crumsort_2cores/crumsort_2cores.hpp"
 
-#include "../merger/merger_level_0.hpp"
+#include "../merger/in_file/merger_level_0.hpp"
+#include "../minimizer/extract_kmer_v3.hpp"
+
+#include "../tools/CTimer/CTimer.hpp"
+
 
 #define MEM_UNIT 64ULL
-
-#define _debug_ 0
-#define _murmurhash_
-
+//
+//
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
 inline uint64_t mask_right(const uint64_t numbits)
 {
     uint64_t mask = -(numbits >= MEM_UNIT) | ((1ULL << numbits) - 1ULL);
@@ -32,27 +39,55 @@ inline uint64_t mask_right(const uint64_t numbits)
 //
 //
 //
-
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+inline char nucleotide(const int index)
+{
+    const char table[] = {'A', 'C', 'T', 'G'};
+    return table[index];
+}
+//
+//
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+void print_kmer(const uint64_t value, const int kmer_size)
+{
+    for(int i = 0; i < kmer_size; i += 1)
+    {
+        const int  car =  value >> (2 * kmer_size - 2 - 2 * i);
+        const char nuc = nucleotide( car & 0x03 );
+        printf("%c", nuc);
+    }
+}
+//
+//
+//
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
 void extract_kmer_v3(
         const std::string& i_file    = "none",
         const std::string& o_file    = "none",
         const std::string& algo      = "crumsort",
+        const int  kmer_size         = 27,
         const int  ram_limit_in_MB   = 1024,
         const bool file_save_output  = true,
         const bool verbose_flag      = false,
         const bool file_save_debug   = false
 )
 {
+    CTimer start_gen( true );
 
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */
     uint64_t max_in_ram = 1024 * 1024* (uint64_t)ram_limit_in_MB / sizeof(uint64_t); // on parle en elements de type uint64_t
-
-    /*
-     * Reading the K value from the first file line
-     */
-    const int kmer = 31;
 
     //
     // On cree le buffer qui va nous permettre de recuperer les
@@ -82,7 +117,8 @@ void extract_kmer_v3(
             (i_file.substr(i_file.find_last_of(".") + 1) == "fastx") ||
             (i_file.substr(i_file.find_last_of(".") + 1) == "fasta") ||
             (i_file.substr(i_file.find_last_of(".") + 1) == "fastq") ||
-            (i_file.substr(i_file.find_last_of(".") + 1) == "fna")
+            (i_file.substr(i_file.find_last_of(".") + 1) == "fna"  ) ||
+            (i_file.substr(i_file.find_last_of(".") + 1) == "fa")
             )
     {
         reader = new read_fastx_file(i_file);
@@ -99,15 +135,21 @@ void extract_kmer_v3(
     //
 
     std::vector<uint64_t> liste_mini( max_in_ram );
-
+    int64_t n_elements = 0;
+    int64_t n_kmers    = 0;
     //
     // Defining counters for statistics
     //
 
-    uint32_t kmer_cnt = 0;
-
     std::tuple<int, bool> mTuple = reader->next_sequence(seq_value, 4096);
 
+    if( verbose_flag )
+        printf("SEQ: %s\n", seq_value);
+
+    //
+    //
+    //
+    int64_t n_sequences = 0;
 
     //
     // Liste des fichiers temporaires dont on a eu besoin pour générer la liste des minimizers
@@ -121,11 +163,14 @@ void extract_kmer_v3(
 #if _debug_core_
         printf("first  = %s (start = %d, new = %d)\n", seq_value, std::get<0>(mTuple), std::get<1>(mTuple) );
 #endif
+
+        n_sequences += 1;
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //
         // Buffer utilisé pour la fenetre glissante des hash des m-mer
         //
-        uint64_t mask = mask_right(2 * kmer); // on masque
+        const uint64_t mask = mask_right(2 * kmer_size); // on masque
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //
@@ -136,7 +181,7 @@ void extract_kmer_v3(
         uint64_t cur_inv_mmer = 0;
         int cnt = 0;
 
-        for(int x = 0; x < kmer - 1; x += 1)
+        for(int x = 0; x < kmer_size - 1; x += 1)
         {
             //
             // Encode les nucleotides du premier k-mer
@@ -150,7 +195,7 @@ void extract_kmer_v3(
             // On calcule leur forme inversée (pour pouvoir obtenir aussi la forme cannonique)
             //
             cur_inv_mmer >>= 2;
-            cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (kmer - 1))); // cf Yoann
+            cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (kmer_size - 1))); // cf Yoann
 #if _DEBUG_CURR_
             if( verbose_flag )
                 printf(" nuc [%c]: | %16.16llX |\n", ptr_kmer[cnt], current_mmer);
@@ -161,18 +206,15 @@ void extract_kmer_v3(
         ////////////////////////////////////////////////////////////////////////////////////
         //
         //
-        int kmerStartIdx  = 1;
-        int nELements     = std::get<0>(mTuple) - kmer + 1;
+        int kmerStartIdx  = 0;
+        int nELements     = std::get<0>(mTuple) - kmer_size + 1;
         int isNewSeq      = false;
 
         //
         // Les sequences de nucleotides peuvent être réparties sur plusieurs lignes
         //
-        while( isNewSeq == false )
+        while( (isNewSeq == false) && (nELements != 0) )
         {
-#if _debug_core_
-            printf("   curr-m-mer       | curr-m-mer-inv   | cannonic-hash    |          hash    |\n");
-#endif
 
             for(int k_pos = kmerStartIdx; k_pos < nELements; k_pos += 1) // On traite le reste des k-mers
             {
@@ -181,133 +223,71 @@ void extract_kmer_v3(
                 current_mmer |= encoded;
                 current_mmer &= mask;
                 cur_inv_mmer >>= 2;
-                cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (mmer - 1))); // cf Yoann
+                cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (kmer_size - 1))); // cf Yoann
 
                 const uint64_t canon  = (current_mmer < cur_inv_mmer) ? current_mmer : cur_inv_mmer;
 
-                uint64_t tab[2];
-                CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
-                const uint64_t s_hash = tab[0];
-                minv                  = (s_hash < minv) ? s_hash : minv;
+                liste_mini[n_elements++] = canon;
 
-#if _debug_core_
-                printf(" - %16.16llX | %16.16llX | %16.16llX | %16.16llX |\n", current_mmer, cur_inv_mmer, canon, s_hash);
-#endif
-
-                if( minv == buffer[0] )
+                if( verbose_flag )
                 {
-                    minv = s_hash;
-                    for(int p = 0; p < z; p += 1) {
-                        const uint64_t value = buffer[p + 1];
-                        minv = (minv < value) ? minv : value;
-                        buffer[p] = value;
-                    }
-                    buffer[z] = s_hash; // on memorise le hash du dernier m-mer
-#if _debug_core_
-                    for(int p = 0; p < z; p += 1)
-                        printf(" --------- minv = %16.16llX / %16.16llX\n", minv, buffer[p]);
-                    printf(" -2minv = %16.16llX (1)\n", minv);
-#endif
-                }else{
-                    for(int p = 0; p < z; p += 1) {
-                        buffer[p] = buffer[p+1];
-                    }
-                    buffer[z] = s_hash; // on memorise le hash du dernier m-mer
-#if _debug_core_
-                    for(int p = 0; p < z + 1; p += 1)
-                        printf(" --------- minv = %16.16llX / %16.16llX\n", minv, buffer[p]);
-#endif
+                    printf("%2d [%c] ", k_pos, ptr_kmer[cnt]);
+                    print_kmer(current_mmer, kmer_size); printf(" - ");
+                    print_kmer(cur_inv_mmer, kmer_size); printf(" ==> ");
+                    print_kmer(canon, kmer_size); printf("\n");
                 }
 
-                ////////////////////////////////////////////////////////////////////////////////////
+                if( n_elements == max_in_ram )
+                {
+                    const int64_t MB = n_kmers / 1024 / 1024;
+                    printf("- On flush ! (%lld M-kmers)\n", MB);
 
-                if( liste_mini[n_minizer-1] != minv ){
-#if _debug_core_
-                    printf("(+)   min = | %16.16llX |\n", minv);
-#endif
-                    liste_mini[n_minizer++] = minv;
+                    // On est obligé de flush sur le disque les données
+                    std::string t_file = o_file + "." + std::to_string( file_list.size() );
 
-                    if( n_minizer >= (max_in_ram - 2) )
-                    {
-                        // On est obligé de flush sur le disque les données
-                        std::string t_file = o_file + "." + std::to_string( file_list.size() );
+                    // On trie les donnnées en memoire
+                    //crumsort_prim( liste_mini.data(), n_elements, 9 /*uint64*/ );
 
+                    // On supprime les redondances
+                    // int n_elements = VectorDeduplication(liste_mini, n_minizer - 1);
+                    //SaveRawToFile(t_file, liste_mini, n_elements);
 
-                        // On trie les donnnées en memoire
-                        crumsort_prim( liste_mini.data(), n_minizer - 1, 9 /*uint64*/ );
+                    // On memorise le nom du fichier temporaire que l'on a créé
+                    //file_list.push_back( t_file );
 
-
-                        // On supprime les redondances
-                        int n_elements = VectorDeduplication(liste_mini, n_minizer - 1);
-
-                        SaveRawToFile(t_file, liste_mini, n_elements - 1);
-
-                        file_list.push_back( t_file );
-
-#if _debug_mode_
-                        printf("[Minimizer_v3] Flushing data to SSD drive [%s, %d]\n", __FILE__, __LINE__);
-#endif
-                        //
-                        // ATTENTION PATCH tres pratique mais compliqué à comprendre... Pour éviter d'avoir un doublon
-                        // on ne copie pas le dernier minimizer maintenant. On le laisse en début de tableau pour avoir
-                        // a disposition la denriere valeur
-                        //
-                        liste_mini[0] = liste_mini[n_minizer-1];
-                        n_minizer     = 1;
-                    }
-#if _debug_core_
-                    printf("   - pushed (%d)\n", n_minizer);
-#endif
-                }else{
-#if _debug_core_
-                    printf("(+)  skip = | %16.16llX |\n", minv);
-#endif
-                    n_skipper += 1;
-#if _debug_core_
-                    printf("   - skipped (%d)\n", n_minizer);
-#endif
+                    // On reinitialise le buffer de sortie qui est maintenant vide
+                    n_elements     = 0;
                 }
 
-                kmer_cnt += 1; // on a traité un kmer de plus
-                cnt      += 1; // on avance le pointeur dans le flux
-// DEBUG !
-                if( minv == 0 ) exit( 0 );
-// FIN DEBUG
+                cnt     += 1; // on avance le pointeur dans le flux
+                n_kmers += 1;
             }
 
             //
             // On lance le chargement de la ligne suivante
             //
             mTuple        = reader->next_sequence(seq_value, 4096);
+            if( verbose_flag )
+                printf("std::get<0>(mTuple) == %d | reader->is_eof() == %d\n", std::get<0>(mTuple), reader->is_eof());
             kmerStartIdx  = 0;
             nELements     = std::get<0>(mTuple);
             isNewSeq      = std::get<1>(mTuple);
             cnt           = 0;
-#if _debug_core_
-
-            if( isNewSeq == false )
-                printf("+ next = %s (start = %d, new = %d)\n", seq_value, nELements, isNewSeq );
-            else
-                printf("+ End of seq detected\n");
-#endif
-            //
-            // On va regarder si le nombre de données présentes dans le buffer de sortie
-            // dépasse une borne MAX, si oui on va flusher sur le disque dur les données
-            // temporaires apres les avoir triées et purgées des doublons.
-            //
-
-            // TODO !
         }
 
         //
         // Si on est arrivé à la fin du fichier alors on se casse!
         //
+        if( verbose_flag )
+            printf("std::get<0>(mTuple) == %d | reader->is_eof() == %d\n", std::get<0>(mTuple), reader->is_eof());
         if( std::get<0>(mTuple) == 0 ) // aucun nucleotide n'a été obtenu => fin de fichier
             break;
         if( reader->is_eof() == true )    // aucun nucleotide n'a été obtenu => fin de fichier
             break;
-
     }
+
+    printf("[Parser] Elapsed time %1.3f\n", start_gen.get_time_sec());
+
 
     //
     // On a du stocker des données sur le disque dur en cours de route... On finit ICI et MAINTENANT !
@@ -324,11 +304,11 @@ void extract_kmer_v3(
 //      SaveRawToFile(o_file + ".non-sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
 
         std::string t_file = o_file + "." + std::to_string( file_list.size() );
-        crumsort_prim( liste_mini.data(), n_minizer, 9 /*uint64*/ );
+        crumsort_prim( liste_mini.data(), n_elements, 9 /*uint64*/ );
 
 //      SaveRawToFile(o_file + ".sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
 
-        int n_elements = VectorDeduplication(liste_mini, n_minizer);
+//        int n_elements = VectorDeduplication(liste_mini, n_minizer);
         SaveRawToFile(t_file, liste_mini, n_elements);
 
         file_list.push_back( t_file );
@@ -362,17 +342,9 @@ void extract_kmer_v3(
     // On vient de finir le traitement d'une ligne. On peut en profiter pour purger le
     // buffer de sortie sur le disque dur apres l'avoir purgé des doublons et l'avoir
     // trié...
-
-    liste_mini.resize(n_minizer);
-
-    //
-    // On stoque à l'indentique les données que l'on vient lire. Cette étape est uniquement utile
-    // pour du debug
-    //
-
-    if( file_save_debug ){
-        SaveMiniToTxtFile_v2(o_file + ".non-sorted-v2.txt", liste_mini);
-    }
+    CTimer start_resize( true );
+    liste_mini.resize(n_elements);
+    printf("[Resize] Elapsed time %1.3f\n", start_resize.get_time_sec());
 
     if( verbose_flag == true ) {
         printf("(II)\n");
@@ -381,6 +353,7 @@ void extract_kmer_v3(
         printf("(II) - Number of samples = %ld\n", liste_mini.size());
     }
 
+    CTimer start_sort( true );
     double start_time = omp_get_wtime();
     if( algo == "std::sort" ) {
         std::sort( liste_mini.begin(), liste_mini.end() );
@@ -406,6 +379,7 @@ void extract_kmer_v3(
         double end_time = omp_get_wtime();
         printf("(II) - Execution time    = %f\n", end_time - start_time);
     }
+    printf("[Sortng] Elapsed time %1.3f\n", start_sort.get_time_sec());
 
     //
     // En regle général on save le résultat sauf lorsque l'on fait du benchmarking
@@ -414,7 +388,7 @@ void extract_kmer_v3(
     if( file_save_debug )
     {
         SaveMiniToTxtFile_v2(o_file + ".sorted.txt", liste_mini);
-        SaveRawToFile   (o_file + ".hash", liste_mini);
+        SaveRawToFile       (o_file + ".hash", liste_mini);
     }
 
     //
@@ -426,16 +400,47 @@ void extract_kmer_v3(
         printf("(II) Vector deduplication step\n");
     }
 
-    VectorDeduplication( liste_mini );
+    //
+    // On cree le tableau qui va contenir les occurences
+    //
+    std::vector<int> liste_cntr( liste_mini.size() );
 
-    if( file_save_debug ){
+    //
+    // On lance l'étape de déduplication & comptage des k-mer
+    //
+    CTimer start_cnt( true );
+    kmer_counter(liste_mini, liste_cntr);
+    printf("[Countg] Elapsed time %1.3f\n", start_cnt.get_time_sec());
+
+    //
+    // On affiche les résultats
+    //
+    if( verbose_flag )
+    {
+        for(int i = 0; i < liste_mini.size(); i += 1)
+        {
+            printf("%2d : ", i);
+            print_kmer(liste_mini[i], kmer_size);
+            printf(" - %6d\n", liste_cntr[i]);
+        }
+    }
+
+    printf("Stats:\n");
+    printf("  No. of k-mers below min. threshold :            0\n");
+    printf("  No. of k-mers above max. threshold :            0\n");
+    printf("  No. of unique k-mers               : %12zu\n",  liste_mini.size());
+    printf("  No. of unique counted k-mers       : %12lld\n", liste_mini.size());
+    printf("  Total no. of k-mers                : %12lld\n", n_kmers);
+    printf("  Total no. of sequences             : %12lld\n", n_sequences);
+    printf("  Total no. of super-k-mers          :            0\n");
+
+    printf("Elapsed time %1.3f\n", start_gen.get_time_sec());
+
+    if( file_save_debug )
         SaveMiniToTxtFile_v2(o_file + ".txt", liste_mini);
-    }
 
-    if( file_save_output ){
+    if( file_save_output )
         SaveRawToFile(o_file, liste_mini);
-    }
 
     delete reader;
-
 }

@@ -141,8 +141,6 @@ bool read_fastx_gz_file::next_sequence(char* n_kmer)
 //
 std::tuple<int, bool> read_fastx_gz_file::next_sequence(char* n_kmer, int buffer_size, const bool _internal_)
 {
-//    if( counter == 40 )
-//        printf("n_lines = %d\n", n_lines);
     //
     // Le fichier est fini, donc rien à faire
     //
@@ -154,7 +152,6 @@ std::tuple<int, bool> read_fastx_gz_file::next_sequence(char* n_kmer, int buffer
     //
     // On cherche le caractere de fin de ligne
     //
-//    printf("recherche fin de ligne\n");
     int pos_nline = -1;
     for(int i = c_ptr; i < n_data; i += 1)
     {
@@ -202,7 +199,6 @@ std::tuple<int, bool> read_fastx_gz_file::next_sequence(char* n_kmer, int buffer
     }
     n_kmer[cnt] = 0;                                    // On rajoute un caractere fin de string
     c_ptr      += 1;                                    // pour des raison de compatibilité (strlen)
-
     n_lines    += 1;
 
 //    printf("fin de copie des elements\n");

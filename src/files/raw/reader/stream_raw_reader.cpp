@@ -1,0 +1,90 @@
+#include "stream_raw_reader.hpp"
+#include "../../../tools/colors.hpp"
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+stream_raw_reader::stream_raw_reader(const std::string& filen)
+{
+    //
+    // Ouverture du fichier en mode lecture !
+    //
+    stream = fopen( filen.c_str(), "r" );
+    if( stream == NULL )
+    {
+        printf("(EE) File does not exist (%s))\n", filen.c_str());
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
+        exit( EXIT_FAILURE );
+    }
+    is_fopen     = true;
+    is_foef      = false;
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+stream_raw_reader::~stream_raw_reader()
+{
+    if( is_open() == true )
+        close();
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+bool stream_raw_reader::is_open ()
+{
+    return is_fopen;
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+bool stream_raw_reader::is_eof()
+{
+    return is_foef;
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+int  stream_raw_reader::read(char* buffer, int eSize, int eCount)
+{
+    const int nread = fread(buffer, eSize, eCount, stream);
+    is_foef         = ( nread != eCount); // a t'on atteint la fin du fichier ?
+    return nread; // nombre d'éléments de taille eSize
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+void stream_raw_reader::close()
+{
+    fclose( stream );
+    is_fopen = false;
+}
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//

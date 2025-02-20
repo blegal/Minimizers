@@ -28,8 +28,8 @@ option(BUILD_INFOS   "Build test programs" OFF)
 #endif()
 
 SET(CMAKE_CXX_STANDARD     17)
-#SET(CMAKE_BUILD_TYPE  Release)
-SET(CMAKE_BUILD_TYPE  Debug)
+SET(CMAKE_BUILD_TYPE  Release)
+#SET(CMAKE_BUILD_TYPE  Debug)
 
 #
 # MacOS with ARM M1/M2 processors
@@ -42,8 +42,8 @@ if(BUILD_MACOS_ARM)
 
     SET(CMAKE_CXX_FLAGS "-Wall")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native -mtune=native")
-    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math -fopenmp -std=c++17")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fopenmp -std=c++17")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -ffast-math -fopenmp -std=c++17")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fopenmp -std=c++17")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flax-vector-conversions") # gcc patch
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/opt/homebrew/include") # gcc patch
 
@@ -132,8 +132,8 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        ./src/minimizer/deduplication.cpp
-        src/back/raw/SaveRawToFile.cpp
+        src/kmer_list/smer_deduplication.cpp
+        ./src/back/raw/SaveRawToFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
         # Front-end parsers
         ./src/front/fastx/read_fastx_file.cpp
@@ -148,7 +148,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/front/fastx/read_fastx_k_value.cpp
         ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
         # main
-        ./src/min_sorter.cpp)
+        apps/min_sorter.cpp)
 add_executable(min_sorter ${source_files})
 
 target_include_directories(min_sorter
@@ -172,7 +172,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        ./src/minimizer/deduplication.cpp
+        src/kmer_list/smer_deduplication.cpp
         ./src/minimizer/minimizer_v2.cpp
         src/back/raw/SaveRawToFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
@@ -195,7 +195,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/front/fastx/read_fastx_k_value.cpp
         ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
         # main
-        ./src/min_sorter_v2.cpp)
+        apps/min_sorter_v2.cpp)
 
 add_executable(min_sorter_v2 ${source_files})
 
@@ -220,7 +220,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/sorting/std_2cores/std_2cores.cpp
         ./src/sorting/crumsort/crumsort.cpp
         ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        ./src/minimizer/deduplication.cpp
+        src/kmer_list/smer_deduplication.cpp
         ./src/minimizer/minimizer_v3.cpp
         src/back/raw/SaveRawToFile.cpp
         ./src/back/txt/SaveMiniToTxtFile.cpp
@@ -239,12 +239,12 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/front/fastx/count_lines_fastx.cpp
         ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
         # sequence size estimator
-        ./src/merger/merger_level_0.cpp
+        src/merger/in_file/merger_level_0.cpp
         ./src/front/read_k_value.cpp
         ./src/front/fastx/read_fastx_k_value.cpp
         ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
         # main
-        ./src/min_sorter_v3.cpp)
+        apps/min_sorter_v3.cpp)
 
 add_executable(min_sorter_v3 ${source_files})
 
@@ -283,7 +283,7 @@ file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/front/fastx/read_fastx_k_value.cpp
         ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
         # main program
-        ./src/min_sorter_ref.cpp)
+        apps/min_sorter_ref.cpp)
 add_executable(min_sorter_ref ${source_files})
 
 target_include_directories(min_sorter_ref
@@ -302,15 +302,15 @@ project(merge)
 
 file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
         ./src/progress/progressbar.cpp
-        ./src/merger/merger_level_s.cpp
-        ./src/merger/merger_level_0.cpp
-        ./src/merger/merger_level_1.cpp
-        ./src/merger/merger_level_2_0.cpp
-        ./src/merger/merger_level_2_32.cpp
-        ./src/merger/merger_level_64_n.cpp
-        ./src/merger/merger_level_n_p.cpp
-        ./src/merger/merger_in.cpp
-        ./src/merge.cpp)
+        src/merger/in_file/merger_level_s.cpp
+        src/merger/in_file/merger_level_0.cpp
+        src/merger/in_file/merger_level_1.cpp
+        src/merger/in_file/merger_level_2_0.cpp
+        src/merger/in_file/merger_level_2_32.cpp
+        src/merger/in_file/merger_level_64_n.cpp
+        src/merger/in_file/merger_level_n_p.cpp
+        src/merger/in_file/merger_in.cpp
+        apps/merge.cpp)
 add_executable(merge ${source_files})
 
 target_include_directories(merge
@@ -328,7 +328,7 @@ target_link_libraries(merge curses)
 project(raw_dump)
 
 file(GLOB_RECURSE source_files
-        ./src/raw_dump.cpp)
+        apps/raw_dump.cpp)
 add_executable(raw_dump ${source_files})
 
 target_include_directories(raw_dump
@@ -340,195 +340,126 @@ target_include_directories(raw_dump
 
 project(raw_compare)
 
-file(GLOB_RECURSE source_files
-        ./src/raw_compare.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/raw_compare.cpp")
+
 add_executable(raw_compare ${source_files})
 
-target_include_directories(raw_compare
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
+target_link_libraries(raw_compare z)
+target_link_libraries(raw_compare bz2)
+target_link_libraries(raw_compare curses)
 
 ########################################################################################################################
 
 project(test_generator)
 
-file(GLOB_RECURSE source_files  ./src/test_generator.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/test_generator.cpp")
+
 add_executable(test_generator ${source_files})
+
+target_link_libraries(test_generator z)
+target_link_libraries(test_generator bz2)
+target_link_libraries(test_generator curses)
 
 ########################################################################################################################
 
 project(BreiZHMinimizer)
 
-file(GLOB_RECURSE source_files
-        ./src/BreiZHMinimizer.cpp
-        ./src/progress/progressbar.cpp
-        # File readers
-        src/files/bz2/reader/file_bz2_reader.cpp
-        src/files/gz/reader/file_gz_reader.cpp
-        src/files/lz4/reader/file_lz4_reader.cpp
-        src/files/raw/reader/file_raw_reader.cpp
-        ./src/files/file_reader_library.cpp
-        # Merger implementations
-        ./src/merger/merger_in.cpp
-        ./src/merger/merger_level_s.cpp
-        ./src/merger/merger_level_0.cpp
-        ./src/merger/merger_level_1.cpp
-        ./src/merger/merger_level_2_0.cpp
-        ./src/merger/merger_level_2_32.cpp
-        ./src/merger/merger_level_64_n.cpp
-        ./src/merger/merger_level_n_p.cpp
-        ./src/merger/merger_n_files.cpp
-        # Output backends
-        ./src/back/raw/SaveRawToFile.cpp
-        ./src/back/txt/SaveMiniToTxtFile.cpp
-        # sorting algorithms
-        ./src/sorting/std_4cores/std_4cores.cpp
-        ./src/sorting/std_2cores/std_2cores.cpp
-        ./src/sorting/crumsort/crumsort.cpp
-        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        ./src/minimizer/deduplication.cpp
-        # Minimizer engines
-        ./src/minimizer/deduplication.cpp
-        ./src/minimizer/minimizer_v2.cpp
-        ./src/minimizer/minimizer_v3.cpp
-        # Front-end parsers
-        src/front/fastx/read_fastx_file.cpp
-        src/front/fastx_gz/read_fastx_gz_file.cpp
-        src/front/fastx_bz2/read_fastx_bz2_file.cpp
-        src/front/fastx_lz4/read_fastx_lz4_file.cpp
-        src/front/fastx_lz4/lz4/lz4file.c
-        src/front/fastx_lz4/lz4/lz4frame.c
-        src/front/fastx_lz4/lz4/xxhash.c
-        src/front/fastx_lz4/lz4/lz4hc.c
-        src/front/fastx_lz4/lz4/lz4.c
-        # tools
-        ./src/tools/CTimer.cpp
-    )
-add_executable(BreiZHMinimizer ${source_files}
-        src/tools/file_stats.cpp
-        src/tools/file_stats.hpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
 
-target_include_directories(BreiZHMinimizer
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/BreiZHMinimizer.cpp")
 
-target_link_libraries(BreiZHMinimizer curses)
+add_executable(BreiZHMinimizer ${source_files})
+
 target_link_libraries(BreiZHMinimizer z)
 target_link_libraries(BreiZHMinimizer bz2)
+target_link_libraries(BreiZHMinimizer curses)
 
 ########################################################################################################################
 
 project(extract_color)
 
-file(GLOB_RECURSE source_files
-        ./src/extract_color.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/extract_all_colors.cpp")
+
 add_executable(extract_color ${source_files})
 
-target_include_directories(extract_color
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
+target_link_libraries(extract_color z)
+target_link_libraries(extract_color bz2)
+target_link_libraries(extract_color curses)
 
 ########################################################################################################################
 
 project(extract_all_colors)
 
-file(GLOB_RECURSE source_files
-        ./src/extract_all_colors.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/extract_all_colors.cpp")
+
 add_executable(extract_all_colors ${source_files})
 
-target_include_directories(extract_all_colors
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
+target_link_libraries(extract_all_colors z)
+target_link_libraries(extract_all_colors bz2)
+target_link_libraries(extract_all_colors curses)
 
 ########################################################################################################################
 
 project(color_stats)
 
-file(GLOB_RECURSE source_files
-        # input file support
-        ./src/files/file_reader_library.cpp
-        ./src/files/raw/reader/file_raw_reader.cpp
-        ./src/files/bz2/reader/file_bz2_reader.cpp
-        ./src/files/lz4/reader/file_lz4_reader.cpp
-        ./src/files/gz/reader/file_gz_reader.cpp
-        # The LZ4 library source codes
-        ./src/front/fastx/read_fastx_file.cpp
-        ./src/front/fastx_gz/read_fastx_gz_file.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
-        ./src/front/fastx_lz4/read_fastx_lz4_file.cpp
-        ./src/front/fastx_lz4/lz4/lz4file.c
-        ./src/front/fastx_lz4/lz4/lz4frame.c
-        ./src/front/fastx_lz4/lz4/xxhash.c
-        ./src/front/fastx_lz4/lz4/lz4hc.c
-        ./src/front/fastx_lz4/lz4/lz4.c
-        # Front-end parsers
-        ./src/color_stats.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/color_stats.cpp")
+
 add_executable(color_stats ${source_files})
 
-target_include_directories(color_stats
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
 target_link_libraries(color_stats z)
 target_link_libraries(color_stats bz2)
+target_link_libraries(color_stats curses)
 
 ########################################################################################################################
 
 project(color_sorter)
 
-file(GLOB_RECURSE source_files
-        ./src/color_sorter.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/color_sorter.cpp")
+
 add_executable(color_sorter ${source_files})
 
-target_include_directories(color_sorter
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
+target_link_libraries(color_sorter z)
+target_link_libraries(color_sorter bz2)
+target_link_libraries(color_sorter curses)
+
+########################################################################################################################
+
+project(kmer_sorter)
+
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/kmer_sorter.cpp")
+
+add_executable(kmer_sorter ${source_files})
+
+target_link_libraries(kmer_sorter z)
+target_link_libraries(kmer_sorter bz2)
+target_link_libraries(kmer_sorter curses)
 
 ########################################################################################################################
 
 project(merge_all)
 
-file(GLOB_RECURSE source_files
-        ./src/tools/file_stats.cpp
-        ./src/merger/merger_n_files.cpp
-        ./src/tools/CTimer.cpp
-        # input file support
-        ./src/files/file_reader_library.cpp
-        ./src/files/raw/reader/file_raw_reader.cpp
-        ./src/files/bz2/reader/file_bz2_reader.cpp
-        ./src/files/lz4/reader/file_lz4_reader.cpp
-        ./src/files/gz/reader/file_gz_reader.cpp
-        # output file support
-        ./src/files/file_writer_library.cpp
-        ./src/files/raw/writer/file_raw_writer.cpp
-        ./src/files/lz4/writer/file_lz4_writer.cpp
-        ./src/files/gz/writer/file_gz_writer.cpp
-        ./src/files/bz2/writer/file_bz2_writer.cpp
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
 
-        # Front-end parsers
-        ./src/front/fastx/read_fastx_file.cpp
-        ./src/front/fastx_gz/read_fastx_gz_file.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
-        ./src/front/fastx_lz4/read_fastx_lz4_file.cpp
-        ./src/front/fastx_lz4/lz4/lz4file.c
-        ./src/front/fastx_lz4/lz4/lz4frame.c
-        ./src/front/fastx_lz4/lz4/xxhash.c
-        ./src/front/fastx_lz4/lz4/lz4hc.c
-        ./src/front/fastx_lz4/lz4/lz4.c
-        # The main file
-        ./src/merge_all.cpp)
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/merge_all.cpp")
+
 add_executable(merge_all ${source_files})
 
-target_include_directories(merge_all
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
 target_link_libraries(merge_all z)
 target_link_libraries(merge_all bz2)
+target_link_libraries(merge_all curses)
 
 ########################################################################################################################

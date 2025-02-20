@@ -1,31 +1,122 @@
-#include "minimizer.hpp"
-#include "../kmer_list/smer_deduplication.hpp"
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <vector>
+#include <chrono>
+#include <algorithm>
+#include <iostream>
+#include <omp.h>
+#include <sstream>
+#include <getopt.h>
 
-#include "../progress/progressbar.h"
+#include "../src/progress/progressbar.h"
 
-#include "../front/fastx/read_fastx_file.hpp"
-#include "../front/fastx_bz2/read_fastx_bz2_file.hpp"
+#include "../src/front/fastx/read_fastx_file.hpp"
+#include "../src/front/fastx_bz2/read_fastx_bz2_file.hpp"
 
-#include "../front/count_file_lines.hpp"
+#include "../src/sorting/std_2cores/std_2cores.hpp"
+#include "../src/sorting/std_4cores/std_4cores.hpp"
+#include "../src/sorting/crumsort_2cores/crumsort_2cores.hpp"
 
-#include "../front/read_k_value.hpp"
+#include "../src/kmer_list/smer_deduplication.hpp"
+#include "../src/front/read_k_value.hpp"
+#include "../src/front/count_file_lines.hpp"
 
-#include "../hash//CustomMurmurHash3.hpp"
+#include "../src/tools/fast_atoi.hpp"
 
-#include "../back/txt/SaveMiniToTxtFile.hpp"
-#include "../back/raw/SaveRawToFile.hpp"
+#include "../src/back/txt/SaveMiniToTxtFile.hpp"
+#include "../src/back/raw/SaveRawToFile.hpp"
 
-#include "../sorting/std_2cores/std_2cores.hpp"
-#include "../sorting/std_4cores/std_4cores.hpp"
-#include "../sorting/crumsort_2cores/crumsort_2cores.hpp"
+#include "../src/hash/CustomMurmurHash3.hpp"
+
+#define _murmurhash_
+
+void my_sort(std::vector<uint64_t>& test)
+{
+    const int size = test.size();
+    const int half = size / 2;
+
+    std::vector<uint64_t> v1( half );
+    std::vector<uint64_t> v2( half );
+
+    vec_copy(v1, test.data(),        half );
+    vec_copy(v2, test.data() + half, half );
+
+    std::sort( v1.begin(), v1.end() );
+    std::sort( v2.begin(), v2.end() );
+
+    int ptr_1 = 0;
+    int ptr_2 = 0;
+
+    int i;
+    for(i = 0; i < size; i += 1)
+    {
+        if( v1[ptr_1] < v2[ptr_2] )
+        {
+            test[i] = v1[ptr_1++];
+        } else {
+            test[i] = v2[ptr_2++];
+        }
+    }
+    if( ptr_1 == half )
+    {
+        for(; i < size; i += 1)
+            test[i] = v2[ptr_2++];
+    }else{
+        for(; i < size; i += 1)
+            test[i] = v2[ptr_1++];
+    }
+    v1.clear();
+    v2.clear();
+}
+
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+
+std::chrono::steady_clock::time_point begin;
+
+#include <omp.h>
+
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
 
 #define MEM_UNIT 64ULL
 
-inline uint64_t mask_right(const uint64_t numbits)
-{
+inline uint64_t mask_right(uint64_t numbits){
     uint64_t mask = -(numbits >= MEM_UNIT) | ((1ULL << numbits) - 1ULL);
     return mask;
 }
+
+
+bool vec_compare(std::vector<uint64_t> dst, std::vector<uint64_t> src)
+{
+    if(dst.size() != src.size())
+        return false;
+
+    const int length = src.size();
+    for(int x = 0; x < length; x += 1)
+        if( dst[x] != src[x] )
+            return false;
+    return true;
+}
+
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
 
 void minimizer_processing(
         const std::string& i_file    = "none",
@@ -35,7 +126,7 @@ void minimizer_processing(
         const bool worst_case_memory = true,
         const bool verbose_flag      = false,
         const bool file_save_debug   = false
-)
+        )
 {
     /*
      * Counting the number of SMER in the file (to allocate memory)
@@ -81,22 +172,23 @@ void minimizer_processing(
     }
 
     //
-    // Creating buffers to speed up file parsing
+    // On cree le buffer qui va nous permettre de recuperer les
+    // nucleotides depuis le fichier
     //
 
-    char seq_value[4096]; bzero(seq_value, 4096);
-    char kmer_b   [  48]; bzero(kmer_b,      48);
-    char mmer_b   [  32]; bzero(mmer_b,      32);
+    char seq_value[4096];
+    bzero(seq_value, 4096);
 
     //
     // Allocating the object that performs fast file parsing
     //
+
     file_reader* reader;
     if (i_file.substr(i_file.find_last_of(".") + 1) == "bz2")
     {
         reader = new read_fastx_bz2_file(i_file);
     }
-    else if(i_file.substr(i_file.find_last_of(".") + 1) == "fastx")
+    else if (i_file.substr(i_file.find_last_of(".") + 1) == "fastx")
     {
         reader = new read_fastx_file(i_file);
     }
@@ -115,21 +207,18 @@ void minimizer_processing(
     const int prog_step = n_lines / 100;
 
     //
-    // For all the lines in the file => load and convert
+    // Allocating the output memory buffer
     //
 
-    // Borne a calculer
+    std::vector<uint64_t> liste_mini(max_bytes / sizeof (uint64_t));
 
-    std::vector<uint64_t> liste_mini((estim_bytes / sizeof (uint64_t)) );
-    if( worst_case_memory == true )
-    {
-        liste_mini.resize(max_bytes / sizeof (uint64_t) );
-    }
+    //
+    // Defining counters for statistics
+    //
 
     uint32_t kmer_cnt = 0;
-
-    int n_minizer = 0;
-    int n_skipper = 0;
+    int n_minizer     = 0;
+    int n_skipper     = 0;
 
     for(int l_number = 0; l_number < n_lines; l_number += 1)
     {
@@ -143,7 +232,7 @@ void minimizer_processing(
         //
         // Buffer utilisé pour la fenetre glissante des hash des m-mer
         //
-        uint64_t buffer[z+1]; // nombre de m-mer/k-mer
+        uint64_t buffer[z + 1]; // nombre de m-mer/k-mer
         for(int x = 0; x <= z; x += 1)
             buffer[x] = UINT64_MAX;
 
@@ -161,16 +250,18 @@ void minimizer_processing(
         for(int x = 0; x < mmer - 1; x += 1)
         {
             //
-            // On calcule les m-mers
+            // Encode les nucleotides du premier s-mer
             //
             const uint64_t encoded = ((ptr_kmer[cnt] >> 1) & 0b11);
             current_mmer <<= 2;
             current_mmer |= encoded; // conversion ASCII => 2bits (Yoann)
             current_mmer &= mask;
 
+            //
+            // On calcule leur forme inversée (pour pouvoir obtenir aussi la forme cannonique)
+            //
             cur_inv_mmer >>= 2;
-            cur_inv_mmer |= (encoded << (2 * (mmer - 1)));
-
+            cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (mmer - 1))); // cf Yoann
 #if _DEBUG_CURR_
             if( verbose_flag )
                 printf(" nuc [%c]: | %16.16llX |\n", ptr_kmer[cnt], current_mmer);
@@ -178,13 +269,11 @@ void minimizer_processing(
             cnt          += 1;
         }
 
-        uint64_t minv = UINT64_MAX;
-
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //
-        // On traite le premier k-mer
+        // On traite le premier k-mer. Pour cela on calcule ses differents s-mer afin d'en extraire la
+        // valeur minimum.
         //
-        ////////////////////////////////////////////////////////////////////////////////////
 #if _DEBUG_CURR_
         if( verbose_flag )
         {
@@ -195,36 +284,31 @@ void minimizer_processing(
 #endif
         ////////////////////////////////////////////////////////////////////////////////////
 
+#if _debug_core_
+        printf("   curr-m-mer       | curr-m-mer-inv   | cannonic-hash    |          hash    |\n");
+#endif
+        uint64_t minv = UINT64_MAX;
         for(int m_pos = 0; m_pos <= z; m_pos += 1)
         {
-            //
             // On calcule les m-mers
-            //
-            const uint64_t encoded = ((ptr_kmer[cnt] >> 1) & 0b11);
+            const uint64_t encoded = ((ptr_kmer[cnt] >> 1) & 0b11); // conversion ASCII => 2bits (Yoann)
             current_mmer <<= 2;
-            current_mmer |= encoded; // conversion ASCII => 2bits (Yoann)
+            current_mmer |= encoded;
             current_mmer &= mask;
-
             cur_inv_mmer >>= 2;
-            cur_inv_mmer |= (encoded << (2 * (mmer - 1)));
+            cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (mmer - 1))); // cf Yoann
 
             const uint64_t canon  = (current_mmer < cur_inv_mmer) ? current_mmer : cur_inv_mmer;
-//          const uint64_t canon  = canonical(current_mmer, 2 * 19);
-
 
             uint64_t tab[2];
             CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
             const uint64_t s_hash = tab[0];
-
             //
+#if _debug_core_
+            printf(" - %16.16llX | %16.16llX | %16.16llX | %16.16llX |\n", current_mmer, cur_inv_mmer, canon, s_hash);
+#endif
             //
-
-//          printf(" nuc | %16.16llX | %16.16llX | <%16.16llX> | %16.16llX |\n", current_mmer, cur_inv_mmer, canon, cano2);
-
             buffer[m_pos]         = s_hash; // on memorise le hash du mmer
-//            if( verbose_flag ) {
-//                printf("   m: %s | %16.16llX | %16.16llX |\n", "", buffer[m_pos], buffer[m_pos]);
-//            }
             minv                  = (s_hash < minv) ? s_hash : minv;
             cnt                  += 1; // on avance dans la sequence de nucleotides
         }
@@ -235,26 +319,39 @@ void minimizer_processing(
             printf("(+)-  min = | %16.16llX |\n", minv);
         }
 #endif
-        printf("(+)-  min = | %16.16llX |\n", minv);
         //
         // On pousse le premier minimiser dans la liste
         //
+#if _debug_core_
+        printf("(+)1  min = | %16.16llX |\n", minv);
+#endif
         if( n_minizer == 0 )
         {
             liste_mini[n_minizer++] = minv;
+#if _debug_core_
+            printf("   - pushed (%d)\n", n_minizer);
+#endif
         }
         else if( liste_mini[n_minizer-1] != minv )
         {
             liste_mini[n_minizer++] = minv;
+#if _debug_core_
+            printf("   - pushed (%d)\n", n_minizer);
+#endif
         }else{
             n_skipper += 1;
+#if _debug_core_
+            printf("   - skipped (%d)\n", n_minizer);
+#endif
         }
 
-        //
-        //
-        //
-
         kmer_cnt += 1;
+
+        ////////////////////////////////////////////////////////////////////////////////////
+
+#if _debug_core_
+        printf("   curr-m-mer       | curr-m-mer-inv   | cannonic-hash    |          hash    |\n");
+#endif
 
         for(int k_pos = 1; k_pos <= s_length - kmer; k_pos += 1) // On traite le reste des k-mers
         {
@@ -262,7 +359,6 @@ void minimizer_processing(
             current_mmer <<= 2;
             current_mmer |= encoded; // conversion ASCII => 2bits (Yoann)
             current_mmer &= mask;
-
             cur_inv_mmer >>= 2;
             cur_inv_mmer |= ( (0x2 ^ encoded) << (2 * (mmer - 1))); // cf Yoann
 
@@ -271,25 +367,36 @@ void minimizer_processing(
             uint64_t tab[2];
             CustomMurmurHash3_x64_128<8> ( &canon, 42, tab );
             const uint64_t s_hash = tab[0];
-
             minv                  = (s_hash < minv) ? s_hash : minv;
+
+#if _debug_core_
+            printf(" - %16.16llX | %16.16llX | %16.16llX | %16.16llX |\n", current_mmer, cur_inv_mmer, canon, s_hash);
+#endif
 
             if( minv == buffer[0] )
             {
                 minv = s_hash;
-//              for(int p = 0; p < z + 1; p += 1) {
-                for(int p = 0; p < z; p += 1) { // < z car on fait p+1
+                for(int p = 0; p < z; p += 1) {
                     const uint64_t value = buffer[p+1];
                     minv = (minv < value) ? minv : value;
                     buffer[p] = value;
                 }
                 buffer[z] = s_hash; // on memorise le hash du dernier m-mer
+#if _debug_core_
+                for(int p = 0; p < z; p += 1)
+                    printf(" --------- minv = %16.16llX / %16.16llX\n", minv, buffer[p]);
+                printf(" -2minv = %16.16llX (1)\n", minv);
+#endif
             }else{
-//                for(int p = 0; p < z + 1; p += 1) {
-                for(int p = 0; p < z; p += 1) { // < z car on fait p+1
+                for(int p = 0; p < z + 1; p += 1) {
                     buffer[p] = buffer[p + 1];
                 }
                 buffer[z] = s_hash; // on memorise le hash du dernier m-mer
+#if _debug_core_
+                for(int p = 0; p < z + 1; p += 1)
+                    printf(" --------- minv = %16.16llX / %16.16llX\n", minv, buffer[p]);
+                //printf(" -3minv = %16.16llX (2)\n", minv);
+#endif
             }
 
             ////////////////////////////////////////////////////////////////////////////////////
@@ -313,12 +420,22 @@ void minimizer_processing(
 
             if( liste_mini[n_minizer-1] != minv )
             {
+#if _debug_core_
+                printf("(+)   min = | %16.16llX |\n", minv);
+#endif
                 liste_mini[n_minizer++] = minv;
+#if _debug_core_
+                printf("   - pushed (%d)\n", n_minizer);
+#endif
             }else{
+#if _debug_core_
+                printf("(+)  skip = | %16.16llX |\n", minv);
+#endif
                 n_skipper += 1;
+#if _debug_core_
+                printf("   - skipped (%d)\n", n_minizer);
+#endif
             }
-            printf("(+)   min = | %16.16llX |\n", minv);
-
 /*
             if( liste_mini[liste_mini.size()-1] != minv )
             {
@@ -340,10 +457,6 @@ void minimizer_processing(
             cnt      += 1;
         }
 
-        // On vient de finir le traitement d'une ligne. On peut en profiter pour purger le
-        // buffer de sortie sur le disque dur apres l'avoir purgé des doublons et l'avoir
-        // trié...
-
         /////////////////////////////////////////////////////////////////////////////////////
         if( verbose_flag == true ) {
             if (l_number % prog_step == 0)
@@ -352,9 +465,10 @@ void minimizer_processing(
         /////////////////////////////////////////////////////////////////////////////////////
     }
 
-
+    printf("(II) n_minizer         : %10d\n", n_minizer        );
+    printf("(II) liste_mini.size() : %10zu\n", liste_mini.size());
     liste_mini.resize(n_minizer);
-
+    printf("(II) liste_mini.size() : %10zu\n", liste_mini.size());
     /////////////////////////////////////////////////////////////////////////////////////
     if( verbose_flag == true ) {
         progressbar_finish(progress);
@@ -465,7 +579,143 @@ void minimizer_processing(
     if( file_save_output ){
         SaveRawToFile(o_file, liste_mini);
     }
+}
 
-    delete reader;
+//
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
 
+int main(int argc, char* argv[])
+{
+
+    std::string i_file = "./AHX_ACXIOSF_6_1_23_all.txt";
+    std::string o_file = "./result";
+
+    int verbose_flag      = 0;
+    int file_save_loaded  = 0;
+    int file_save_debug   = 0;
+    int file_save_output  = 1;
+
+    int worst_case_memory = 1;
+
+    //
+    //
+    //
+
+    std::string algo = "std::sort";
+
+    static struct option long_options[] =
+            {
+                    /* These options set a flag. */
+                    {"verbose",           no_argument, &verbose_flag,    1},
+                    {"brief",              no_argument, &verbose_flag,    0},
+                    {"worst-case",         no_argument, &worst_case_memory,1},
+                    {"save-loaded",        no_argument, &file_save_loaded,1},
+                    {"save-debug",         no_argument, &file_save_debug, 1},
+                    {"do-not-save-output", no_argument, &file_save_output, 0},
+                    /* These options don’t set a flag.
+                       We distinguish them by their indices. */
+                    {"sorter",      required_argument, 0, 's'},
+                    {"file",        required_argument, 0, 'i'},
+                    {"output",      required_argument, 0, 'o'},
+                    {0, 0, 0, 0}
+            };
+
+    /* getopt_long stores the option index here. */
+    int option_index = 0;
+    int c;
+    while( true )
+    {
+        c = getopt_long (argc, argv, "s:q:i:o:", long_options, &option_index);
+
+        /* Detect the end of the options. */
+        if (c == -1)
+            break;
+
+        switch ( c )
+        {
+            case 0:
+                /* If this option set a flag, do nothing else now. */
+                if (long_options[option_index].flag != 0)
+                    break;
+                printf ("option %s", long_options[option_index].name);
+                if (optarg)
+                    printf (" with arg %s", optarg);
+                printf ("\n");
+                break;
+
+                //
+                //
+                //
+            case 'i':
+                printf("parsing -file option\n");
+                i_file = optarg;
+//              o_file = i_file + ".ordered";
+                break;
+
+                //
+                //
+                //
+            case 'o':
+                printf("parsing -output option\n");
+                o_file = optarg;
+                break;
+
+                //
+                // Sorting algorithm
+                //
+            case 's':
+                algo = optarg;
+                break;
+
+            case '?':
+                /* getopt_long already printed an error message. */
+                break;
+
+            default:
+                abort ();
+        }
+    }
+
+    /*
+     * Print any remaining command line arguments (not options).
+     * */
+    if (optind < argc)
+    {
+        printf ("non-option ARGV-elements: ");
+        while (optind < argc)
+            printf ("%s ", argv[optind++]);
+        putchar ('\n');
+        putchar ('\n');
+        printf ("Usage :\n");
+        printf ("./kmer_sorter --file [kmer-file] [options]");
+        putchar ('\n');
+        printf ("Options :\n");
+        printf (" --file [string]      : the name of the file that contains k-mers\n");
+        printf (" --output             : the name of the file that sorted k-mers at the end\n");
+        printf (" --verbose            : display debug informations\n");
+        printf (" --save-loaded        : for debugging purpose\n");
+        printf (" --save-debug         : for debugging purpose\n");
+        printf (" --do-not-save-output : for debugging purpose\n");
+        printf (" --sorter             : the name of the sorting algorithm to apply\n");
+        printf (" --quotient           : the quotient size\n");
+        exit( EXIT_FAILURE );
+    }
+
+
+    minimizer_processing(
+            i_file,
+            o_file,
+            algo,
+            file_save_output,
+            worst_case_memory,
+            verbose_flag,
+            file_save_debug
+    );
+
+    return 0;
 }

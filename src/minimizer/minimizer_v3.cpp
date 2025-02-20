@@ -1,5 +1,5 @@
 #include "minimizer_v3.hpp"
-#include "deduplication.hpp"
+#include "../kmer_list/smer_deduplication.hpp"
 
 #include "../front/fastx/read_fastx_file.hpp"
 #include "../front/fastx_gz/read_fastx_gz_file.hpp"
@@ -17,7 +17,7 @@
 #include "../sorting/std_4cores/std_4cores.hpp"
 #include "../sorting/crumsort_2cores/crumsort_2cores.hpp"
 
-#include "../merger/merger_level_0.hpp"
+#include "../merger/in_file/merger_level_0.hpp"
 
 #define MEM_UNIT 64ULL
 
@@ -321,7 +321,7 @@ void minimizer_processing_v3(
 
 
                         // On supprime les redondances
-                        int n_elements = VectorDeduplication(liste_mini, n_minizer - 1);
+                        int n_elements = smer_deduplication(liste_mini, n_minizer - 1);
 
                         SaveRawToFile(t_file, liste_mini, n_elements - 1);
 
@@ -411,7 +411,7 @@ void minimizer_processing_v3(
 
 //      SaveRawToFile(o_file + ".sorted." + std::to_string( file_list.size() ), liste_mini, n_minizer);
 
-        int n_elements = VectorDeduplication(liste_mini, n_minizer);
+        int n_elements = smer_deduplication(liste_mini, n_minizer);
         SaveRawToFile(t_file, liste_mini, n_elements);
 
         file_list.push_back( t_file );
@@ -446,8 +446,6 @@ void minimizer_processing_v3(
         delete reader;
         return;
     }
-
-
 
     // On vient de finir le traitement d'une ligne. On peut en profiter pour purger le
     // buffer de sortie sur le disque dur apres l'avoir purgé des doublons et l'avoir
@@ -516,7 +514,7 @@ void minimizer_processing_v3(
         printf("(II) Vector deduplication step\n");
     }
 
-    VectorDeduplication( liste_mini );
+    smer_deduplication( liste_mini );
 
     if( file_save_debug ){
         SaveMiniToTxtFile_v2(o_file + ".txt", liste_mini);

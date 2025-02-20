@@ -1,5 +1,5 @@
 #include "minimizer_v2.hpp"
-#include "deduplication.hpp"
+#include "../kmer_list/smer_deduplication.hpp"
 
 #include "../front/fastx/read_fastx_file.hpp"
 #include "../front/fastx_gz/read_fastx_gz_file.hpp"
@@ -438,7 +438,7 @@ void minimizer_processing_v2(
     // pour du debug
     //
     uint64_t before =  liste_mini.size();
-    VectorDeduplication( liste_mini );
+    smer_deduplication( liste_mini );
     uint64_t after  =  liste_mini.size();
     uint64_t diffr  =  before - after;
 
