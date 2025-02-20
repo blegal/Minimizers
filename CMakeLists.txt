@@ -380,6 +380,20 @@ target_link_libraries(BreiZHMinimizer curses)
 
 ########################################################################################################################
 
+project(BreiZHMinimizer_v2)
+
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/BreiZHMinimizer_v2.cpp")
+
+add_executable(BreiZHMinimizer_v2 ${source_files})
+
+target_link_libraries(BreiZHMinimizer_v2 z)
+target_link_libraries(BreiZHMinimizer_v2 bz2)
+target_link_libraries(BreiZHMinimizer_v2 curses)
+
+########################################################################################################################
+
 project(extract_color)
 
 file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)

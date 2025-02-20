@@ -108,6 +108,7 @@ void merge_n_files_less_than_64_colors(
                     i_files.erase  ( i_files.begin()   + i );
                     i_buffer.erase ( i_buffer.begin()  + i );
                     nElements.erase( nElements.begin() + i );
+                    counter.erase  ( counter.begin()   + i );
                     color.erase    ( color.begin()     + i );
                     i -= 1;
                 }
