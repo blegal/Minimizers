@@ -162,20 +162,22 @@ std::tuple<int, bool> read_fastx_gz_file_no_N::next_sequence(char* n_kmer, int b
     if (buffer[c_ptr] == '\n') c_ptr += 1; //case buffer ended on newline (would else fall into non-DNA case)
     
 
-    //last time left on header, find next sequence and recurse over it
+    ///last time left on header, find next sequence and recurse over it
     if ((buffer[c_ptr] == '>') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '+'))
     {
+        bool quality = (buffer[c_ptr] == '+');
         //start looking for newline in remaining buffer
         for(int i = c_ptr; i < n_data; i += 1) {
             if (buffer[i] == '\n') {
                 c_ptr      = i + 1;
 
-                if (buffer[c_ptr] == '+'){ //skip fastq quality line
+                if (quality){ //skip fastq quality line
                     c_ptr += n_qualities;
                     if (c_ptr >= n_data && !reload()){
                         return {0, _internal_};
                         //nothing after quality line
                     }
+                    n_qualities = 0;
                 } 
 
                 return next_sequence(n_kmer, buffer_size, true);
@@ -188,12 +190,13 @@ std::tuple<int, bool> read_fastx_gz_file_no_N::next_sequence(char* n_kmer, int b
             if (buffer[i] == '\n') {
                 c_ptr      = i + 1;
 
-                if (buffer[c_ptr] == '+'){ //skip fastq quality line
+                if (quality){ //skip fastq quality line
                     c_ptr += n_qualities;
                     if (c_ptr >= n_data && !reload()){
                         return {0, _internal_};
                         //nothing after quality line
                     }
+                    n_qualities = 0;
                 } 
 
                 return next_sequence(n_kmer, buffer_size, true);

@@ -119,7 +119,6 @@ bool read_fastx_file_no_N::next_sequence(char* n_kmer)
 //
 std::tuple<int, bool> read_fastx_file_no_N::next_sequence(char* n_kmer, int buffer_size, const bool _internal_)
 {
-    
     if( file_ended == true || is_eof())
     {
         return {0, true}; // aucun octet n'est disponible
@@ -131,17 +130,19 @@ std::tuple<int, bool> read_fastx_file_no_N::next_sequence(char* n_kmer, int buff
     //last time left on header, find next sequence and recurse over it
     if ((buffer[c_ptr] == '>') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '+'))
     {
+        bool quality = (buffer[c_ptr] == '+');
         //start looking for newline in remaining buffer
         for(int i = c_ptr; i < n_data; i += 1) {
             if (buffer[i] == '\n') {
                 c_ptr      = i + 1;
 
-                if (buffer[c_ptr] == '+'){ //skip fastq quality line
+                if (quality){ //skip fastq quality line
                     c_ptr += n_qualities;
                     if (c_ptr >= n_data && !reload()){
                         return {0, _internal_};
                         //nothing after quality line
                     }
+                    n_qualities = 0;
                 } 
 
                 return next_sequence(n_kmer, buffer_size, true);
@@ -154,12 +155,13 @@ std::tuple<int, bool> read_fastx_file_no_N::next_sequence(char* n_kmer, int buff
             if (buffer[i] == '\n') {
                 c_ptr      = i + 1;
 
-                if (buffer[c_ptr] == '+'){ //skip fastq quality line
+                if (quality){ //skip fastq quality line
                     c_ptr += n_qualities;
                     if (c_ptr >= n_data && !reload()){
                         return {0, _internal_};
                         //nothing after quality line
                     }
+                    n_qualities = 0;
                 } 
 
                 return next_sequence(n_kmer, buffer_size, true);
@@ -174,6 +176,7 @@ std::tuple<int, bool> read_fastx_file_no_N::next_sequence(char* n_kmer, int buff
         !(buffer[c_ptr] == 'T') && !(buffer[c_ptr] == 't') && 
         !(buffer[c_ptr] == 'U') && !(buffer[c_ptr] == 'u')){
             c_ptr      += 1; //TODO: look for first non intrus
+            n_qualities += 1; //'N' have qualities aswell
             return next_sequence(n_kmer, buffer_size, true);
     }
 
@@ -192,6 +195,7 @@ std::tuple<int, bool> read_fastx_file_no_N::next_sequence(char* n_kmer, int buff
             buffer[c_ptr] == 'T' || buffer[c_ptr] == 't' || 
             buffer[c_ptr] == 'U' || buffer[c_ptr] == 'u'){
             n_kmer[cnt++] = buffer[c_ptr++];
+            n_qualities += 1;
         }
 
         //ignore newlines
