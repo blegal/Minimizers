@@ -364,8 +364,8 @@ int main(int argc, char *argv[])
         n_files.resize( l_files.size() );
 
         int counter = 0;
-//        omp_set_num_threads(threads_minz);
-//#pragma omp parallel for default(shared)
+        omp_set_num_threads(threads_minz);
+        #pragma omp parallel for default(shared)
         for(int i = 0; i < l_files.size(); i += 1)
         {
 //            const auto start_mzr = std::chrono::steady_clock::now();
