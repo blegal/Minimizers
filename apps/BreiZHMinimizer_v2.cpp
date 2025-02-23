@@ -1,5 +1,4 @@
 #include <cstdio>
-#include <fstream>
 #include <vector>
 #include <omp.h>
 #include <unistd.h>
@@ -10,6 +9,7 @@
 #include "../src/minimizer/minimizer_v2.hpp"
 #include "../src/minimizer/minimizer_v3.hpp"
 #include "../src/merger/in_file/merger_in.hpp"
+#include "../src/merger/CMergeFile.hpp"
 
 #include "../src/merger/in_file/merger_n_files.hpp"
 #include "../src/merger/in_file/merger_n_files_lt64.hpp"
@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
     // On filtre les fichiers que l'on souhaite traiter car dans les repertoires il peut y avoir
     // de la doc, etc.
     //
-    std::vector<std::string> l_files;
+    std::vector<std::string> filelist;
     for( int i = 0; i < t_files.size(); i += 1 )
     {
         std::string t_file = t_files[i];
@@ -296,15 +296,16 @@ int main(int argc, char *argv[])
                     (t_file.substr(t_file.find_last_of(".") + 1) == "fna")
                 )
             ){
-//          printf ("(II) accepting %s\n", t_file.c_str());
-            l_files.push_back( t_file );
+            filelist.push_back( t_file );
         }else if( (skip_minimizer_step == true) &&
             (
                     (t_file.substr(t_file.find_last_of(".") + 1) == "raw")
             )
             ){
-//          printf ("(II) accepting %s\n", t_file.c_str());
-            l_files.push_back( t_file );
+            //
+            // raw files are mainly used for debbuging purpose !
+            //
+            filelist.push_back( t_file );
         }else{
             warning_section();
             printf ("(WW)   > discarding %s\n", t_file.c_str());
@@ -312,10 +313,13 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("(II) - Number of selected   files : %zu\n", l_files.size());
+    printf("(II) - Number of selected   files : %zu\n", filelist.size());
     printf("(II)\n");
 
-    if( l_files.size() == 0 )
+    //
+    // Si nous n'avons aucun fichier c'est que l'utilisateur a du faire une erreur
+    //
+    if( filelist.size() == 0 )
     {
         error_section();
         printf("(EE) The provided directory does not contain valid file(s) \n");
@@ -328,21 +332,21 @@ int main(int argc, char *argv[])
     // On limite le nombre de fichiers a traiter, utile lors des phases de debug
     // pour ne pas avoir a traiter tous les fichiers d'un repo
     //
-    if ( l_files.size() > file_limit ) {
+    if ( filelist.size() > file_limit ) {
         warning_section();
         printf ("(WW) Reducing the number of files to process (file_limit = %d)\n", file_limit);
         reset_section();
-        while (l_files.size() > file_limit) {
-            l_files.pop_back();
+        while (filelist.size() > file_limit) {
+            filelist.pop_back();
         }
     }
 
 
-
-    std::vector<std::string> n_files;
     //
     //
     //
+    std::vector<CMergeFile> n_files;
+    std::vector<CMergeFile> l_files;
     if( skip_minimizer_step == false )
     {
         uint64_t in_mbytes = 0;
@@ -355,27 +359,25 @@ int main(int argc, char *argv[])
             printf("(II) - Limited memory mode : false\n");
 
         CTimer minzr_timer( true );
-//      const auto start = std::chrono::steady_clock::now();
 
         //
         // On predimentionne le vecteur de sortie car on connait sa taille. Cela evite les
         // problemes liés à la fonction push_back qui a l'air incertaine avec OpenMP
         //
-        n_files.resize( l_files.size() );
+        n_files.resize( filelist.size() );
 
         int counter = 0;
         omp_set_num_threads(threads_minz);
-        #pragma omp parallel for default(shared)
-        for(int i = 0; i < l_files.size(); i += 1)
+#pragma omp parallel for default(shared)
+        for(int i = 0; i < filelist.size(); i += 1)
         {
-//            const auto start_mzr = std::chrono::steady_clock::now();
             CTimer minimizer_t( true );
 
             //
             // On mesure la taille des fichiers d'entrée
             //
-            const file_stats i_file( l_files[i] );
-            const std::string t_file = "data_n" + to_number(i, (int)l_files.size()) + ".c0";
+            const file_stats i_file( filelist[i] );
+            const std::string t_file = "data_n" + to_number(i, (int)filelist.size()) + ".raw";
             in_mbytes += i_file.size_mb;
 
             /////
@@ -389,35 +391,33 @@ int main(int argc, char *argv[])
             // On mesure la taille du fichier de sortie
             //
             const file_stats o_file(t_file);
-//          const uint64_t o_size    = get_file_size(t_file);
-//          const uint64_t sizo_mb   = o_size / 1024 / 1024;
             ou_mbytes += o_file.size_mb;
             if(verbose_flag == true )
             {
                 //
                 // Mesure du temps d'execution
                 //
-//              const auto  end_mzr = std::chrono::steady_clock::now();
-//              const float e_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_mzr - start_mzr).count() / 1000.f;
                 std::string nname = shorten(i_file.name, 32);
                 counter += 1;
-                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, l_files.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
+                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, filelist.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
 
             }
 
             /////
-            n_files[i] = o_file.name; // on stocke le nom du fichier que l'on vient de produire
+            CMergeFile d_file( t_file, 0, 0 );
+            n_files[i] = d_file;                          // on stocke le nom du fichier que l'on vient de produire
             /////
         }
+
+        //
+        // The S-MER computation stage is now finished, we can prepare the merging ones
+        //
         l_files = n_files;
         n_files.clear();
 
         //
         //
         //
-        std::sort(l_files.begin(), l_files.end());
-
-//        const auto  end = std::chrono::steady_clock::now();
         const float elapsed = minzr_timer.get_time_sec();
         printf("(II) - Information loaded from files : %6d MB\n", (int)(in_mbytes));
         printf("(II)   Information wrote to files    : %6d MB\n", (int)(ou_mbytes));
@@ -426,24 +426,20 @@ int main(int argc, char *argv[])
         printf("(II) - Execution time : %1.2f seconds\n", elapsed);
         printf("(II)\n");
     }
-    //
-    //
-    //
-    std::vector<std::string> vrac_names;
-    std::vector<int>         vrac_levels;
-    std::vector<int>         vrac_real_color;
 
     //
     //
     //
     printf("(II) Tree-based merging of sorted minimizer files - %d thread(s)\n", threads_merge);
     n_files.resize( (l_files.size() + 63) / 64 ); // pur éviter le push_back qui semble OpenMP unsafe !
+    omp_set_num_threads(threads_merge); // on regle le niveau de parallelisme accessible dans cette partie
+#pragma omp parallel for
     for(int ll = 0; ll < l_files.size(); ll += 64)
     {
         const int64_t max_files = (l_files.size() - ll) < 64 ? (l_files.size() - ll) : 64;
         std::vector<std::string> liste;
-        for(int ff = 0; ff < max_files; ff += 1)
-            liste.push_back( l_files[ll + ff] );
+        for(int ff = 0; ff < max_files; ff += 1)        // in this first stage all the file are not colored
+            liste.push_back( l_files[ll + ff].name );   // at the input
 
         const std::string t_file   = "data_n" + to_number(ll/64, l_files.size()/64) + "." + std::to_string(max_files) + "c";
 
@@ -458,18 +454,22 @@ int main(int argc, char *argv[])
         }
 
         //
+        // On memorise le nom et la nature du fichier que l'on vient de créer
         //
-        //
-        n_files[ll/64] = t_file;
+        CMergeFile o_file(t_file, 64, max_files); // the real color depends on the amount of merged files
+        n_files[ll/64] = o_file;
     }
 
     //
-    // On a finit le merging
+    // The first merging stage is now ended, it is time to prepare the future ones
     //
     l_files = n_files;
     n_files.clear();
 
-
+    //
+    //
+    //
+    std::vector<CMergeFile> vrac_names;
 
     printf("(II) Tree-based merging of sorted minimizer files - %d thread(s)\n", threads_merge);
     const auto start_merge = std::chrono::steady_clock::now();
@@ -488,46 +488,91 @@ int main(int argc, char *argv[])
         if(verbose_flag == true )
             printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
-        n_files.resize( l_files.size() / 2 ); // pur éviter le push_back qui semble OpenMP unsafe !
+#define MAX_FILES 8
+
+        n_files.resize( (l_files.size() + MAX_FILES - 1) / MAX_FILES ); // pur éviter le push_back qui semble OpenMP unsafe !
 
         uint64_t in_mbytes = 0; // pour calculer les debits
         uint64_t ou_mbytes = 0; // pour calculer les debits
 
+
         int cnt = 0;
 #pragma omp parallel for
-        for(int ll = 0; ll < l_files.size() - 1; ll += 2)
+        for(int ll = 0; ll < l_files.size(); ll += MAX_FILES) // On merge par 8, ce choix est discutable
         {
+            //
+            // Gathering statistic informations about the merging process
+            //
             const auto start_file = std::chrono::steady_clock::now();
-            const file_stats i_file_1( l_files[ll    ] );
-            const file_stats i_file_2( l_files[ll + 1] );
-            const std::string t_file   = "data_n" + to_number(ll/2, l_files.size()/2) + "." + std::to_string(2 * colors) + "c";
+            const int64_t max_files = (l_files.size() - ll) < MAX_FILES ? (l_files.size() - ll) : MAX_FILES;
 
-            in_mbytes += i_file_1.size_mb;
-            in_mbytes += i_file_2.size_mb;
+            for(int ff = 0; ff < max_files; ff += 1)
+            {
+                const file_stats file_s( l_files[ll + ff].name );
+                in_mbytes += file_s.size_mb;
+            }
 
-            merger_in( i_file_1.name, i_file_2.name, t_file, colors, colors);    // couleurs homogenes
+            int final_real_color = 0;
+            for(int ff = 0; ff < max_files; ff += 1)
+                final_real_color += l_files[ll + ff].real_colors;
+
+            int final_numb_colors = 0;
+            for(int ff = 0; ff < max_files; ff += 1)
+                final_numb_colors += l_files[ll + ff].numb_colors;
+
+            //
+            // Generation of the name of the output file
+            //
+            std::string t_file   = "data_n";
+            t_file += to_number(ll/MAX_FILES, l_files.size()/MAX_FILES) + ".";
+            t_file += std::to_string(final_real_color) + "c";
+
+            //
+            // Creation of the filelist
+            //
+            std::vector<std::string> tmp_list;
+            for(int ff = 0; ff < max_files; ff += 1)
+                tmp_list.push_back( l_files[ll + ff].name );
+
+            //
+            // We apply a 2->1 merging process
+            //
+//            merger_in(
+//                    l_files[ll    ].name,
+//                    l_files[ll + 1].name,
+//                    t_file,
+//                    l_files[ll + 1].numb_colors,
+//                    l_files[ll + 1].numb_colors
+//                    );    // couleurs homogenes
+            merge_n_files_greater_than_64_colors(
+                    tmp_list,
+                    l_files[ll].numb_colors,
+                t_file);
+
 
             if(
                     (keep_merge_files == false) && !((skip_minimizer_step || keep_minimizer_files) && (colors == 1)) ) // sinon on supprime nos fichier d'entrée !
             {
-                std::remove( i_file_1.name.c_str() ); // delete file
-                std::remove( i_file_2.name.c_str() ); // delete file
+                std::remove( l_files[ll    ].name.c_str() ); // delete file
+                std::remove( l_files[ll + 1].name.c_str() ); // delete file
             }
 
             const file_stats o_file( t_file );
             ou_mbytes += o_file.size_mb;
 
             //
+            // Creation of the object associated to the generated file
             //
-            //
-            n_files[ll/2] = o_file.name;
+            CMergeFile cm_file( t_file, final_numb_colors, final_real_color);
+            n_files[ll/MAX_FILES] = cm_file;
 
+            //
+            // Information reporting for the user
+            //
             if(verbose_flag == true ){
-                printf("%6d |", cnt);
-                i_file_1.printf_size();
-                printf("   +   ");
-                i_file_2.printf_size();
-                printf("   == MERGE =>   ");
+                printf("%6d | %s .... ", cnt, l_files[ll            ].name.c_str());
+                printf("%s ",                 l_files[ll+max_files-1].name.c_str());
+                printf("   == %d x MERGE =>   ", MAX_FILES);
                 o_file.printf_size();
                 const auto  end_file = std::chrono::steady_clock::now();
                 const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
@@ -536,8 +581,8 @@ int main(int argc, char *argv[])
 
             cnt += 1; // on compte le nombre de données traitées
         }
-
         const auto  end_merge = std::chrono::steady_clock::now();
+
         const float elapsed_file = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_merge - start_merge).count() / 1000.f;
         if( verbose_flag ){
             const float d_in = (float)in_mbytes / elapsed_file;
@@ -551,29 +596,21 @@ int main(int argc, char *argv[])
         }
 
         //
-        // On trie les fichiers par ordre alphabetique car sinon pour reussir a faire le lien entre couleur et
-        // nom du fichier d'entrée est une véritable galère surtout lorsque l'on applique une parallelisation
-        // OpenMP !!! On n'a pas besoin de trier les couleurs (int) associés car ils ont tous la meme valeur.
-        //
-//        for(int i = 0; i < n_files.size(); i += 1)
-//            printf("- Before sorting (%2d : %s)...\n", i, n_files[i].c_str());
-
-        std::sort(n_files.begin(), n_files.end());
-
-//        for(int i = 0; i < n_files.size(); i += 1)
-//            printf("- After  sorting (%2d : %s)...\n", i, n_files[i].c_str());
-
-        //
-        // On regarde si des fichiers n'ont pas été traités. Cela peut arriver lorsque l'arbre de fusion
+        // On regarde si le dernier fichier a le meme nombre de couleurs que les autres fichiers
         // n'est pas équilibré. On stocke le fichier
         //
-        if( l_files.size()%2 )
+        if( n_files.size() >= 2 )
         {
-            vrac_names.push_back ( l_files[l_files.size()-1] );
-            vrac_levels.push_back( colors                    );
-            warning_section();
-            printf("(II)     > Keeping (%s) file for later processing...\n", vrac_names.back().c_str());
-            reset_section();
+            CMergeFile d1_file = n_files[n_files.size()-2];
+            CMergeFile d2_file = n_files[n_files.size()-1];
+            if( d1_file.numb_colors != d2_file.numb_colors )
+            {
+                n_files.pop_back();
+                vrac_names.push_back ( d2_file );
+                warning_section();
+                printf("(II)     > Keeping (%s) file for later processing...\n", d2_file.name.c_str());
+                reset_section();
+            }
         }
 
         //
@@ -583,12 +620,11 @@ int main(int argc, char *argv[])
         if( n_files.size() == 1 )
         {
             vrac_names.push_back ( n_files[0] );
-            vrac_levels.push_back( 2 * colors );
         }
 
         l_files = n_files;
         n_files.clear();
-        colors *= 2;
+        colors *= MAX_FILES;
     }
     const auto  end_merge = std::chrono::steady_clock::now();
     const float elapsed_merge = std::chrono::duration_cast<std::chrono::milliseconds>(end_merge - start_merge).count() / 1000.f;
@@ -598,16 +634,13 @@ int main(int argc, char *argv[])
     if( verbose_flag )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
-    //
-    // Utile pour les fusions partielles et le renomage du binaire à la fin
-    //
-    vrac_real_color = vrac_levels;
-/*
+
     for(int i = 0; i < vrac_names.size(); i += 1)
     {
-        printf("(II) Remaning file : %5d | %20s | level = %6d ||\n", i, vrac_names[i].c_str(), vrac_levels[i]);
+        printf("(II) Remaning file : %5d | %20s | num_colors = %6lld | real_colors = %6lld \n", i, vrac_names[i].name.c_str(),  vrac_names[i].numb_colors,  vrac_names[i].real_colors);
     }
-*/
+
+
     if( verbose_flag )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
@@ -620,78 +653,49 @@ int main(int argc, char *argv[])
         CTimer timer_merge( true );
 
         int cnt = 0;
-        //
-        // A t'on un cas particulier a gerer (fichier avec 0 couleur)
-        //
-        if(vrac_levels[0] == 1)
-        {
-            const std::string i_file = vrac_names[0];
-            const std::string o_file   = "data_n" + std::to_string(cnt++) + "." + std::to_string(2) + "c";
-            printf("- No color file processing (%s)\n", i_file.c_str());
-            merger_in(i_file,i_file, o_file, 0, 0);
-            vrac_names     [0] = o_file;
-            vrac_levels    [0] =      2; // les niveaux de fusion auxquels on
-            vrac_real_color[0] =      1; // on a une seule couleur
-            printf("- %20.20s (%d) + %20.20s (%d)\n", i_file.c_str(), 0, i_file.c_str(), 0);
-
-            if((keep_merge_files == false)
-                && !((skip_minimizer_step || keep_minimizer_files) && (colors == 1)) ) {
-                std::remove(i_file.c_str()); // delete file
-            }
-        }
 
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
         while( vrac_names.size() != 1 )
         {
-            const std::string i_file_1 = vrac_names[1]; // le plus grand est tjs le second
-            const std::string i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
-            int color_1     = vrac_levels    [1];
-            int color_2     = vrac_levels    [0];
-            int r_color_1   = vrac_real_color[1];
-            int r_color_2   = vrac_real_color[0];
-            int real_color  = r_color_1 + r_color_2;
-            int merge_color =   color_1   + color_2;
 
-            printf("- %20.20s (%d) + %20.20s (%d)\n", i_file_1.c_str(), r_color_1, i_file_2.c_str(), r_color_2);
+            const CMergeFile i_file_1 = vrac_names[1]; // le plus grand est tjs le second
+            const CMergeFile i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
+                  CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
 
-            if( (color_1 <= 32) && (color_2 <= 32) ){
-                color_2     = color_1;           // on uniformise
-                merge_color = color_1 + color_2; // le double du plus gros
-            }else if( color_1 >= 64 ){
-                if( color_2 < 64 ){
-                    color_2     = 64;                 // on est obligé de compter 64 meme si c moins, c'est un uint64_t
-                    merge_color = color_1 + color_2;  //
-                }else{
-                    // on ne change rien !
-                    merge_color = color_1 + color_2;  //
-                }
-            }
+            o_file.name = "data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c";
+
+            printf("- %20.20s (%lld) + %20.20s (%lld)\n", i_file_1.name.c_str(), i_file_1.real_colors, i_file_2.name.c_str(), i_file_2.real_colors);
 
             //
             // On lance le processus de merging sur les 2 fichiers
             //
-            const std::string o_file   = "data_n" + std::to_string(cnt++) + "." + std::to_string(real_color) + "c";
-            printf("  %20.20s (%d) + %20.20s (%d) ===> %20.20s (%d)\n", i_file_1.c_str(), color_1, i_file_2.c_str(), color_2, o_file.c_str(), real_color);
-            merger_in(i_file_1,i_file_2, o_file, color_1, color_2);
+            printf("  %20.20s (%lld) + %20.20s (%lld) ===> %20.20s (%lld)\n",
+                   i_file_1.name.c_str(), i_file_1.real_colors,
+                   i_file_2.name.c_str(), i_file_2.real_colors,
+                   o_file.name.c_str(),   o_file.real_colors);
+
+            merger_in(
+                    i_file_1.name,
+                    i_file_2.name,
+                    o_file.name,
+                    i_file_1.numb_colors,
+                    i_file_2.numb_colors
+            );
             vrac_names     [1] = o_file;
-            vrac_levels    [1] = merge_color;
-            vrac_real_color[1] = real_color;
 
             //
             // On supprime le premier élément du tableau
             //
-            vrac_names.erase     ( vrac_names.begin()      );
-            vrac_levels.erase    ( vrac_levels.begin()     );
-            vrac_real_color.erase( vrac_real_color.begin() );
+            vrac_names.erase( vrac_names.begin() );
 
             //
             // On supprime les fichiers source
             //
             if( keep_merge_files == false )
             {
-                std::remove( i_file_1.c_str() ); // delete file
-                std::remove( i_file_2.c_str() ); // delete file
+                std::remove( i_file_1.name.c_str() ); // delete file
+                std::remove( i_file_2.name.c_str() ); // delete file
             }
         }
 //      const auto  end_merge_2nd = std::chrono::steady_clock::now();
@@ -705,10 +709,9 @@ int main(int argc, char *argv[])
     //
     if( vrac_names.size() == 1 )
     {
-        const std::string file   = vrac_names[0]; // le plus grand est tjs le second
-        const int real_color     = vrac_real_color[0];
-        const std::string o_file = file_out + "." + std::to_string(real_color) + "c";
-        std::rename(vrac_names[0].c_str(), o_file.c_str());
+        const CMergeFile lastfile = vrac_names[0];
+        const std::string o_file = file_out + "." + std::to_string(lastfile.real_colors) + "c";
+        std::rename(lastfile.name.c_str(), o_file.c_str());
         printf("(II) Renaming final file : %s\n", o_file.c_str());
     }else{
         printf("(EE) Something strange happened !!!\n");
