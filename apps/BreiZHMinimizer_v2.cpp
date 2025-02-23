@@ -550,12 +550,11 @@ int main(int argc, char *argv[])
                 t_file);
 
 
-            if(
-                    (keep_merge_files == false) && !((skip_minimizer_step || keep_minimizer_files) && (colors == 1)) ) // sinon on supprime nos fichier d'entrée !
-            {
-                std::remove( l_files[ll    ].name.c_str() ); // delete file
-                std::remove( l_files[ll + 1].name.c_str() ); // delete file
-            }
+//            if(
+//                    (keep_merge_files == false) && !((skip_minimizer_step || keep_minimizer_files) && (colors == 1)) ) // sinon on supprime nos fichier d'entrée !
+//            {
+            for(int ff = 0; ff < max_files; ff += 1)
+                std::remove( l_files[ll+ff].name.c_str() );
 
             const file_stats o_file( t_file );
             ou_mbytes += o_file.size_mb;
