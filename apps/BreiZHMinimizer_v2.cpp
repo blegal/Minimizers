@@ -110,6 +110,7 @@ int main(int argc, char *argv[])
     int   threads_merge       = 1;
     int   ram_value           = 1024;
     int   limited_memory      = 1;
+    int   merge_step          = 8;
 
     int   file_limit          = 65536;
 
@@ -128,8 +129,9 @@ int main(int argc, char *argv[])
             {"compression", required_argument, 0, 'C'},
             {"output",      required_argument, 0, 'O'},
 
-            {"limited-mem",              no_argument, &limited_memory,    1},
-            {"unlimited-mem",              no_argument, &limited_memory,    0},
+            {"limited-mem",        no_argument, &limited_memory,    1},
+            {"unlimited-mem",     no_argument, &limited_memory,    0},
+            {"ways",      required_argument, 0, 'w'},
 
             {"max-files",      required_argument, 0,  'x'},
             {"threads",      required_argument, 0,  't'},
@@ -175,6 +177,10 @@ int main(int argc, char *argv[])
 
             case 'O':
                 file_out = optarg;
+                break;
+
+            case 'w':
+                merge_step = std::atoi( optarg );
                 break;
 
             case 'C':
@@ -441,7 +447,7 @@ int main(int argc, char *argv[])
     //
     //
     //
-    printf("(II) Tree-based merging of sorted minimizer files - %d thread(s)\n", threads_merge);
+    printf("(II) Tree-based %d-ways merging of sorted minimizer files - %d thread(s)\n", 64, threads_merge);
     if(verbose_flag == true )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
     n_files.resize( (l_files.size() + 63) / 64 ); // pur éviter le push_back qui semble OpenMP unsafe !
@@ -505,16 +511,16 @@ int main(int argc, char *argv[])
     //
     std::vector<CMergeFile> vrac_names;
 
-    printf("(II) Tree-based merging of sorted minimizer files - %d thread(s)\n", threads_merge);
+    printf("(II) Tree-based %d-ways merging of first stage files - %d thread(s)\n", merge_step, threads_merge);
     const auto start_merge = std::chrono::steady_clock::now();
     int colors = 64;
     omp_set_num_threads(threads_merge); // on regle le niveau de parallelisme accessible dans cette partie
     while( l_files.size() > 1 )
     {
         if( verbose_flag )
-            printf("(II)   - Merging %4zu files with %4d color(s)\n", l_files.size(), colors);
+            printf("(II)   - %d-ways merging %4zu files with %4d color(s)\n", merge_step, l_files.size(), colors);
         else{
-            printf("(II)   - Merging %4zu files | %4d color(s) | ", l_files.size(), colors);
+            printf("(II)   - %d-ways merging %4zu files | %4d color(s) | ",   merge_step, l_files.size(), colors);
             fflush(stdout);
         }
         const auto start_merge = std::chrono::steady_clock::now();
@@ -522,9 +528,8 @@ int main(int argc, char *argv[])
         if(verbose_flag == true )
             printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
-#define MAX_FILES 8
 
-        n_files.resize( (l_files.size() + MAX_FILES - 1) / MAX_FILES ); // pur éviter le push_back qui semble OpenMP unsafe !
+        n_files.resize( (l_files.size() + merge_step - 1) / merge_step ); // pur éviter le push_back qui semble OpenMP unsafe !
 
         uint64_t in_mbytes = 0; // pour calculer les debits
         uint64_t ou_mbytes = 0; // pour calculer les debits
@@ -532,13 +537,13 @@ int main(int argc, char *argv[])
 
         int cnt = 0;
 #pragma omp parallel for
-        for(int ll = 0; ll < l_files.size(); ll += MAX_FILES) // On merge par 8, ce choix est discutable
+        for(int ll = 0; ll < l_files.size(); ll += merge_step) // On merge par 8, ce choix est discutable
         {
             //
             // Gathering statistic informations about the merging process
             //
             const auto start_file = std::chrono::steady_clock::now();
-            const int64_t max_files = (l_files.size() - ll) < MAX_FILES ? (l_files.size() - ll) : MAX_FILES;
+            const int64_t max_files = (l_files.size() - ll) < merge_step ? (l_files.size() - ll) : merge_step;
 
             int64_t local_mb = 0;
             for(int ff = 0; ff < max_files; ff += 1)
@@ -560,7 +565,7 @@ int main(int argc, char *argv[])
             // Generation of the name of the output file
             //
             std::string t_file   = "data_n";
-            t_file += to_number(ll/MAX_FILES, l_files.size()/MAX_FILES) + ".";
+            t_file += to_number(ll/merge_step, l_files.size()/merge_step) + ".";
             t_file += std::to_string(final_real_color) + "c" + extension;
 
             //
@@ -599,7 +604,7 @@ int main(int argc, char *argv[])
             // Creation of the object associated to the generated file
             //
             CMergeFile cm_file( t_file, final_numb_colors, final_real_color);
-            n_files[ll/MAX_FILES] = cm_file;
+            n_files[ll/merge_step] = cm_file;
 
             //
             // Information reporting for the user
@@ -607,7 +612,7 @@ int main(int argc, char *argv[])
             if(verbose_flag == true ){
                 printf("%6d | %s .... ", cnt, l_files[ll            ].name.c_str());
                 printf("%s ",                 l_files[ll+max_files-1].name.c_str());
-                printf("   == %d x MERGE =>   ", MAX_FILES);
+                printf("   == %d x MERGE =>   ", merge_step);
                 o_file.printf_size();
                 const auto  end_file = std::chrono::steady_clock::now();
                 const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
@@ -659,7 +664,7 @@ int main(int argc, char *argv[])
 
         l_files = n_files;
         n_files.clear();
-        colors *= MAX_FILES;
+        colors *= merge_step;
     }
     const auto  end_merge = std::chrono::steady_clock::now();
     const float elapsed_merge = std::chrono::duration_cast<std::chrono::milliseconds>(end_merge - start_merge).count() / 1000.f;
