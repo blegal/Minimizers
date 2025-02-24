@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
     //
     std::string directory = "";
     std::string filename  = "";
+    std::string extension = "";
     std::string file_out  = "result";
 
     int   verbose_flag        = 0;
@@ -118,9 +119,10 @@ int main(int argc, char *argv[])
             {"keep-minimizers",     no_argument, 0, 'K'},
             {"keep-temp-files",     no_argument, 0, 'k'},
 
-            {"directory",       required_argument, 0, 'd'},
-            {"filename",      required_argument, 0,  'f'},
+            {"directory",   required_argument, 0, 'd'},
+            {"filename",    required_argument, 0,  'f'},
             {"output",      required_argument, 0,  'O'},
+            {"compression", required_argument, 0,  'C'},
 
             {"limited-mem",              no_argument, &limited_memory,    1},
             {"unlimited-mem",              no_argument, &limited_memory,    0},
@@ -169,6 +171,10 @@ int main(int argc, char *argv[])
 
             case 'O':
                 file_out = optarg;
+                break;
+
+            case 'C':
+                extension = optarg;
                 break;
 
             case 't':
