@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
 
             {"directory",       required_argument, 0, 'd'},
             {"filename",      required_argument, 0,  'f'},
+            {"output",      required_argument, 0,  'O'},
 
             {"limited-mem",              no_argument, &limited_memory,    1},
             {"unlimited-mem",              no_argument, &limited_memory,    0},
@@ -166,6 +167,9 @@ int main(int argc, char *argv[])
                 keep_merge_files     = true;
                 break;
 
+            case 'O':
+                file_out = optarg;
+                break;
 
             case 't':
                 threads_minz  = std::atoi( optarg );
