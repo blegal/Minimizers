@@ -110,6 +110,7 @@ void merge_n_files_greater_than_64_colors(
                     i_files.erase  ( i_files.begin()   + i );
                     i_buffer.erase ( i_buffer.begin()  + i );
                     nElements.erase( nElements.begin() + i );
+                    color_pos.erase( color_pos.begin() + i );
                     counter.erase  ( counter.begin()   + i );
                     i -= 1;
                 }
@@ -140,7 +141,6 @@ void merge_n_files_greater_than_64_colors(
                     curr_value = val;
                     curr_index = i;
                 }
-//              printf("(+) val = %16.16X | curr_value = %16.16X | curr_index = %2d |\n", val, curr_value, curr_index);
             }
 
             //
