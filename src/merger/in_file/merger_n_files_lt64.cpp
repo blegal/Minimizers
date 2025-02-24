@@ -1,4 +1,6 @@
 #include "merger_n_files_lt64.hpp"
+#include "../../files/stream_reader_library.hpp"
+#include "../../files/stream_writer_library.hpp"
 
 void merge_n_files_less_than_64_colors(
         const std::vector<std::string>& file_list,
@@ -18,10 +20,10 @@ void merge_n_files_less_than_64_colors(
     //
     // On ouvre tous les fichiers que l'on doit fusionner
     //
-    std::vector<FILE*> i_files (file_list.size());
+    std::vector<stream_reader*> i_files (file_list.size());
     for(int i = 0; i < file_list.size(); i += 1)
     {
-        FILE *f = fopen(file_list[i].c_str(), "rb");
+        stream_reader* f = stream_reader_library::allocate( file_list[i] );
         if( f == NULL )
         {
             printf("(EE) File does not exist (%s))\n", file_list[i].c_str());
@@ -73,7 +75,7 @@ void merge_n_files_less_than_64_colors(
     //
     // On ouvre le fichier de destination
     //
-    FILE *fdst  = fopen(o_file.c_str(),   "wb");
+    stream_writer* fdst = stream_writer_library::allocate( o_file );
     if( fdst == NULL )
     {
         printf("(EE) File does not exist (%s))\n", o_file.c_str());
@@ -99,13 +101,15 @@ void merge_n_files_less_than_64_colors(
             //
             if (counter[i] == nElements[i])
             {
-                nElements[i] = fread(i_buffer[i], sizeof(uint64_t), _iBuff_, i_files[i]);
+                nElements[i] = i_files[i]->read(i_buffer[i], sizeof(uint64_t), _iBuff_);
+                //nElements[i] = fread(i_buffer[i], sizeof(uint64_t), _iBuff_, i_files[i]);
                 counter  [i] = 0;
                 if( nElements[i] == 0 )
                 {
                     // On est arrivé à la fin du fichier, donc on suppirme le flux
                     // du processus de fusion...
-                    fclose         ( i_files[i]             );
+                    delete i_files[i];
+                  //fclose         ( i_files[i]             );
                     i_files.erase  ( i_files.begin()   + i );
                     i_buffer.erase ( i_buffer.begin()  + i );
                     nElements.erase( nElements.begin() + i );
@@ -164,7 +168,8 @@ void merge_n_files_less_than_64_colors(
             // valeurs car on peut avoir besoin de mettre a jour les couleurs à l'itération suivante
             //
             if (ndst == _oBuff_) {
-                fwrite(dest, sizeof(uint64_t), ndst - 2, fdst);
+              //fwrite(dest, sizeof(uint64_t), ndst - 2, fdst);
+                fdst->write(dest, sizeof(uint64_t), ndst - 2);
                 dest[0] = dest[ndst-2]; // on recupere le dernier minimizer inséré
                 dest[1] = dest[ndst-1]; // on recupere la derniere couleur insérée
                 ndst = 2;
@@ -177,13 +182,15 @@ void merge_n_files_less_than_64_colors(
     // On flush les données restantes avant de quitter
     //
     if (ndst != 0) {
-        fwrite(dest, sizeof(uint64_t), ndst, fdst);
+      //fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        fdst->write(dest, sizeof(uint64_t), ndst);
         ndst = 0;
     }
 
     //
     // On ferme le fichier de sortie et on détruit le buffer
     //
-    fclose( fdst  );
-    delete [] dest;
+  //fclose( fdst  );
+    delete [] dest; // on detruit le buffer interne
+    delete fdst;    // on détruit le fichier de sortie (fclose)
 }

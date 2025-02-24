@@ -15,5 +15,5 @@ public:
 
     virtual bool is_open ();
     virtual void close  ();
-    virtual int  write  (char* buffer, int eSize, int eCount);
+    virtual int  write  (void* buffer, int eSize, int eCount);
 };

@@ -16,5 +16,5 @@ public:
     virtual bool is_open();
     virtual void close  ();
     virtual bool is_eof ();
-    virtual int  read   (char* buffer, int eSize, int eCount);
+    virtual int  read   (void* buffer, int eSize, int eCount);
 };

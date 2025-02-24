@@ -62,7 +62,7 @@ bool stream_gz_reader::is_eof()
 //
 //
 //
-int stream_gz_reader::read(char* buffer, int eSize, int eCount)
+int stream_gz_reader::read(void* buffer, int eSize, int eCount)
 {
     const int n_data = gzread(gzfp, buffer,  eSize * eCount);
     if( n_data == Z_STREAM_END ) {

@@ -21,7 +21,7 @@ stream_raw_writer::stream_raw_writer(const std::string& filen)
         reset_section();
         exit( EXIT_FAILURE );
     }
-    is_fopen     = true; // file
+    is_fopen = true; // file
 }
 //
 //
@@ -53,10 +53,10 @@ bool stream_raw_writer::is_open ()
 //
 //
 //
-int stream_raw_writer::write(char* buffer, int eSize, int eCount)
+int stream_raw_writer::write(void* buffer, int eSize, int eCount)
 {
     const int nwrite = fwrite(buffer, eSize, eCount, stream);
-    if( nwrite != (eSize * eCount) )
+    if( nwrite != eCount ) // fwrite retourne le nombre d'éléments copiés et non le nombre de bytes !
     {
         error_section();
         printf("(EE) An error occured during the data write task:\n");

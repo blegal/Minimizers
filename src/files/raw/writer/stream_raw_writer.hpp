@@ -12,6 +12,6 @@ public:
     ~stream_raw_writer();
 
     virtual bool is_open ();
-    virtual int  write  (char* buffer, int eSize, int eCount);
+    virtual int  write  (void* buffer, int eSize, int eCount);
     virtual void close  ();
 };

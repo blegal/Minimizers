@@ -65,7 +65,7 @@ bool stream_bz2_reader::is_eof()
 //
 //
 //
-int stream_bz2_reader::read(char* buffer, int eSize, int eCount)
+int stream_bz2_reader::read(void* buffer, int eSize, int eCount)
 {
     const int nread = BZ2_bzread ( bzf, buffer, eSize * eCount);
     if( nread < 0 )

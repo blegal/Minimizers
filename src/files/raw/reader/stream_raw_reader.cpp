@@ -63,7 +63,7 @@ bool stream_raw_reader::is_eof()
 //
 //
 //
-int  stream_raw_reader::read(char* buffer, int eSize, int eCount)
+int  stream_raw_reader::read(void* buffer, int eSize, int eCount)
 {
     const int nread = fread(buffer, eSize, eCount, stream);
     is_foef         = ( nread != eCount); // a t'on atteint la fin du fichier ?

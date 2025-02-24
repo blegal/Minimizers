@@ -60,7 +60,7 @@ bool stream_gz_writer::is_open ()
 //
 //
 //
-int stream_gz_writer::write(char* buffer, int eSize, int eCount)
+int stream_gz_writer::write(void* buffer, int eSize, int eCount)
 {
     int nwrite = gzwrite( gzfp, buffer, eSize * eCount );
     if( nwrite == 0 )

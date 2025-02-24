@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
     //
     std::vector<uint64_t> liste_1( n_minimizr );
 
+
     FILE* f1 = fopen( ifile_1.c_str(), "r" );
     if( f1 == NULL )
     {

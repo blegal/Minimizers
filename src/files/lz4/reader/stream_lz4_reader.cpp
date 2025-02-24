@@ -73,7 +73,7 @@ bool stream_lz4_reader::is_eof()
 //
 //
 //
-int  stream_lz4_reader::read(char* buffer, int eSize, int eCount)
+int  stream_lz4_reader::read(void* buffer, int eSize, int eCount)
 {
     const LZ4F_errorCode_t nread = LZ4F_read (lz4fRead, buffer, eCount * eSize );
     if (LZ4F_isError(nread)) {

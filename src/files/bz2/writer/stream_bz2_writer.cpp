@@ -79,7 +79,7 @@ bool stream_bz2_writer::is_open ()
 //
 //
 //
-int stream_bz2_writer::write(char* buffer, int eSize, int eCount)
+int stream_bz2_writer::write(void* buffer, int eSize, int eCount)
 {
     int bzerror;
     int nwrite = eSize * eCount;

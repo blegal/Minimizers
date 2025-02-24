@@ -178,7 +178,8 @@ int main(int argc, char *argv[])
                 break;
 
             case 'C':
-                extension = optarg;
+                extension  = ".";
+                extension += optarg;
                 break;
 
             case 't':
@@ -441,19 +442,24 @@ int main(int argc, char *argv[])
     //
     //
     printf("(II) Tree-based merging of sorted minimizer files - %d thread(s)\n", threads_merge);
+    if(verbose_flag == true )
+        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
     n_files.resize( (l_files.size() + 63) / 64 ); // pur éviter le push_back qui semble OpenMP unsafe !
     omp_set_num_threads(threads_merge); // on regle le niveau de parallelisme accessible dans cette partie
+    int cnt = 0;
 #pragma omp parallel for
     for(int ll = 0; ll < l_files.size(); ll += 64)
     {
+        const auto start_file = std::chrono::steady_clock::now();
         const int64_t max_files = (l_files.size() - ll) < 64 ? (l_files.size() - ll) : 64;
         std::vector<std::string> liste;
         for(int ff = 0; ff < max_files; ff += 1)        // in this first stage all the file are not colored
             liste.push_back( l_files[ll + ff].name );   // at the input
 
-        const std::string t_file   = "data_n" + to_number(ll/64, l_files.size()/64) + "." + std::to_string(max_files) + "c";
+        std::string t_file = "data_n" + to_number(ll/64, l_files.size()/64) + ".";
+        t_file            += std::to_string(max_files) + "c" + extension;
 
-        printf("(II) %d - Creating %s\n", ll, t_file.c_str());
+//      printf("(II) %d - Creating %s\n", ll, t_file.c_str());
 
         merge_n_files_less_than_64_colors( liste, t_file);
 
@@ -463,12 +469,30 @@ int main(int argc, char *argv[])
                 std::remove( liste[ff].c_str() );
         }
 
+
         //
         // On memorise le nom et la nature du fichier que l'on vient de créer
         //
         CMergeFile o_file(t_file, 64, max_files); // the real color depends on the amount of merged files
         n_files[ll/64] = o_file;
+
+        //
+        // Information reporting for the user
+        //
+        if(verbose_flag == true ){
+            const file_stats t_file( o_file.name );
+            printf("%6d | %s .... ", cnt, l_files[ll            ].name.c_str());
+            printf("%s ",                 l_files[ll+max_files-1].name.c_str());
+            printf("   == %d x MERGE =>   ", 8);
+            t_file.printf_size();
+            const auto  end_file = std::chrono::steady_clock::now();
+            const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
+            printf("in  %6.2fs\n", elapsed_file);
+        }
+        cnt += 1;
     }
+    if(verbose_flag == true )
+        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
     //
     // The first merging stage is now ended, it is time to prepare the future ones
@@ -537,7 +561,7 @@ int main(int argc, char *argv[])
             //
             std::string t_file   = "data_n";
             t_file += to_number(ll/MAX_FILES, l_files.size()/MAX_FILES) + ".";
-            t_file += std::to_string(final_real_color) + "c";
+            t_file += std::to_string(final_real_color) + "c" + extension;
 
             //
             // Creation of the filelist
@@ -735,7 +759,7 @@ int main(int argc, char *argv[])
     if( vrac_names.size() == 1 )
     {
         const CMergeFile lastfile = vrac_names[0];
-        const std::string o_file = file_out + "." + std::to_string(lastfile.real_colors) + "c";
+        const std::string o_file = file_out + "." + std::to_string(lastfile.real_colors) + "c" + extension;
         std::rename(lastfile.name.c_str(), o_file.c_str());
         printf("(II) Renaming final file : %s\n", o_file.c_str());
     }else{

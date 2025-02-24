@@ -78,7 +78,7 @@ bool stream_lz4_writer::is_open ()
 //
 //
 //
-int stream_lz4_writer::write(char* buffer, int eSize, int eCount)
+int stream_lz4_writer::write(void* buffer, int eSize, int eCount)
 {
     const LZ4F_errorCode_t ret = LZ4F_write(lz4fWrite, buffer, eSize * eCount);
     if (LZ4F_isError(ret)) {
