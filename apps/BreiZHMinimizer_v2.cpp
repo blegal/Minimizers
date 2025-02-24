@@ -124,6 +124,7 @@ int main(int argc, char *argv[])
 
             {"directory",       required_argument, 0, 'd'},
             {"filename",      required_argument, 0,  'f'},
+            {"output",      required_argument, 0,  'O'},
 
             {"limited-mem",              no_argument, &limited_memory,    1},
             {"unlimited-mem",              no_argument, &limited_memory,    0},
@@ -168,7 +169,12 @@ int main(int argc, char *argv[])
 
             case 'k':
                 keep_merge_files     = true;
+            break;
+
+            case 'O':
+                file_out = optarg;
                 break;
+
 
 
             case 't':
@@ -506,10 +512,12 @@ int main(int argc, char *argv[])
             const auto start_file = std::chrono::steady_clock::now();
             const int64_t max_files = (l_files.size() - ll) < MAX_FILES ? (l_files.size() - ll) : MAX_FILES;
 
+            int64_t local_mb = 0;
             for(int ff = 0; ff < max_files; ff += 1)
             {
                 const file_stats file_s( l_files[ll + ff].name );
                 in_mbytes += file_s.size_mb;
+                local_mb  += file_s.size_mb;
             }
 
             int final_real_color = 0;
