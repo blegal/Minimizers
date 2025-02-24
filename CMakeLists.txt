@@ -125,38 +125,12 @@ endif ()
 
 project(min_sorter)
 
-file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
-        # sorting algorithms
-        ./src/sorting/std_4cores/std_4cores.cpp
-        ./src/sorting/std_2cores/std_2cores.cpp
-        ./src/sorting/crumsort/crumsort.cpp
-        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        src/kmer_list/smer_deduplication.cpp
-        ./src/back/raw/SaveRawToFile.cpp
-        ./src/back/txt/SaveMiniToTxtFile.cpp
-        # Front-end parsers
-        ./src/front/fastx/read_fastx_file.cpp
-        ./src/front/fastx_gz/read_fastx_gz_file.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
-        # Line counters
-        ./src/front/count_file_lines.cpp
-        ./src/front/fastx/count_lines_fastx.cpp
-        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
-        # sequence size estimator
-        ./src/front/read_k_value.cpp
-        ./src/front/fastx/read_fastx_k_value.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
-        # main
-        apps/min_sorter.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/min_sorter.cpp")
+
 add_executable(min_sorter ${source_files})
 
-target_include_directories(min_sorter
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
-
-target_link_libraries(min_sorter pthread)
 target_link_libraries(min_sorter z)
 target_link_libraries(min_sorter bz2)
 target_link_libraries(min_sorter curses)
@@ -165,162 +139,56 @@ target_link_libraries(min_sorter curses)
 
 project(min_sorter_v2)
 
-file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
-        # sorting algorithms
-        ./src/sorting/std_4cores/std_4cores.cpp
-        ./src/sorting/std_2cores/std_2cores.cpp
-        ./src/sorting/crumsort/crumsort.cpp
-        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        src/kmer_list/smer_deduplication.cpp
-        ./src/minimizer/minimizer_v2.cpp
-        src/back/raw/SaveRawToFile.cpp
-        ./src/back/txt/SaveMiniToTxtFile.cpp
-        # Front-end parsers
-        src/front/fastx/read_fastx_file.cpp
-        src/front/fastx_gz/read_fastx_gz_file.cpp
-        src/front/fastx_bz2/read_fastx_bz2_file.cpp
-        src/front/fastx_lz4/read_fastx_lz4_file.cpp
-        src/front/fastx_lz4/lz4/lz4file.c
-        src/front/fastx_lz4/lz4/lz4frame.c
-        src/front/fastx_lz4/lz4/xxhash.c
-        src/front/fastx_lz4/lz4/lz4hc.c
-        src/front/fastx_lz4/lz4/lz4.c
-        # Line counters
-        ./src/front/count_file_lines.cpp
-        ./src/front/fastx/count_lines_fastx.cpp
-        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
-        # sequence size estimator
-        ./src/front/read_k_value.cpp
-        ./src/front/fastx/read_fastx_k_value.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
-        # main
-        apps/min_sorter_v2.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/min_sorter_v2.cpp")
 
 add_executable(min_sorter_v2 ${source_files})
 
-target_include_directories(min_sorter_v2
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
-
-target_link_libraries(min_sorter_v2 pthread)
-target_link_libraries(min_sorter_v2 bz2)
 target_link_libraries(min_sorter_v2 z)
+target_link_libraries(min_sorter_v2 bz2)
 target_link_libraries(min_sorter_v2 curses)
 
 ########################################################################################################################
 
 project(min_sorter_v3)
 
-file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
-        # sorting algorithms
-        ./src/sorting/std_4cores/std_4cores.cpp
-        ./src/sorting/std_2cores/std_2cores.cpp
-        ./src/sorting/crumsort/crumsort.cpp
-        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        src/kmer_list/smer_deduplication.cpp
-        ./src/minimizer/minimizer_v3.cpp
-        src/back/raw/SaveRawToFile.cpp
-        ./src/back/txt/SaveMiniToTxtFile.cpp
-        # Front-end parsers
-        src/front/fastx/read_fastx_file.cpp
-        src/front/fastx_gz/read_fastx_gz_file.cpp
-        src/front/fastx_bz2/read_fastx_bz2_file.cpp
-        src/front/fastx_lz4/read_fastx_lz4_file.cpp
-        src/front/fastx_lz4/lz4/lz4file.c
-        src/front/fastx_lz4/lz4/lz4frame.c
-        src/front/fastx_lz4/lz4/xxhash.c
-        src/front/fastx_lz4/lz4/lz4hc.c
-        src/front/fastx_lz4/lz4/lz4.c
-        # Line counters
-        ./src/front/count_file_lines.cpp
-        ./src/front/fastx/count_lines_fastx.cpp
-        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
-        # sequence size estimator
-        src/merger/in_file/merger_level_0.cpp
-        ./src/front/read_k_value.cpp
-        ./src/front/fastx/read_fastx_k_value.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
-        # main
-        apps/min_sorter_v3.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/min_sorter_v3.cpp")
 
 add_executable(min_sorter_v3 ${source_files})
 
-target_include_directories(min_sorter_v3
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
-
-target_link_libraries(min_sorter_v3 pthread)
-target_link_libraries(min_sorter_v3 bz2)
 target_link_libraries(min_sorter_v3 z)
+target_link_libraries(min_sorter_v3 bz2)
 target_link_libraries(min_sorter_v3 curses)
 
 ########################################################################################################################
 
 project(min_sorter_ref)
 
-file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
-        ./src/sorting/std_4cores/std_4cores.cpp
-        ./src/sorting/std_2cores/std_2cores.cpp
-        ./src/sorting/crumsort/crumsort.cpp
-        ./src/sorting/crumsort_2cores/crumsort_2cores.cpp
-        src/back/raw/SaveRawToFile.cpp
-        ./src/back/txt/SaveMiniToTxtFile.cpp
-        # Front-end parsers
-        ./src/front/fastx/read_fastx_file.cpp
-        ./src/front/fastx_gz/read_fastx_gz_file.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_file.cpp
-        # Line counters
-        ./src/front/count_file_lines.cpp
-        ./src/front/fastx/count_lines_fastx.cpp
-        ./src/front/fastx_bz2/count_lines_fastx_bz2.cpp
-        # sequence size estimator
-        ./src/front/read_k_value.cpp
-        ./src/front/fastx/read_fastx_k_value.cpp
-        ./src/front/fastx_bz2/read_fastx_bz2_k_value.cpp
-        # main program
-        apps/min_sorter_ref.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/min_sorter_ref.cpp")
+
 add_executable(min_sorter_ref ${source_files})
 
-target_include_directories(min_sorter_ref
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
-
-target_link_libraries(min_sorter_ref pthread)
-target_link_libraries(min_sorter_ref bz2)
 target_link_libraries(min_sorter_ref z)
+target_link_libraries(min_sorter_ref bz2)
 target_link_libraries(min_sorter_ref curses)
 
 ########################################################################################################################
 
 project(merge)
 
-file(GLOB_RECURSE source_files ./src/quicksort.cpp ./src/additional_methods.cpp
-        ./src/progress/progressbar.cpp
-        src/merger/in_file/merger_level_s.cpp
-        src/merger/in_file/merger_level_0.cpp
-        src/merger/in_file/merger_level_1.cpp
-        src/merger/in_file/merger_level_2_0.cpp
-        src/merger/in_file/merger_level_2_32.cpp
-        src/merger/in_file/merger_level_64_n.cpp
-        src/merger/in_file/merger_level_n_p.cpp
-        src/merger/in_file/merger_in.cpp
-        apps/merge.cpp)
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/merge.cpp")
+
 add_executable(merge ${source_files})
 
-target_include_directories(merge
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
-
-target_link_libraries(merge pthread)
-target_link_libraries(merge bz2)
 target_link_libraries(merge z)
+target_link_libraries(merge bz2)
 target_link_libraries(merge curses)
 
 ########################################################################################################################
