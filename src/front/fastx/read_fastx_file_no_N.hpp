@@ -13,6 +13,7 @@ private:
     bool no_more_load  = false;
     bool file_ended    = false;
     FILE* f;
+    long long int debug = 0;
 
 public:
      read_fastx_file_no_N(const std::string filen);

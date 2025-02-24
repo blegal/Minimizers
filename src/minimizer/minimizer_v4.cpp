@@ -46,6 +46,7 @@ void minimizer_processing_v4(
 )
 {
     bool verbose = false;
+    if (verbose) std::cerr << "minimizer_processing_v4" << std::endl;
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */

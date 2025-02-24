@@ -21,6 +21,7 @@ private:
     bool file_ended    = false;
     FILE*   stream;
     gzFile  streaz;
+    long long int debug = 0;
     
 public:
      read_fastx_gz_file_no_N(const std::string filen);

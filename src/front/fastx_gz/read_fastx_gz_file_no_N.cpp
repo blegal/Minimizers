@@ -159,18 +159,25 @@ std::tuple<int, bool> read_fastx_gz_file_no_N::next_sequence(char* n_kmer, int b
         return {0, true}; // aucun octet n'est disponible
     }
 
-    if (buffer[c_ptr] == '\n') c_ptr += 1; //case buffer ended on newline (would else fall into non-DNA case)
+    if (buffer[c_ptr] == '\n') {
+        c_ptr += 1; //case buffer ended on newline (would else fall into non-DNA case) and after quality line jump
+        if (c_ptr >= n_data){ //check buffer empty ?
+            file_ended = !reload();
+            if (file_ended) return {0, _internal_};
+        }
+    }
     
 
-    ///last time left on header, find next sequence and recurse over it
+    //last time left on header, find next sequence and recurse over it
     if ((buffer[c_ptr] == '>') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '+'))
     {
         bool quality = (buffer[c_ptr] == '+');
+        c_ptr += 1;
         //start looking for newline in remaining buffer
-        for(int i = c_ptr; i < n_data; i += 1) {
-            if (buffer[i] == '\n') {
-                c_ptr      = i + 1;
-
+        while (c_ptr < n_data) {
+            if (buffer[c_ptr] == '\n') {
+                c_ptr      += 1;
+                if (c_ptr >= n_data) reload(); //case buffer ended on header newline
                 if (quality){ //skip fastq quality line
                     c_ptr += n_qualities;
                     if (c_ptr >= n_data && !reload()){
@@ -182,14 +189,14 @@ std::tuple<int, bool> read_fastx_gz_file_no_N::next_sequence(char* n_kmer, int b
 
                 return next_sequence(n_kmer, buffer_size, true);
             }
+            c_ptr += 1;
         }
-
         //didnt find it yet ? reload buffer and start looking again
         reload();
-        for(int i = c_ptr; i < n_data; i += 1) {
-            if (buffer[i] == '\n') {
-                c_ptr      = i + 1;
-
+        while (c_ptr < n_data) {
+            if (buffer[c_ptr] == '\n') {
+                c_ptr      += 1;
+                if (c_ptr >= n_data) reload(); //case buffer ended on header newline
                 if (quality){ //skip fastq quality line
                     c_ptr += n_qualities;
                     if (c_ptr >= n_data && !reload()){
@@ -201,6 +208,7 @@ std::tuple<int, bool> read_fastx_gz_file_no_N::next_sequence(char* n_kmer, int b
 
                 return next_sequence(n_kmer, buffer_size, true);
             }
+            c_ptr += 1;
         }
     }
 
