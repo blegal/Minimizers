@@ -100,6 +100,8 @@ int main(int argc, char *argv[]) {
         {
             for(int j = -16; j < 16; j += 1)
             {
+                if( (i + j) <           0 ) continue;
+                if( (i + j) >= n_minimizr ) continue;
                 const uint64_t miniz_1 = liste_1[i+j];
                 const uint64_t miniz_2 = liste_2[i+j];
                 if( miniz_1 ==  miniz_2 ){
