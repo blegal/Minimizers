@@ -267,18 +267,6 @@ int main(int argc, char *argv[])
         printf (" --help           (-h)          : display debug informations\n");
         putchar ('\n');
         exit( EXIT_FAILURE );
-/*
-        {"skip-minimizer-step",     no_argument, 0, 'S'},
-        {"keep-temp-files",     no_argument, 0, 'k'},
-        {"directory",       required_argument, 0, 'd'},
-        {"filename",      required_argument, 0,  'f'},
-        {"limited-mem",              no_argument, &limited_memory,    1},
-        {"unlimited-mem",              no_argument, &limited_memory,    0},
-        {"threads",      required_argument, 0,  't'},
-        {"sorter",      required_argument, 0, 's'},
-        {"GB",           required_argument, 0, 'G'},
-        {"MB",           required_argument, 0, 'M'},
-*/
     }
 
 
