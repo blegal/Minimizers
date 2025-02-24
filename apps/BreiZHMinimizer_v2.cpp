@@ -630,6 +630,20 @@ int main(int argc, char *argv[])
     printf("(II) - Execution time : %1.2f seconds\n", elapsed_merge);
     printf("(II)\n");
 
+    //
+    //
+    //
+    if(vrac_names.size() == 0)
+    {
+        //
+        // On n'a qu'un seul fichier suite au premier processus de fusion (64), donc on ne passe
+        // pas par la seconde étape de fusion => mise à jour du vecteur de sortie
+        //
+        const CMergeFile single = l_files[0];
+        vrac_names.push_back( single );
+    }
+
+
     if( verbose_flag )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
@@ -642,6 +656,7 @@ int main(int argc, char *argv[])
 
     if( verbose_flag )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
+
 
     //
     //
@@ -657,7 +672,6 @@ int main(int argc, char *argv[])
 
         while( vrac_names.size() != 1 )
         {
-
             const CMergeFile i_file_1 = vrac_names[1]; // le plus grand est tjs le second
             const CMergeFile i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
                   CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
@@ -681,7 +695,7 @@ int main(int argc, char *argv[])
                     i_file_1.numb_colors,
                     i_file_2.numb_colors
             );
-            vrac_names     [1] = o_file;
+            vrac_names[1] = o_file;
 
             //
             // On supprime le premier élément du tableau
@@ -697,14 +711,14 @@ int main(int argc, char *argv[])
                 std::remove( i_file_2.name.c_str() ); // delete file
             }
         }
-//      const auto  end_merge_2nd = std::chrono::steady_clock::now();
-//      const float elapsed_merge_2nd = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_merge_2nd - start_merge_2nd).count() / 1000.f;
         printf("(II) - Execution time : %1.2f seconds\n", timer_merge.get_time_sec());
         printf("(II)\n");
     }
 
+
     //
-    //
+    // Normalement on a un fichier en sortie du processus de fusion, sinon c'est que quelque-chose
+    // a merdé dans le processus de fusion
     //
     if( vrac_names.size() == 1 )
     {
