@@ -1,4 +1,6 @@
 #include "merger_level_1.hpp"
+#include "../../files/stream_reader_library.hpp"
+#include "../../files/stream_writer_library.hpp"
 
 template< int level >
 void merge_level_64_n_t(
@@ -22,15 +24,15 @@ void merge_level_64_n_t(
     int64_t counterB = 0; // nombre de données lues dans le flux
     int64_t ndst     = 0; // nombre de données écrites dans le flux
 
-    FILE *fin_1 = fopen(ifile_1.c_str(), "r");
-    FILE *fin_2 = fopen(ifile_2.c_str(), "r");
-    FILE *fdst  = fopen(o_file.c_str(),  "w");
+    stream_reader* fin_1 = stream_reader_library::allocate( ifile_1 );
+    stream_reader* fin_2 = stream_reader_library::allocate( ifile_2 );
+    stream_writer* fdst  = stream_writer_library::allocate( o_file );
 
     uint64_t last_value = 0xFFFFFFFFFFFFFFFF;
     while (true) {
 
         if (counterA == nElementsA) {
-            nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
+            nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuff_);
             if (nElementsA == 0) {
                 break;
             }
@@ -38,7 +40,7 @@ void merge_level_64_n_t(
 
         }
         if (counterB == nElementsB) {
-            nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
+            nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuff_);
             if (nElementsB == 0) {
                 break;
             };
@@ -101,7 +103,7 @@ void merge_level_64_n_t(
         //
         //
         if (ndst == _oBuff_) {
-            fwrite(dest, sizeof(uint64_t), ndst - 1 - 2 * n_u64_per_min, fdst); // we should keep one element
+            fdst->write(dest, sizeof(uint64_t), ndst - 1 - 2 * n_u64_per_min); // we should keep one element
             //
             ndst = 0;
             dest[ndst++] = dest[_oBuff_ - 1 - 2 * n_u64_per_min]; // we should keep the last value in case the next
@@ -137,7 +139,7 @@ void merge_level_64_n_t(
     // On realise le flush du buffer de sortie, cela nous simplifier la vie par la suite !
     //
     if (ndst != 0) {
-        fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        fdst->write(dest, sizeof(uint64_t), ndst);
         ndst = 0;
     }
 
@@ -154,13 +156,13 @@ void merge_level_64_n_t(
             for(int c = 0; c < n_u64_per_min; c +=1)
                 dest[ndst++] = in_2[i + 1 + c];
         }
-        fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        fdst->write(dest, sizeof(uint64_t), ndst);
         ndst = 0;
         //
         // On traite les donées restantes en passant par le buffer de dest.
         //
         do{
-            nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
+            nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuff_);
 
             for(int i = 0; i < nElementsB; i += 1 + n_u64_per_min) {
 //                printf("+B adds: %16.16llX\n", in_2[i]);
@@ -172,7 +174,7 @@ void merge_level_64_n_t(
             }
 
             if( nElementsB != 0 ){
-                fwrite(dest, sizeof(uint64_t), ndst, fdst);
+                fdst->write(dest, sizeof(uint64_t), ndst);
                 ndst = 0;
             }
         }while(nElementsB == _iBuff_);
@@ -193,14 +195,14 @@ void merge_level_64_n_t(
             for(int c = 0; c < n_u64_per_min; c +=1)
                 dest[ndst++] = 0;
         }
-        fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        fdst->write(dest, sizeof(uint64_t), ndst);
         ndst = 0;
 
         //
         // On traite les donées restantes en passant par le buffer de dest.
         //
         do{
-            nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
+            nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuff_);
 
             for(int i = 0; i < nElementsA; i += 1 + n_u64_per_min) {
 //                printf("+A adds: %16.16llX\n", in_1[i]);
@@ -213,15 +215,15 @@ void merge_level_64_n_t(
 
             if( nElementsA != 0 )
             {
-                fwrite(dest, sizeof(uint64_t), ndst, fdst);
+                fdst->write(dest, sizeof(uint64_t), ndst);
                 ndst = 0;
             }
         }while(nElementsA == _iBuff_);
     }
 
-    fclose( fin_1 );
-    fclose( fin_2 );
-    fclose( fdst  );
+    delete fin_1;
+    delete fin_2;
+    delete fdst;
 
     delete [] in_1;
     delete [] in_2;

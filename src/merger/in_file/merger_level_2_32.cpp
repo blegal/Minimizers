@@ -1,4 +1,6 @@
 #include "merger_level_1.hpp"
+#include "../../files/stream_reader_library.hpp"
+#include "../../files/stream_writer_library.hpp"
 
 void merge_level_2_32(
         const std::string& ifile_1,
@@ -21,15 +23,15 @@ void merge_level_2_32(
     int64_t counterB = 0; // nombre de données lues dans le flux
     int64_t ndst     = 0; // nombre de données écrites dans le flux
 
-    FILE *fin_1 = fopen(ifile_1.c_str(), "r");
-    FILE *fin_2 = fopen(ifile_2.c_str(), "r");
-    FILE *fdst  = fopen(o_file.c_str(),   "w");
+    stream_reader* fin_1 = stream_reader_library::allocate( ifile_1 );
+    stream_reader* fin_2 = stream_reader_library::allocate( ifile_2 );
+    stream_writer* fdst  = stream_writer_library::allocate( o_file );
 
     uint64_t last_value = 0xFFFFFFFFFFFFFFFF;
     while (true) {
 
         if (counterA == nElementsA) {
-            nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
+            nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuff_);
             if (nElementsA == 0) {
                 break;
             }
@@ -37,7 +39,7 @@ void merge_level_2_32(
 
         }
         if (counterB == nElementsB) {
-            nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
+            nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuff_);
             if (nElementsB == 0) {
                 break;
             };
@@ -81,7 +83,7 @@ void merge_level_2_32(
         //
         //
         if (ndst == _oBuff_) {
-            fwrite(dest, sizeof(uint64_t), ndst - 2, fdst);
+            fdst->write(dest, sizeof(uint64_t), ndst - 2);
             dest[0] = dest[_oBuff_ - 2]; // we should keep the last value in case the next
             dest[1] = dest[_oBuff_ - 1]; // processed value is the same (should update the color)
             ndst = 2;
@@ -114,38 +116,38 @@ void merge_level_2_32(
     if (ndst != 0) {
 //        printf("flush dest buffer (Z-1) : (%16.16llX, %16.16llX)\n", dest[ndst-2], dest[ndst-1]);
 //        printf("                          (%16.16llX)\n", dest[ndst-1]);
-        fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        fdst->write(dest, sizeof(uint64_t), ndst);
         ndst = 0;
     }
 
     if (nElementsA == 0) {
 //        printf("flush B : %lld %lld\n", counterB, nElementsB);
         for(int i = counterB + 1; i < nElementsB; i+= 2) in_2[i] = in_2[i] << level;
-        fwrite(in_2 + counterB, sizeof(uint64_t), nElementsB - counterB, fdst);
+        fdst->write(in_2 + counterB, sizeof(uint64_t), nElementsB - counterB);
         do{
-            nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
+            nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuff_);
             for(int i = 1; i < nElementsB; i+= 2) in_2[i] = in_2[i] << level;
 //            printf(" - flush B : %lld\n", nElementsB);
             if( nElementsB != 0 )
-                fwrite(in_2, sizeof(uint64_t), nElementsB, fdst);
+                fdst->write(in_2, sizeof(uint64_t), nElementsB);
         }while(nElementsB == _iBuff_);
 
     }else if (nElementsB == 0) {
 //        printf("flush A : %lld %lld\n", counterA, nElementsA);
         for(int i = counterA + 1; i < nElementsA; i+= 2) in_1[i] = in_1[i];
-        fwrite(in_1 + counterA, sizeof(uint64_t), nElementsA - counterA, fdst);
+        fdst->write(in_1 + counterA, sizeof(uint64_t), nElementsA - counterA);
         do{
-            nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
+            nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuff_);
             for(int i = 1; i < nElementsA; i+= 2) in_1[i] = in_1[i];
 //            printf(" - flush A : %lld\n", nElementsA);
             if( nElementsA != 0 )
-                fwrite(in_1, sizeof(uint64_t), nElementsA, fdst);
+                fdst->write(in_1, sizeof(uint64_t), nElementsA);
         }while(nElementsA == _iBuff_);
     }
 
-    fclose( fin_1 );
-    fclose( fin_2 );
-    fclose( fdst  );
+    delete fin_1;
+    delete fin_2;
+    delete fdst;
 
     delete [] in_1;
     delete [] in_2;

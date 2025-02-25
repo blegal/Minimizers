@@ -1,4 +1,6 @@
 #include "merger_level_1.hpp"
+#include "../../files/stream_reader_library.hpp"
+#include "../../files/stream_writer_library.hpp"
 
 void merge_level_1(
         const std::string& ifile_1,
@@ -20,9 +22,9 @@ void merge_level_1(
     int64_t counterB = 0; // nombre de données lues dans le flux
     int64_t ndst     = 0; // nombre de données écrites dans le flux
 
-    FILE *fin_1 = fopen(ifile_1.c_str(), "r");
-    FILE *fin_2 = fopen(ifile_2.c_str(), "r");
-    FILE *fdst  = fopen(o_file.c_str(),   "w");
+    stream_reader* fin_1 = stream_reader_library::allocate( ifile_1 );
+    stream_reader* fin_2 = stream_reader_library::allocate( ifile_2 );
+    stream_writer* fdst  = stream_writer_library::allocate( o_file );
 
     uint64_t colorDocA = 0x0000000000000001;
     uint64_t colorDocB = 0x0000000000000002;
@@ -31,7 +33,7 @@ void merge_level_1(
     while (true) {
 
         if (counterA == nElementsA) {
-            nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
+            nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuff_);
             if (nElementsA == 0) {
                 break;
             }
@@ -39,7 +41,7 @@ void merge_level_1(
 
         }
         if (counterB == nElementsB) {
-            nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
+            nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuff_);
             if (nElementsB == 0) {
                 break;
             };
@@ -54,10 +56,8 @@ void merge_level_1(
                 if (v1 != last_value){
                     dest[ndst++] = v1;
                     dest[ndst++] = colorDocA;
-//                    printf("un (%3llu, %3llu)...\n", v1, v2);
                 }else{
                     dest[ndst-1] |= colorDocA;
-//                    printf("ici %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
                 }
                 last_value = v1;
                 counterA  += 1;
@@ -65,10 +65,8 @@ void merge_level_1(
                 if (v2 != last_value){
                     dest[ndst++] = v2;
                     dest[ndst++] = colorDocB;
-//                    printf("deux (%3llu, %3llu)...\n", v1, v2);
                 }else{
                     dest[ndst-1] |= colorDocB;
-//                    printf("la %3lld (%3llu, %3llu)...\n", last_value, v1, v2);
                 }
                 last_value = v2;
                 counterB  += 1;
@@ -79,11 +77,10 @@ void merge_level_1(
         //
         //
         if (ndst == _oBuff_) {
-            fwrite(dest, sizeof(uint64_t), ndst - 2, fdst);
+            fdst->write(dest, sizeof(uint64_t), ndst - 2);
             dest[0] = dest[_oBuff_ - 2]; // we should keep the last value in case the next
             dest[1] = dest[_oBuff_ - 1]; // processed value is the same (should update the color)
             ndst = 2;
-//          ndst = 0;
         }
     }
 
@@ -129,7 +126,7 @@ void merge_level_1(
     // On realise le flush du buffer de sortie, cela nous simplifier la vie par la suite !
     //
     if (ndst != 0) {
-        fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        fdst->write(dest, sizeof(uint64_t), ndst);
         ndst = 0;
     }
 
@@ -139,12 +136,12 @@ void merge_level_1(
             dest[ndst++] = in_2[i];
             dest[ndst++] = colorDocB;
         }
-        fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        fdst->write(dest, sizeof(uint64_t), ndst);
         do{
             ndst       = 0;
-            nElementsB = fread(in_2, sizeof(uint64_t), _iBuff_, fin_2);
+            nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuff_);
             for(int i = 0; i < nElementsB; i += 1){ dest[ndst++] = in_2[i]; dest[ndst++] = colorDocB; }
-            fwrite(dest, sizeof(uint64_t), ndst, fdst);
+            fdst->write(dest, sizeof(uint64_t), ndst);
         }while(nElementsB == _iBuff_);
 
     }else if (nElementsB == 0) {
@@ -153,18 +150,18 @@ void merge_level_1(
             dest[ndst++] = in_1[i];
             dest[ndst++] = colorDocA;
         }
-        fwrite(dest, sizeof(uint64_t), ndst, fdst);
+        fdst->write(dest, sizeof(uint64_t), ndst);
         do{
             ndst       = 0;
-            nElementsA = fread(in_1, sizeof(uint64_t), _iBuff_, fin_1);
+            nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuff_);
             for(int i = 0; i < nElementsA; i += 1){  dest[ndst++] = in_1[i]; dest[ndst++] = colorDocA; }
-            fwrite(dest, sizeof(uint64_t), ndst, fdst);
+            fdst->write(dest, sizeof(uint64_t), ndst);
         }while(nElementsA == _iBuff_);
     }
 
-    fclose( fin_1 );
-    fclose( fin_2 );
-    fclose( fdst  );
+    delete fin_1;
+    delete fin_2;
+    delete fdst;
 
     delete [] in_1;
     delete [] in_2;

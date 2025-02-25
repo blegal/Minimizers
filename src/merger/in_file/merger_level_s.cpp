@@ -1,5 +1,8 @@
 #include "merger_level_s.hpp"
 
+#include "../../files/stream_reader_library.hpp"
+#include "../../files/stream_writer_library.hpp"
+
 void merge_level_s(
         const std::string& i_file,
         const std::string& o_file)

@@ -471,7 +471,7 @@ int main(int argc, char *argv[])
             const auto start_file = std::chrono::steady_clock::now();
             const file_stats i_file_1( l_files[ll    ] );
             const file_stats i_file_2( l_files[ll + 1] );
-            const std::string t_file   = "data_n" + to_number(ll/2, l_files.size()/2) + "." + std::to_string(2 * colors) + "c";
+            const std::string t_file   = "data_n" + to_number(ll/2, l_files.size()/2) + "." + std::to_string(2 * colors) + "c" + extension;
 
             in_mbytes += i_file_1.size_mb;
             in_mbytes += i_file_2.size_mb;
@@ -597,7 +597,7 @@ int main(int argc, char *argv[])
         if(vrac_levels[0] == 1)
         {
             const std::string i_file = vrac_names[0];
-            const std::string o_file   = "data_n" + std::to_string(cnt++) + "." + std::to_string(2) + "c";
+            const std::string o_file   = "data_n" + std::to_string(cnt++) + "." + std::to_string(2) + "c" + extension;
             printf("- No color file processing (%s)\n", i_file.c_str());
             merger_in(i_file,i_file, o_file, 0, 0);
             vrac_names     [0] = o_file;
@@ -642,7 +642,7 @@ int main(int argc, char *argv[])
             //
             // On lance le processus de merging sur les 2 fichiers
             //
-            const std::string o_file   = "data_n" + std::to_string(cnt++) + "." + std::to_string(real_color) + "c";
+            const std::string o_file   = "data_n" + std::to_string(cnt++) + "." + std::to_string(real_color) + "c" + extension;
             printf("  %20.20s (%d) + %20.20s (%d) ===> %20.20s (%d)\n", i_file_1.c_str(), color_1, i_file_2.c_str(), color_2, o_file.c_str(), real_color);
             merger_in(i_file_1,i_file_2, o_file, color_1, color_2);
             vrac_names     [1] = o_file;
@@ -678,7 +678,7 @@ int main(int argc, char *argv[])
     {
         const std::string file   = vrac_names[0]; // le plus grand est tjs le second
         const int real_color     = vrac_real_color[0];
-        const std::string o_file = file_out + "." + std::to_string(real_color) + "c";
+        const std::string o_file = file_out + "." + std::to_string(real_color) + "c" + extension;
         std::rename(vrac_names[0].c_str(), o_file.c_str());
         printf("(II) Renaming final file : %s\n", o_file.c_str());
     }else{

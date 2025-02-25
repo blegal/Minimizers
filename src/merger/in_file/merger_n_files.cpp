@@ -1,5 +1,8 @@
 #include "merger_n_files.hpp"
 
+#include "../../files/stream_reader_library.hpp"
+#include "../../files/stream_writer_library.hpp"
+
 void merge_n_files(
         const std::vector<std::string>& file_list,
         const std::string& o_file)
