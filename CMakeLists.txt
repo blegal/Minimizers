@@ -318,6 +318,20 @@ target_link_libraries(color_sorter curses)
 
 ########################################################################################################################
 
+project(color_sort_and_dump)
+
+file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+
+list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/color_sort_and_dump.cpp")
+
+add_executable(color_sort_and_dump ${source_files})
+
+target_link_libraries(color_sort_and_dump z)
+target_link_libraries(color_sort_and_dump bz2)
+target_link_libraries(color_sort_and_dump curses)
+
+########################################################################################################################
+
 project(kmer_sorter)
 
 file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
