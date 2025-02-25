@@ -1,15 +1,12 @@
 #include <cstdio>
-#include <cstdlib>
-#include <fstream>
 #include <vector>
-#include <chrono>
 #include <algorithm>
-#include <iostream>
-#include <omp.h>
-#include <sstream>
 #include <getopt.h>
 #include <sys/stat.h>
 #include <dirent.h>
+
+#include "../../files/stream_reader_library.hpp"
+#include "../../files/stream_writer_library.hpp"
 
 uint64_t get_file_size(const std::string& filen) {
     struct stat file_status;
