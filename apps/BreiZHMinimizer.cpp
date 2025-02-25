@@ -174,7 +174,8 @@ int main(int argc, char *argv[])
                 break;
 
             case 'C':
-                extension = optarg;
+                extension  = ".";
+                extension += optarg;
                 break;
 
             case 't':
