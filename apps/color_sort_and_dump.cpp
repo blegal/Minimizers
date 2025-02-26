@@ -45,7 +45,11 @@ inline uint64_t popcount_u64_builtin(const uint64_t val)
 {
     return __builtin_popcountll(val);
 }
-
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
 class item{
 public:
     uint64_t element;
@@ -59,7 +63,11 @@ public:
         element = e;
     }
 };
-
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
 int main(int argc, char *argv[]) {
 
     CTimer time_m(true);
@@ -148,7 +156,7 @@ int main(int argc, char *argv[]) {
     //
     // Allocation de notre future structure de données
     //
-    std::vector< item     > liste;
+    std::vector< item > liste;
 
     //
     // Allocation du tableau permettant de calculer l'histogramme
@@ -194,6 +202,10 @@ int main(int argc, char *argv[]) {
             item ii( eSize * m + 1 ); // la valeur du minimizer
 
             int n_bits = 0;
+
+            //
+            // On parcours toutes les couleurs du minimizer courant
+            //
             for(int c = 0; c < n_uint64_c; c += 1)
             {
                 const uint64_t value = buffer[eSize * m + 1 + c];
@@ -210,8 +222,8 @@ int main(int argc, char *argv[]) {
                         n_bits     += 1;
                     }
                 }
-                histo[n_bits] += 1;
             }
+            histo[n_bits] += 1;
             liste.push_back( ii );
             cnt_elements += 1;
         }
@@ -253,7 +265,6 @@ int main(int argc, char *argv[]) {
     printf("+------+------------+--------+---------+\n");
     printf("| Idx  | #Occurence | Occ. %% | Cumul.%% |\n");
     printf("+------+------------+--------+---------+\n");
-#if 0
     double sum = 0.0;
     for(uint64_t i = 1; i < histo.size(); i += 1)
     {
@@ -271,6 +282,6 @@ int main(int argc, char *argv[]) {
         std::cout << "Elapsed time : " << (ms_time/1000.0) << "s\n";
     else
         std::cout << "Elapsed time : " << ms_time << "ms\n";
-#endif
+
     return 0;
 }
