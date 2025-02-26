@@ -50,19 +50,23 @@ inline uint64_t popcount_u64_builtin(const uint64_t val)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //
-class item{
-public:
-    uint64_t element;
-    std::vector<uint16_t> colors;
-
-    item() {
-        element = 0;
-    }
-
-    item(uint64_t e) {
-        element = e;
-    }
+struct item{
+    uint64_t  minimizer;
+    uint16_t  n_colors;
+    uint16_t* colors;
 };
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+uint16_t* allocate_color_set(const std::vector<int>& vect)
+{
+    uint16_t* colors = (uint16_t*)malloc( vect.size() * sizeof(uint16_t) );
+    for(int i = 0; i < vect.size(); i += 1)
+        colors[i] = vect[i];
+    return colors;
+}
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -199,13 +203,12 @@ int main(int argc, char *argv[]) {
             //
             // On compte le nombre de couleurs associé au minimizer
             //
-            item ii( eSize * m + 1 ); // la valeur du minimizer
-
             int n_bits = 0;
 
             //
             // On parcours toutes les couleurs du minimizer courant
             //
+            std::vector<int> ll;
             for(int c = 0; c < n_uint64_c; c += 1)
             {
                 const uint64_t value = buffer[eSize * m + 1 + c];
@@ -217,16 +220,30 @@ int main(int argc, char *argv[]) {
                 {
                     if( (value >> x) & 0x01 )
                     {
-                        ii.colors.push_back(64 * c + x);
+                        ll.push_back(64 * c + x);
                         cnt_colors += 1;
                         n_bits     += 1;
                     }
                 }
             }
             histo[n_bits] += 1;
+
+            item ii;
+            ii.minimizer = buffer[eSize * m + 1]; // la valeur du minimizer
+            ii.n_colors  = ll.size();
+            ii.colors    = allocate_color_set( ll );
             liste.push_back( ii );
             cnt_elements += 1;
+
+            if( cnt_elements%1000000 == 0 ){
+                const int64_t mem_bytes  = (cnt_elements * sizeof(item)) + sizeof(uint16_t) * cnt_colors;
+                const int64_t mem_kbytes = mem_bytes  / 1024;
+                const int64_t mem_mbytes = mem_kbytes / 1024;
+                printf("%16lld elements | %16lld bytes | %16lld kbytes | %16lld mbytes |\n", cnt_elements, mem_bytes, mem_kbytes, mem_mbytes);
+            }
+
         }
+
     }
 
     //
