@@ -1,4 +1,6 @@
 #include "SaveRawToFile.hpp"
+#include "../../files/stream_writer_library.hpp"
+
 //
 //
 //
@@ -8,6 +10,12 @@
 //
 bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_hash, const int n_elements)
 {
+#if 1
+    stream_writer* o_file = stream_writer_library::allocate( filename );
+    o_file->write((void*)list_hash.data(), sizeof(uint64_t), n_elements);
+    o_file->close();
+    delete o_file;
+#else
     std::string n_file = filename;
     FILE* f = fopen( n_file.c_str(), "w" );
     if( f == NULL )
@@ -20,7 +28,7 @@ bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_
     fwrite(list_hash.data(), sizeof(uint64_t), n_elements, f);
 
     fclose( f );
-
+#endif
     return true;
 }
 //
