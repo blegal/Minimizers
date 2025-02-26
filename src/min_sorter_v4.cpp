@@ -31,7 +31,7 @@ std::chrono::steady_clock::time_point begin;
 int main(int argc, char* argv[])
 {
 
-    std::string i_file = "/home/vlevallo/tmp/test_bertrand/toy.fastq";
+    std::string i_file = "/home/vlevallo/tmp/test_bertrand/toy.fasta";
     //std::string i_file = "/home/vlevallo/tmp/test_bertrand/ecoli_20/GCA_000008865.2_ASM886v2.fna";
     std::string o_file = "./result";
 

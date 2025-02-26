@@ -247,18 +247,6 @@ int main(int argc, char *argv[])
         printf (" --help           (-h)          : display debug informations\n");
         putchar ('\n');
         exit( EXIT_FAILURE );
-/*
-        {"skip-minimizer-step",     no_argument, 0, 'S'},
-        {"keep-temp-files",     no_argument, 0, 'k'},
-        {"directory",       required_argument, 0, 'd'},
-        {"filename",      required_argument, 0,  'f'},
-        {"limited-mem",              no_argument, &limited_memory,    1},
-        {"unlimited-mem",              no_argument, &limited_memory,    0},
-        {"threads",      required_argument, 0,  't'},
-        {"sorter",      required_argument, 0, 's'},
-        {"GB",           required_argument, 0, 'G'},
-        {"MB",           required_argument, 0, 'M'},
-*/
     }
 
 
@@ -268,73 +256,21 @@ int main(int argc, char *argv[])
     // (ajout de la donnée uint64_t pour la couleur). Ce n'est pas un probleme scientifique mais
     // technique, un peu plus de code a developper plus tard...
     //
-    std::vector<std::string> t_files = file_list_cpp(directory);
-    std::sort(t_files.begin(), t_files.end());
-
-    printf("(II) Searching for files\n");
-    printf("(II) - Number of identified files : %zu\n", t_files.size());
-
-    //
-    // On filtre les fichiers que l'on souhaite traiter car dans les repertoires il peut y avoir
-    // de la doc, etc.
-    //
-    std::vector<std::string> l_files;
-    for( int i = 0; i < t_files.size(); i += 1 )
-    {
-        std::string t_file = t_files[i];
-        if( (skip_minimizer_step == false) &&
-                (
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "lz4")   ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "bz2")   ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "gz")    ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "fastx") ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "fasta") ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "fastq") ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "fna")
-                )
-            ){
-//          printf ("(II) accepting %s\n", t_file.c_str());
-            l_files.push_back( t_file );
-        }else if( (skip_minimizer_step == true) &&
-            (
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "raw")
-            )
-            ){
-//          printf ("(II) accepting %s\n", t_file.c_str());
-            l_files.push_back( t_file );
-        }else{
-            warning_section();
-            printf ("(WW)   > discarding %s\n", t_file.c_str());
-            reset_section();
-        }
-    }
-
-    printf("(II) - Number of selected   files : %zu\n", l_files.size());
-    printf("(II)\n");
-
-    if( l_files.size() == 0 )
-    {
+    
+    std::vector<std::string> t_files; //replace w/ m_filenames in kam
+    std::ifstream infile(filename);
+    if (!infile) {
         error_section();
-        printf("(EE) The provided directory does not contain valid file(s) \n");
+        printf("(EE) Unable to open file: %s\n", filename.c_str());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         reset_section();
-        exit( EXIT_FAILURE );
+        exit(EXIT_FAILURE);
     }
-
-    //
-    // On limite le nombre de fichiers a traiter, utile lors des phases de debug
-    // pour ne pas avoir a traiter tous les fichiers d'un repo
-    //
-    if ( l_files.size() > file_limit ) {
-        warning_section();
-        printf ("(WW) Reducing the number of files to process (file_limit = %d)\n", file_limit);
-        reset_section();
-        while (l_files.size() > file_limit) {
-            l_files.pop_back();
-        }
+    std::string line;
+    while (std::getline(infile, line)) {
+        t_files.push_back(line);
     }
-
-
+    infile.close();
 
     std::vector<std::string> n_files;
     //
@@ -358,12 +294,12 @@ int main(int argc, char *argv[])
         // On predimentionne le vecteur de sortie car on connait sa taille. Cela evite les
         // problemes liés à la fonction push_back qui a l'air incertaine avec OpenMP
         //
-        n_files.resize( l_files.size() );
+        n_files.resize( t_files.size() );
 
         int counter = 0;
         omp_set_num_threads(threads_minz);
 #pragma omp parallel for default(shared)
-        for(int i = 0; i < l_files.size(); i += 1)
+        for(int i = 0; i < t_files.size(); i += 1)
         {
 //            const auto start_mzr = std::chrono::steady_clock::now();
             CTimer minimizer_t( true );
@@ -371,8 +307,8 @@ int main(int argc, char *argv[])
             //
             // On mesure la taille des fichiers d'entrée
             //
-            const file_stats i_file( l_files[i] );
-            const std::string t_file = "data_n" + to_number(i, (int)l_files.size()) + ".c0";
+            const file_stats i_file( t_files[i] );
+            const std::string t_file = "data_n" + to_number(i, (int)t_files.size()) + ".c0";
             in_mbytes += i_file.size_mb;
 
             /////
@@ -400,7 +336,7 @@ int main(int argc, char *argv[])
 //              const float e_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_mzr - start_mzr).count() / 1000.f;
                 std::string nname = shorten(i_file.name, 32);
                 counter += 1;
-                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, l_files.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
+                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, t_files.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
 
             }
 
@@ -408,13 +344,13 @@ int main(int argc, char *argv[])
             n_files[i] = o_file.name; // on stocke le nom du fichier que l'on vient de produire
             /////
         }
-        l_files = n_files;
+        t_files = n_files;
         n_files.clear();
 
         //
         //
         //
-        std::sort(l_files.begin(), l_files.end());
+        std::sort(t_files.begin(), t_files.end());
 
 //        const auto  end = std::chrono::steady_clock::now();
         const float elapsed = minzr_timer.get_time_sec();
@@ -439,12 +375,12 @@ int main(int argc, char *argv[])
     const auto start_merge = std::chrono::steady_clock::now();
     int colors = 1;
     omp_set_num_threads(threads_merge); // on regle le niveau de parallelisme accessible dans cette partie
-    while( l_files.size() > 1 )
+    while( t_files.size() > 1 )
     {
         if( verbose_flag )
-            printf("(II)   - Merging %4zu files with %4d color(s)\n", l_files.size(), colors);
+            printf("(II)   - Merging %4zu files with %4d color(s)\n", t_files.size(), colors);
         else{
-            printf("(II)   - Merging %4zu files | %4d color(s) | ", l_files.size(), colors);
+            printf("(II)   - Merging %4zu files | %4d color(s) | ", t_files.size(), colors);
             fflush(stdout);
         }
         const auto start_merge = std::chrono::steady_clock::now();
@@ -452,19 +388,19 @@ int main(int argc, char *argv[])
         if(verbose_flag == true )
             printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
-        n_files.resize( l_files.size() / 2 ); // pur éviter le push_back qui semble OpenMP unsafe !
+        n_files.resize( t_files.size() / 2 ); // pur éviter le push_back qui semble OpenMP unsafe !
 
         uint64_t in_mbytes = 0; // pour calculer les debits
         uint64_t ou_mbytes = 0; // pour calculer les debits
 
         int cnt = 0;
 #pragma omp parallel for
-        for(int ll = 0; ll < l_files.size() - 1; ll += 2)
+        for(int ll = 0; ll < t_files.size() - 1; ll += 2)
         {
             const auto start_file = std::chrono::steady_clock::now();
-            const file_stats i_file_1( l_files[ll    ] );
-            const file_stats i_file_2( l_files[ll + 1] );
-            const std::string t_file   = "data_n" + to_number(ll/2, l_files.size()/2) + "." + std::to_string(2 * colors) + "c";
+            const file_stats i_file_1( t_files[ll    ] );
+            const file_stats i_file_2( t_files[ll + 1] );
+            const std::string t_file   = "data_n" + to_number(ll/2, t_files.size()/2) + "." + std::to_string(2 * colors) + "c";
 
             in_mbytes += i_file_1.size_mb;
             in_mbytes += i_file_2.size_mb;
@@ -531,9 +467,9 @@ int main(int argc, char *argv[])
         // On regarde si des fichiers n'ont pas été traités. Cela peut arriver lorsque l'arbre de fusion
         // n'est pas équilibré. On stocke le fichier
         //
-        if( l_files.size()%2 )
+        if( t_files.size()%2 )
         {
-            vrac_names.push_back ( l_files[l_files.size()-1] );
+            vrac_names.push_back ( t_files[t_files.size()-1] );
             vrac_levels.push_back( colors                    );
             warning_section();
             printf("(II)     > Keeping (%s) file for later processing...\n", vrac_names.back().c_str());
@@ -550,7 +486,7 @@ int main(int argc, char *argv[])
             vrac_levels.push_back( 2 * colors );
         }
 
-        l_files = n_files;
+        t_files = n_files;
         n_files.clear();
         colors *= 2;
     }

@@ -11,7 +11,6 @@
 //
 read_fastx_file_no_N::read_fastx_file_no_N(const std::string filen)
 {
-    std::cerr << "init fastx reader\n";
     buffer = new char[buff_size];
 
     f = fopen( filen.c_str(), "r" );
