@@ -1,5 +1,6 @@
 #include "./SaveMiniToTxtFile.hpp"
 #include "../../progress/progressbar.h"
+#include "../../files/stream_writer_library.hpp"
 
 //
 //
