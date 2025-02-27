@@ -26,7 +26,6 @@ void merge_level_1(
     uint64_t colorDocA = 0x0000000000000001;
     uint64_t colorDocB = 0x0000000000000002;
 
-    uint64_t last_value = 0xFFFFFFFFFFFFFFFF;
     while (true) {
 
         if (counterA == nElementsA) {

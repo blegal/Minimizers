@@ -26,7 +26,7 @@ file_stats::file_stats(const std::string filen)
 
 void file_stats::printf_size() const
 {
-    if     ( size_kb < 10 ) printf("%14s [%5llu B ]   ", name.c_str(), size_bytes);
-    else if( size_mb < 10 ) printf("%14s [%5llu KB]   ", name.c_str(), size_kb);
-    else                    printf("%14s [%5llu MB]   ", name.c_str(), size_mb);
+    if     ( size_kb < 10 ) printf("%14s [%5lu B ]   ", name.c_str(), size_bytes);
+    else if( size_mb < 10 ) printf("%14s [%5lu KB]   ", name.c_str(), size_kb);
+    else                    printf("%14s [%5lu MB]   ", name.c_str(), size_mb);
 }

@@ -26,7 +26,7 @@ bool SaveMiniToTxtFile(const std::string filename, const std::vector<uint64_t> l
 
     for(int y = 0; y < n_lines; y += 1)
     {
-        fprintf(f, "%16.16llX\n", list_hash[y]);
+        fprintf(f, "%16.16lX\n", list_hash[y]);
     }
 
     fclose( f );
