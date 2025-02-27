@@ -679,7 +679,9 @@ int main(int argc, char *argv[])
 
     for(int i = 0; i < vrac_names.size(); i += 1)
     {
-        printf("(II) Remaning file : %5d | %20s | num_colors = %6lld | real_colors = %6lld \n", i, vrac_names[i].name.c_str(),  vrac_names[i].numb_colors,  vrac_names[i].real_colors);
+        const file_stats t_file( vrac_names[i].name   );
+        t_file.printf_size();
+        printf("(II) Remaining file : %5d | %20s | num_colors = %6lld | real_colors = %6lld | size = %6lld MB\n", i, vrac_names[i].name.c_str(),  vrac_names[i].numb_colors,  vrac_names[i].real_colors, t_file.size_mb);
     }
 
 
@@ -692,7 +694,7 @@ int main(int argc, char *argv[])
     //
     if( vrac_names.size() > 1 )
     {
-        printf("(II) Comb-based merging of sorted minimizer files\n");
+        printf("(II) Comb-based 2-ways merging of sorted minimizer files\n");
         CTimer timer_merge( true );
 
         int cnt = 0;
@@ -701,21 +703,23 @@ int main(int argc, char *argv[])
 
         while( vrac_names.size() != 1 )
         {
+            const auto  start_file = std::chrono::steady_clock::now();
+
             const CMergeFile i_file_1 = vrac_names[1]; // le plus grand est tjs le second
             const CMergeFile i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
                   CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
 
-            o_file.name = "data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c";
+            o_file.name = "data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c" + extension;
 
-            printf("- %20.20s (%lld) + %20.20s (%lld)\n", i_file_1.name.c_str(), i_file_1.real_colors, i_file_2.name.c_str(), i_file_2.real_colors);
+//            printf("- %20.20s (%lld) + %20.20s (%lld)\n", i_file_1.name.c_str(), i_file_1.real_colors, i_file_2.name.c_str(), i_file_2.real_colors);
 
             //
             // On lance le processus de merging sur les 2 fichiers
             //
-            printf("  %20.20s (%lld) + %20.20s (%lld) ===> %20.20s (%lld)\n",
-                   i_file_1.name.c_str(), i_file_1.real_colors,
-                   i_file_2.name.c_str(), i_file_2.real_colors,
-                   o_file.name.c_str(),   o_file.real_colors);
+//            printf("  %20.20s (%lld) + %20.20s (%lld) ===> %20.20s (%lld)\n",
+//                   i_file_1.name.c_str(), i_file_1.real_colors,
+//                   i_file_2.name.c_str(), i_file_2.real_colors,
+//                   o_file.name.c_str(),   o_file.real_colors);
 
             merger_in(
                     i_file_1.name,
@@ -725,6 +729,18 @@ int main(int argc, char *argv[])
                     i_file_2.numb_colors
             );
             vrac_names[1] = o_file;
+
+            //
+            // Information reporting for the user
+            //
+            if(verbose_flag == true ){
+                printf("%6d | %s and %s   == 2-way x MERGE =>   ", cnt, i_file_1.name.c_str(), i_file_2.name.c_str());
+                const file_stats t_file( o_file.name   );
+                t_file.printf_size();
+                const auto  end_file = std::chrono::steady_clock::now();
+                const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
+                printf("in  %6.2fs\n", elapsed_file);
+            }
 
             //
             // On supprime le premier élément du tableau
