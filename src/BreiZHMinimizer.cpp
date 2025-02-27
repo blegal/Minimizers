@@ -66,7 +66,7 @@ std::string shorten(const std::string fname, const int length)
     //
     // Removing file path
     //
-    int name_pos       = fname.find_last_of("/");
+    auto name_pos       = fname.find_last_of("/");
     std::string nstr   = fname;
     if( name_pos != std::string::npos )
         nstr  = fname.substr(name_pos + 1);
@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
     std::string directory = "";
     std::string filename  = "";
     std::string file_out  = "result";
+    std::string tmp_dir   = "";
 
     int   verbose_flag        = 0;
     bool  skip_minimizer_step = 0;
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
     int   ram_value           = 1024;
     int   limited_memory      = 1;
 
-    int   file_limit          = 65536;
+    //int   file_limit          = 65536;
 
     std::string algo = "std::sort";
 
@@ -121,6 +122,7 @@ int main(int argc, char *argv[])
 
             {"directory",       required_argument, 0, 'd'},
             {"filename",      required_argument, 0,  'f'},
+            {"tmp_dir",      no_argument, 0,  't'},
 
             {"limited-mem",              no_argument, &limited_memory,    1},
             {"unlimited-mem",              no_argument, &limited_memory,    0},
@@ -181,9 +183,9 @@ int main(int argc, char *argv[])
                 threads_merge = std::atoi( optarg );
                 break;
 
-            case 'x':
-                file_limit = std::atoi( optarg );
-                break;
+            //case 'x':
+                //file_limit = std::atoi( optarg );
+                //break;
 
             case 's':
                 algo = optarg;
@@ -299,7 +301,7 @@ int main(int argc, char *argv[])
         int counter = 0;
         omp_set_num_threads(threads_minz);
 #pragma omp parallel for default(shared)
-        for(int i = 0; i < t_files.size(); i += 1)
+        for(size_t i = 0; i < t_files.size(); i += 1)
         {
 //            const auto start_mzr = std::chrono::steady_clock::now();
             CTimer minimizer_t( true );
@@ -336,7 +338,7 @@ int main(int argc, char *argv[])
 //              const float e_time = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_mzr - start_mzr).count() / 1000.f;
                 std::string nname = shorten(i_file.name, 32);
                 counter += 1;
-                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, t_files.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
+                printf("%zu | %5d/%5zu | %32s | %6zu MB | ==========> | %20s | %6zu MB | %5.2f sec.\n", i, counter, t_files.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
 
             }
 
@@ -395,7 +397,7 @@ int main(int argc, char *argv[])
 
         int cnt = 0;
 #pragma omp parallel for
-        for(int ll = 0; ll < t_files.size() - 1; ll += 2)
+        for(size_t ll = 0; ll < t_files.size() - 1; ll += 2)
         {
             const auto start_file = std::chrono::steady_clock::now();
             const file_stats i_file_1( t_files[ll    ] );

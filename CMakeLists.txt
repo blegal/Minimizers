@@ -130,11 +130,11 @@ project(BreiZHMinimizer)
 file(GLOB_RECURSE source_files
         ./src/BreiZHMinimizer.cpp
         # File readers
-        src/files/bz2/reader/file_bz2_reader.cpp
-        src/files/gz/reader/file_gz_reader.cpp
-        src/files/lz4/reader/file_lz4_reader.cpp
-        src/files/raw/reader/file_raw_reader.cpp
-        ./src/files/file_reader_library.cpp
+        #src/files/bz2/reader/file_bz2_reader.cpp
+        #src/files/gz/reader/file_gz_reader.cpp
+        #src/files/lz4/reader/file_lz4_reader.cpp
+        #src/files/raw/reader/file_raw_reader.cpp
+        #./src/files/file_reader_library.cpp
         # Merger implementations
         ./src/merger/merger_in.cpp
         ./src/merger/merger_level_s.cpp
