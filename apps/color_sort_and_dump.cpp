@@ -67,6 +67,28 @@ uint16_t* allocate_color_set(const std::vector<int>& vect)
         colors[i] = vect[i];
     return colors;
 }
+
+bool Sgreater_func (const item& e1, const item& e2)
+{
+    //
+    // on tri par taille pour commencer
+    //
+    if ( e1.n_colors != e2.n_colors )
+        return e1.n_colors > e2.n_colors;
+
+    //
+    // on tri par valeur
+    //
+    for(int i = 0; i < e1.n_colors; i += 1)
+    {
+        if( e1.colors[i] != e2.colors[i] )
+        {
+            return e1.colors[i] > e2.colors[i];
+        }
+    }
+    return 0;
+}
+
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,7 +261,7 @@ int main(int argc, char *argv[]) {
                 const int64_t mem_bytes  = (cnt_elements * sizeof(item)) + sizeof(uint16_t) * cnt_colors;
                 const int64_t mem_kbytes = mem_bytes  / 1024;
                 const int64_t mem_mbytes = mem_kbytes / 1024;
-                printf("%16lld elements | %16lld bytes | %16lld kbytes | %16lld mbytes |\n", cnt_elements, mem_bytes, mem_kbytes, mem_mbytes);
+                printf("%16lld elements | %16lld bytes | %16lld kbytes | %16lld mbytes | %6.3f%%\n", cnt_elements, mem_bytes, mem_kbytes, mem_mbytes, 100.0 * (double)cnt_elements/(double)933491795);
             }
 
         }
@@ -295,6 +317,25 @@ int main(int argc, char *argv[]) {
     printf("+------+------------+--------+---------+\n");
 
     double ms_time = time_m.get_time_ms();
+    if( ms_time > 1000.0 )
+        std::cout << "Elapsed time : " << (ms_time/1000.0) << "s\n";
+    else
+        std::cout << "Elapsed time : " << ms_time << "ms\n";
+
+    std::sort( liste.begin(), liste.end(), &Sgreater_func);
+
+    for(uint64_t i = 1; i < liste.size(); i += 1)
+    {
+        const item ii = liste[i];
+        printf("%6d |\e[0;32m %16.16llX \e[0;37m| [3d]", i, ii.minimizer, ii.n_colors);
+
+        for(int c = 0; c < ii.n_colors; c += 1)
+            printf("%d ", ii.colors[c]);
+
+        printf("\n");
+    }
+
+    ms_time = time_m.get_time_ms();
     if( ms_time > 1000.0 )
         std::cout << "Elapsed time : " << (ms_time/1000.0) << "s\n";
     else
