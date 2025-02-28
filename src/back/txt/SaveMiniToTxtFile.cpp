@@ -12,10 +12,10 @@
 
 bool SaveMiniToTxtFile(const std::string filename, const std::vector<uint64_t> list_hash)
 {
-    printf("(II)\n");
-    printf("(II) Saving minimizer data set in [%s]\n", filename.c_str());
-    progressbar *progress = progressbar_new("Saving minimizer values (TXT)", 100);
-    double start_time = omp_get_wtime();
+//    printf("(II)\n");
+//    printf("(II) Saving minimizer data set in [%s]\n", filename.c_str());
+//    progressbar *progress = progressbar_new("Saving minimizer values (TXT)", 100);
+//    double start_time = omp_get_wtime();
 
     std::string n_file = filename;
     FILE* f = fopen( n_file.c_str(), "w" );
@@ -32,16 +32,14 @@ bool SaveMiniToTxtFile(const std::string filename, const std::vector<uint64_t> l
     {
         fprintf(f, "%16.16llX\n", list_hash[y]);
 
-        if( y%prog_step == 0)
-            progressbar_inc(progress);
+//        if( y%prog_step == 0)
+//            progressbar_inc(progress);
     }
 
     fclose( f );
-    double end_time = omp_get_wtime();
-
-    progressbar_finish(progress);
-
-    printf("(II) - Execution time    = %f\n", end_time - start_time);
+//    double end_time = omp_get_wtime();
+//    progressbar_finish(progress);
+//    printf("(II) - Execution time    = %f\n", end_time - start_time);
     return true;
 }
 
@@ -64,11 +62,11 @@ inline char to_ascii(const int64_t value)
 
 bool SaveMiniToTxtFile_v2(const std::string filename, const std::vector<uint64_t> list_hash)
 {
-    printf("(II)\n");
-    printf("(II) Saving minimizer data set in [%s]\n", filename.c_str());
+//    printf("(II)\n");
+//    printf("(II) Saving minimizer data set in [%s]\n", filename.c_str());
     const int n_lines = list_hash.size();
-    progressbar *progress = progressbar_new("Saving minimizer values (TXT)", 100);
-    double start_time = omp_get_wtime();
+//    progressbar *progress = progressbar_new("Saving minimizer values (TXT)", 100);
+//    double start_time = omp_get_wtime();
 
     std::string n_file = filename;
     FILE* f = fopen( n_file.c_str(), "w" );
@@ -114,8 +112,8 @@ bool SaveMiniToTxtFile_v2(const std::string filename, const std::vector<uint64_t
             cnt = 0;
         }
 
-        if( y%prog_step == 0)
-            progressbar_inc(progress);
+//        if( y%prog_step == 0)
+//            progressbar_inc(progress);
     }
 
     //
@@ -128,10 +126,10 @@ bool SaveMiniToTxtFile_v2(const std::string filename, const std::vector<uint64_t
     }
 
     fclose( f );
-    double end_time = omp_get_wtime();
+//    double end_time = omp_get_wtime();
 
-    progressbar_finish(progress);
+//    progressbar_finish(progress);
 
-    printf("(II) - Execution time    = %f\n", end_time - start_time);
+//    printf("(II) - Execution time    = %f\n", end_time - start_time);
     return true;
 }
