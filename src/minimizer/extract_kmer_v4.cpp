@@ -446,7 +446,7 @@ void extract_kmer_v4(
     }
 
     CTimer start_sort( true );
-    double start_time = omp_get_wtime();
+//    double start_time = omp_get_wtime();
     if( algo == "std::sort" ) {
         std::sort( liste_mini.begin(), liste_mini.end() );
     } else if( algo == "std_2cores" ) {
@@ -467,10 +467,10 @@ void extract_kmer_v4(
         printf("(EE) - crumsort_2cores :\n");
         exit( EXIT_FAILURE );
     }
-    if( verbose_flag == true ) {
-        double end_time = omp_get_wtime();
-        printf("(II) - Execution time    = %f\n", end_time - start_time);
-    }
+//    if( verbose_flag == true ) {
+//        double end_time = omp_get_wtime();
+//        printf("(II) - Execution time    = %f\n", end_time - start_time);
+//    }
     printf("[Sortng] Elapsed time %1.3f\n", start_sort.get_time_sec());
 
     //
