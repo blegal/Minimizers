@@ -102,11 +102,13 @@ int main(int argc, char *argv[]) {
     uint64_t n_colors = 0;
     int verbose_flag  = 0;
     int help_flag     = 0;
+    int max_lines     = -1;
 
     static struct option long_options[] ={
             {"verbose",     no_argument, &verbose_flag, 1},
             {"help",        no_argument, 0, 'h'},
             {"file",        required_argument, 0,  'f'},
+            {"max-lines",   required_argument, 0,  'm'},
             {"colors",      required_argument, 0,  'c'},
             {0, 0, 0, 0}
     };
@@ -115,7 +117,7 @@ int main(int argc, char *argv[]) {
     int c;
     while( true )
     {
-        c = getopt_long (argc, argv, "f:c:vh", long_options, &option_index);
+        c = getopt_long (argc, argv, "f:c:m:vh", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -127,6 +129,10 @@ int main(int argc, char *argv[]) {
 
             case 'c':
                 n_colors = std::atoi( optarg );
+                break;
+
+            case 'm':
+                max_lines = std::atoi( optarg );
                 break;
 
             case 'h':
@@ -182,7 +188,8 @@ int main(int argc, char *argv[]) {
     //
     // Allocation de notre future structure de données
     //
-    std::vector< item > liste;
+    std::vector< item     > liste;
+    std::vector< uint16_t > colors;
 
     //
     // Allocation du tableau permettant de calculer l'histogramme
@@ -215,7 +222,7 @@ int main(int argc, char *argv[]) {
         //
         const int n_reads  = reader->read((char*)buffer.data(), sizeof(uint64_t), buffer.size());
         const int elements = n_reads / (1 + n_uint64_c);
-        cnt_uint64 += n_reads;
+        cnt_uint64        += n_reads;
 
         //
         // On parcours l'ensemble des minimizer que l'on a chargé
@@ -223,14 +230,13 @@ int main(int argc, char *argv[]) {
         for(int m = 0; m < elements; m += 1) // le nombre total de minimizers
         {
             //
-            // On compte le nombre de couleurs associé au minimizer
             //
-            int n_bits = 0;
+            //
 
             //
             // On parcours toutes les couleurs du minimizer courant
             //
-            std::vector<int> ll;
+            int n_bits = 0;
             for(int c = 0; c < n_uint64_c; c += 1)
             {
                 const uint64_t value = buffer[eSize * m + 1 + c];
@@ -242,7 +248,7 @@ int main(int argc, char *argv[]) {
                 {
                     if( (value >> x) & 0x01 )
                     {
-                        ll.push_back(64 * c + x);
+                        colors.push_back(64 * c + x); // on ajoute la couleur au vecteur
                         cnt_colors += 1;
                         n_bits     += 1;
                     }
@@ -250,11 +256,19 @@ int main(int argc, char *argv[]) {
             }
             histo[n_bits] += 1;
 
+            // on met a jour les couleurs
             item ii;
-            ii.minimizer = buffer[eSize * m + 1]; // la valeur du minimizer
-            ii.n_colors  = ll.size();
-            ii.colors    = allocate_color_set( ll );
+            ii.minimizer = buffer[eSize * m];                      // la valeur du minimizer
+            ii.colors    = colors.data() + colors.size() - n_bits; // pointeur de debut de zone
+            ii.n_colors  = n_bits;
             liste.push_back( ii );
+
+            const item jj = liste[liste.size()-1];
+            printf("%6d |\e[0;32m %16.16llX \e[0;37m [%4d] %p ", cnt_elements, jj.minimizer, jj.n_colors, jj.colors);
+            for(int c = 0; c < jj.n_colors; c += 1)
+                printf("%d ", jj.colors[c]);
+            printf("\n");
+
             cnt_elements += 1;
 
             if( cnt_elements%1000000 == 0 ){
@@ -264,7 +278,13 @@ int main(int argc, char *argv[]) {
                 printf("%16lld elements | %16lld bytes | %16lld kbytes | %16lld mbytes | %6.3f%%\n", cnt_elements, mem_bytes, mem_kbytes, mem_mbytes, 100.0 * (double)cnt_elements/(double)933491795);
             }
 
+            if( cnt_elements == max_lines )
+                break;
+
         }
+
+        if( cnt_elements == max_lines )
+            break;
 
     }
 
@@ -298,6 +318,7 @@ int main(int argc, char *argv[]) {
     printf("(II)             Kbytes   : %llu\n",  mem_size_kbytes);
     printf("(II)             Mbytes   : %llu\n",  mem_size_mbytes);
 
+#if 0
     //
     // On va afficher l'ensemble des données issues de l'histo
     //
@@ -315,6 +336,10 @@ int main(int argc, char *argv[]) {
         }
     }
     printf("+------+------------+--------+---------+\n");
+#endif
+    //
+    // On affiche le temps passé a charger les données
+    //
 
     double ms_time = time_m.get_time_ms();
     if( ms_time > 1000.0 )
@@ -322,16 +347,22 @@ int main(int argc, char *argv[]) {
     else
         std::cout << "Elapsed time : " << ms_time << "ms\n";
 
-    std::sort( liste.begin(), liste.end(), &Sgreater_func);
+    //
+    // On lance le tri des données
+    //
 
-    for(uint64_t i = 1; i < liste.size(); i += 1)
+    //std::sort( liste.begin(), liste.end(), &Sgreater_func);
+
+    //
+    // On affiche les données triées les 16 premieres
+    //
+
+    for(uint64_t i = 0; i < liste.size(); i += 1)
     {
-        const item ii = liste[i];
-        printf("%6d |\e[0;32m %16.16llX \e[0;37m| [3d]", i, ii.minimizer, ii.n_colors);
-
-        for(int c = 0; c < ii.n_colors; c += 1)
-            printf("%d ", ii.colors[c]);
-
+        const item jj = liste[i];
+        printf("%6d |\e[0;32m %16.16llX \e[0;37m [%4d] %p ", cnt_elements, jj.minimizer, jj.n_colors, jj.colors);
+        for(int c = 0; c < jj.n_colors; c += 1)
+            printf("%d ", jj.colors[c]);
         printf("\n");
     }
 
