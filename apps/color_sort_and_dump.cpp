@@ -67,7 +67,11 @@ uint16_t* allocate_color_set(const std::vector<int>& vect)
         colors[i] = vect[i];
     return colors;
 }
-
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
 bool Sgreater_func (const item& e1, const item& e2)
 {
     //
@@ -84,6 +88,27 @@ bool Sgreater_func (const item& e1, const item& e2)
         if( e1.colors[i] != e2.colors[i] )
         {
             return e1.colors[i] > e2.colors[i];
+        }
+    }
+    return 0;
+}
+
+bool Slower_func (const item& e1, const item& e2)
+{
+    //
+    // on tri par taille pour commencer
+    //
+    if ( e1.n_colors != e2.n_colors )
+        return e1.n_colors < e2.n_colors;
+
+    //
+    // on tri par valeur
+    //
+    for(int i = 0; i < e1.n_colors; i += 1)
+    {
+        if( e1.colors[i] != e2.colors[i] )
+        {
+            return e1.colors[i] < e2.colors[i];
         }
     }
     return 0;
@@ -188,8 +213,7 @@ int main(int argc, char *argv[]) {
     //
     // Allocation de notre future structure de données
     //
-    std::vector< item     > liste;
-    std::vector< uint16_t > colors;
+    std::vector< item > liste;
 
     //
     // Allocation du tableau permettant de calculer l'histogramme
@@ -227,11 +251,13 @@ int main(int argc, char *argv[]) {
         //
         // On parcours l'ensemble des minimizer que l'on a chargé
         //
+        std::vector< int > colors;
         for(int m = 0; m < elements; m += 1) // le nombre total de minimizers
         {
             //
             //
             //
+            colors.clear();
 
             //
             // On parcours toutes les couleurs du minimizer courant
@@ -259,15 +285,15 @@ int main(int argc, char *argv[]) {
             // on met a jour les couleurs
             item ii;
             ii.minimizer = buffer[eSize * m];                      // la valeur du minimizer
-            ii.colors    = colors.data() + colors.size() - n_bits; // pointeur de debut de zone
-            ii.n_colors  = n_bits;
+            ii.colors    = allocate_color_set( colors );
+            ii.n_colors  = colors.size();
             liste.push_back( ii );
 
-            const item jj = liste[liste.size()-1];
-            printf("%6d |\e[0;32m %16.16llX \e[0;37m [%4d] %p ", cnt_elements, jj.minimizer, jj.n_colors, jj.colors);
-            for(int c = 0; c < jj.n_colors; c += 1)
-                printf("%d ", jj.colors[c]);
-            printf("\n");
+//            const item jj = liste[liste.size()-1];
+//            printf("%6d |\e[0;32m %16.16llX \e[0;37m [%4d] ", cnt_elements, jj.minimizer, jj.n_colors);
+//            for(int c = 0; c < jj.n_colors; c += 1)
+//                printf("%d ", jj.colors[c]);
+//            printf("\n");
 
             cnt_elements += 1;
 
@@ -287,7 +313,6 @@ int main(int argc, char *argv[]) {
             break;
 
     }
-
     //
     //
     //
@@ -351,16 +376,25 @@ int main(int argc, char *argv[]) {
     // On lance le tri des données
     //
 
-    //std::sort( liste.begin(), liste.end(), &Sgreater_func);
+    std::sort( liste.begin(), liste.end(), &Slower_func);
 
     //
     // On affiche les données triées les 16 premieres
     //
 
-    for(uint64_t i = 0; i < liste.size(); i += 1)
+    for(uint64_t i = 0; i < 16 /*liste.size()*/; i += 1)
     {
         const item jj = liste[i];
-        printf("%6d |\e[0;32m %16.16llX \e[0;37m [%4d] %p ", cnt_elements, jj.minimizer, jj.n_colors, jj.colors);
+        printf("%6d |\e[0;32m %16.16llX \e[0;37m [%4d] ", i, jj.minimizer, jj.n_colors);
+        for(int c = 0; c < jj.n_colors; c += 1)
+            printf("%d ", jj.colors[c]);
+        printf("\n");
+    }
+
+    for(uint64_t i = liste.size() - 16; i < liste.size(); i += 1)
+    {
+        const item jj = liste[i];
+        printf("%6d |\e[0;32m %16.16llX \e[0;37m [%4d] ", i, jj.minimizer, jj.n_colors);
         for(int c = 0; c < jj.n_colors; c += 1)
             printf("%d ", jj.colors[c]);
         printf("\n");
