@@ -391,7 +391,7 @@ void minimizer_processing(
     }
     /////////////////////////////////////////////////////////////////////////////////////
 
-    double start_time = omp_get_wtime();
+//    double start_time = omp_get_wtime();
     if( algo == "std::sort" ) {
         std::sort( liste_mini.begin(), liste_mini.end() );
     } else if( algo == "std_2cores" ) {
@@ -412,10 +412,10 @@ void minimizer_processing(
         printf("(EE) - crumsort_2cores :\n");
         exit( EXIT_FAILURE );
     }
-    if( verbose_flag == true ) {
-        double end_time = omp_get_wtime();
-        printf("(II) - Execution time    = %f\n", end_time - start_time);
-    }
+//    if( verbose_flag == true ) {
+//        double end_time = omp_get_wtime();
+//        printf("(II) - Execution time    = %f\n", end_time - start_time);
+//    }
 
     /////////////////////////////////////////////////////////////////////////////////////
     if( verbose_flag == true ) {
