@@ -18,3 +18,8 @@ extern void minimizer_processing_v4(
         const bool verbose_flag,
         const bool file_save_debug
     );
+
+extern void minimizer_processing_stats_only(
+        const std::string& i_file,
+        std::vector<uint64_t>& results
+    );
