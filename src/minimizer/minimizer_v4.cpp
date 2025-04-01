@@ -42,7 +42,9 @@ void minimizer_processing_v4(
         const int  ram_limit_in_MB   = 1024,
         const bool file_save_output  = true,
         const bool verbose_flag      = false,
-        const bool file_save_debug   = false
+        const bool file_save_debug   = false,
+        const int kmer = 31,
+        const int mmer = 19
 )
 {
     bool verbose = false;
@@ -52,11 +54,6 @@ void minimizer_processing_v4(
      */
     uint64_t max_in_ram = 1024 * 1024* (uint64_t)ram_limit_in_MB / sizeof(uint64_t); // on parle en elements de type uint64_t
 
-    /*
-     * Reading the K value from the first file line
-     */
-    const int kmer = 31;
-    const int mmer = 19;
     const int z    = kmer - mmer;
 
     //

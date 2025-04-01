@@ -16,5 +16,7 @@ extern void minimizer_processing_v4(
         const int  ram_limit_in_MB,
         const bool file_save_output,
         const bool verbose_flag,
-        const bool file_save_debug
+        const bool file_save_debug,
+        const int k,
+        const int m
     );

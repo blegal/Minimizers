@@ -156,8 +156,6 @@ file(GLOB_RECURSE source_files
         ./src/minimizer/deduplication.cpp
         # Minimizer engines
         ./src/minimizer/deduplication.cpp
-        ./src/minimizer/minimizer_v2.cpp
-        ./src/minimizer/minimizer_v3.cpp
         ./src/minimizer/minimizer_v4.cpp
         # Front-end parsers
         src/front/fastx/read_fastx_file.cpp
@@ -173,18 +171,14 @@ file(GLOB_RECURSE source_files
         src/front/fastx_lz4/lz4/lz4.c
         # tools
         ./src/tools/CTimer.cpp
+        ./src/tools/file_stats.cpp
     )
-add_executable(BreiZHMinimizer ${source_files}
-        src/tools/file_stats.cpp
-        src/tools/file_stats.hpp)
 
-target_include_directories(BreiZHMinimizer
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
 
-target_link_libraries(BreiZHMinimizer z)
-target_link_libraries(BreiZHMinimizer bz2)
+add_library(BreiZHMinimizerLib STATIC ${source_files})
+target_include_directories(BreiZHMinimizerLib PUBLIC "${PROJECT_SOURCE_DIR}/../src/headers/")
+target_link_libraries(BreiZHMinimizerLib z bz2)
+
 
 ########################################################################################################################
 
