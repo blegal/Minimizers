@@ -79,7 +79,7 @@ if(BUILD_LINUX_INTEL)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mtune=native")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math -fopenmp")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_MKL_")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
     #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3")  #Uncomment to debug with valgrind
 endif ()
 
@@ -176,7 +176,6 @@ file(GLOB_RECURSE source_files
 
 
 add_library(BreiZHMinimizerLib STATIC ${source_files})
-target_include_directories(BreiZHMinimizerLib PUBLIC "${PROJECT_SOURCE_DIR}/../src/headers/")
 target_link_libraries(BreiZHMinimizerLib z bz2)
 
 
