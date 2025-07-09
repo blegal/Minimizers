@@ -121,241 +121,50 @@ if(ENABLE_LTO)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 endif ()
 
-########################################################################################################################
 
-project(min_sorter)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/min_sorter.cpp")
-
-add_executable(min_sorter ${source_files})
-
-target_link_libraries(min_sorter z)
-target_link_libraries(min_sorter bz2)
-target_link_libraries(min_sorter curses)
-
-########################################################################################################################
-
-project(min_sorter_v2)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/min_sorter_v2.cpp")
-
-add_executable(min_sorter_v2 ${source_files})
-
-target_link_libraries(min_sorter_v2 z)
-target_link_libraries(min_sorter_v2 bz2)
-target_link_libraries(min_sorter_v2 curses)
-
-########################################################################################################################
-
-project(min_sorter_v3)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/min_sorter_v3.cpp")
-
-add_executable(min_sorter_v3 ${source_files})
-
-target_link_libraries(min_sorter_v3 z)
-target_link_libraries(min_sorter_v3 bz2)
-target_link_libraries(min_sorter_v3 curses)
-
-########################################################################################################################
-
-project(min_sorter_ref)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/min_sorter_ref.cpp")
-
-add_executable(min_sorter_ref ${source_files})
-
-target_link_libraries(min_sorter_ref z)
-target_link_libraries(min_sorter_ref bz2)
-target_link_libraries(min_sorter_ref curses)
-
-########################################################################################################################
-
-project(merge)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/merge.cpp")
-
-add_executable(merge ${source_files})
-
-target_link_libraries(merge z)
-target_link_libraries(merge bz2)
-target_link_libraries(merge curses)
-
-########################################################################################################################
-
-project(raw_dump)
-
-file(GLOB_RECURSE source_files
-        apps/raw_dump.cpp)
-add_executable(raw_dump ${source_files})
-
-target_include_directories(raw_dump
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/../src/headers/"
-)
-
-########################################################################################################################
-
-project(raw_compare)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/raw_compare.cpp")
-
-add_executable(raw_compare ${source_files})
-
-target_link_libraries(raw_compare z)
-target_link_libraries(raw_compare bz2)
-target_link_libraries(raw_compare curses)
-
-########################################################################################################################
-
-project(test_generator)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/test_generator.cpp")
-
-add_executable(test_generator ${source_files})
-
-target_link_libraries(test_generator z)
-target_link_libraries(test_generator bz2)
-target_link_libraries(test_generator curses)
-
-########################################################################################################################
 
 project(BreiZHMinimizer)
 
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+# BreiZHMinimizer LIB
+file(GLOB_RECURSE src_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+file(GLOB_RECURSE lib_sources ${CMAKE_CURRENT_SOURCE_DIR}/lib/*)
+add_library(BreiZHMinimizerLib STATIC ${src_sources} ${lib_sources})
+target_link_libraries(BreiZHMinimizerLib PUBLIC z bz2 curses)
 
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/BreiZHMinimizer.cpp")
 
-add_executable(BreiZHMinimizer ${source_files})
+# --- Helper macro to add executables using common sources + app sources ---
 
-target_link_libraries(BreiZHMinimizer z)
-target_link_libraries(BreiZHMinimizer bz2)
-target_link_libraries(BreiZHMinimizer curses)
+macro(add_app exe_name app_source)
+    file(GLOB_RECURSE app_sources "${app_source}")
+    add_executable(${exe_name} ${src_sources} ${lib_sources} ${app_sources})
+    target_link_libraries(${exe_name} PRIVATE z bz2 curses)
+endmacro()
 
-########################################################################################################################
+# --- Main executable, uses the lib ---
 
-project(BreiZHMinimizer_v2)
+add_executable(BreiZHMinimizer apps/BreiZHMinimizer_cli.cpp)
+target_link_libraries(BreiZHMinimizer PRIVATE BreiZHMinimizerLib)
 
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
+# --- All other executables, standalone tools ---
+# UNCOMMENT TO BUILD
 
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/BreiZHMinimizer_v2.cpp")
+#add_app(min_sorter          "apps/min_sorter.cpp")
+#add_app(min_sorter_v2       "apps/min_sorter_v2.cpp")
+#add_app(min_sorter_v3       "apps/min_sorter_v3.cpp")
+#add_app(min_sorter_ref      "apps/min_sorter_ref.cpp")
+#add_app(merge               "apps/merge.cpp")
+#add_app(raw_dump            "apps/raw_dump.cpp")
+#add_app(raw_compare         "apps/raw_compare.cpp")
+#add_app(test_generator      "apps/test_generator.cpp")
+#add_app(extract_color       "apps/extract_all_colors.cpp")
+#add_app(extract_all_colors  "apps/extract_all_colors.cpp")
+#add_app(color_stats         "apps/color_stats.cpp")
+#add_app(color_sorter        "apps/color_sorter.cpp")
+#add_app(color_sort_and_dump "apps/color_sort_and_dump.cpp")
+#add_app(kmer_sorter         "apps/kmer_sorter.cpp")
+#add_app(merge_all           "apps/merge_all.cpp")
 
-add_executable(BreiZHMinimizer_v2 ${source_files})
+# --- Special case raw_dump: includes extra include dirs ---
+# UNCOMMENT TO BUILD raw_dump exe
 
-target_link_libraries(BreiZHMinimizer_v2 z)
-target_link_libraries(BreiZHMinimizer_v2 bz2)
-target_link_libraries(BreiZHMinimizer_v2 curses)
-
-########################################################################################################################
-
-project(extract_color)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/extract_all_colors.cpp")
-
-add_executable(extract_color ${source_files})
-
-target_link_libraries(extract_color z)
-target_link_libraries(extract_color bz2)
-target_link_libraries(extract_color curses)
-
-########################################################################################################################
-
-project(extract_all_colors)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/extract_all_colors.cpp")
-
-add_executable(extract_all_colors ${source_files})
-
-target_link_libraries(extract_all_colors z)
-target_link_libraries(extract_all_colors bz2)
-target_link_libraries(extract_all_colors curses)
-
-########################################################################################################################
-
-project(color_stats)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/color_stats.cpp")
-
-add_executable(color_stats ${source_files})
-
-target_link_libraries(color_stats z)
-target_link_libraries(color_stats bz2)
-target_link_libraries(color_stats curses)
-
-########################################################################################################################
-
-project(color_sorter)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/color_sorter.cpp")
-
-add_executable(color_sorter ${source_files})
-
-target_link_libraries(color_sorter z)
-target_link_libraries(color_sorter bz2)
-target_link_libraries(color_sorter curses)
-
-########################################################################################################################
-
-project(color_sort_and_dump)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/color_sort_and_dump.cpp")
-
-add_executable(color_sort_and_dump ${source_files})
-
-target_link_libraries(color_sort_and_dump z)
-target_link_libraries(color_sort_and_dump bz2)
-target_link_libraries(color_sort_and_dump curses)
-
-########################################################################################################################
-
-project(kmer_sorter)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/kmer_sorter.cpp")
-
-add_executable(kmer_sorter ${source_files})
-
-target_link_libraries(kmer_sorter z)
-target_link_libraries(kmer_sorter bz2)
-target_link_libraries(kmer_sorter curses)
-
-########################################################################################################################
-
-project(merge_all)
-
-file(GLOB_RECURSE source_files ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
-
-list(APPEND source_files "${CMAKE_CURRENT_SOURCE_DIR}/apps/merge_all.cpp")
-
-add_executable(merge_all ${source_files})
-
-target_link_libraries(merge_all z)
-target_link_libraries(merge_all bz2)
-target_link_libraries(merge_all curses)
-
-########################################################################################################################
+#target_include_directories(raw_dump PUBLIC "${PROJECT_SOURCE_DIR}/../src/headers/")

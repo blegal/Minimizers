@@ -1,24 +1,4 @@
-#include <cstdio>
-#include <vector>
-#include <omp.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <sys/stat.h>
-#include <filesystem>
-
-#include "../src/minimizer/minimizer_v2.hpp"
-#include "../src/minimizer/minimizer_v3.hpp"
-#include "../src/minimizer/minimizer_v4.hpp"
-#include "../src/merger/in_file/merger_in.hpp"
-#include "../src/merger/CMergeFile.hpp"
-
-#include "../src/merger/in_file/merger_n_files.hpp"
-#include "../src/merger/in_file/merger_n_files_lt64.hpp"
-#include "../src/merger/in_file/merger_n_files_ge64.hpp"
-
-#include "../src/tools/colors.hpp"
-#include "../src/tools/CTimer/CTimer.hpp"
-#include "../src/tools/file_stats.hpp"
+#include "BreiZHMinimizer.hpp"
 
 std::string to_number(int value, const int maxv)
 {
@@ -37,32 +17,6 @@ std::string to_number(int value, const int maxv)
     if( value != 0 )
         number += std::to_string(value) + number;
     return number;
-}
-
-
-//
-//  Récupère la liste des fichiers contenus dans un répertoire
-//
-std::vector<std::string> file_list_cpp(const std::string path, std::string ext = ".fastx")
-{
-    struct stat path_stat;
-    stat(path.c_str(), &path_stat);
-    if( (path_stat.st_mode & S_IFDIR) == 0)
-    {
-        error_section();
-        printf("(EE) The provided path is not a directory (%s)\n", path.c_str());
-        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-        reset_section();
-        exit( EXIT_FAILURE );
-    }
-
-    std::vector<std::string> paths;
-    for (const auto& entry : std::filesystem::directory_iterator(path))
-    {
-        if( entry.path().string().find_first_of(ext) != std::string::npos )
-            paths.push_back(entry.path().string());
-    }
-    return paths;
 }
 
 std::string shorten(const std::string fname, const int length)
@@ -87,266 +41,22 @@ std::string shorten(const std::string fname, const int length)
     return nstr;
 }
 
-int main(int argc, char *argv[])
+void generate_minimizers(
+    std::vector<std::string> filenames, 
+    const std::string &output,
+    const std::string &tmp_dir, 
+    const int threads, 
+    const int ram_value, 
+    const int k, 
+    const int m, 
+    const int merge_step,
+    const std::string &algo, 
+    size_t verbose,
+    bool skip_minimizer_step, 
+    bool keep_minimizer_files, 
+    bool keep_merge_files)
 {
     CTimer timer_full( true );
-//  const auto prog_start = std::chrono::steady_clock::now();
-
-    //
-    //
-    //
-    std::string directory = "";
-    std::string filename  = "";
-    std::string extension = "";
-    std::string file_out  = "result";
-
-    int   verbose_flag        = 0;
-    bool  skip_minimizer_step = 0;
-
-    bool  keep_merge_files     = false;
-    bool  keep_minimizer_files = false;
-
-    int   help_flag           = 0;
-    int   threads_minz        = 1;
-    int   threads_merge       = 1;
-    int   ram_value           = 1024; //MB
-    int   limited_memory      = 1;
-    int   merge_step          = 8;
-
-    int   file_limit          = 65536;
-
-    std::string algo = "std::sort";
-
-    static struct option long_options[] = {
-            {"help",        no_argument, 0, 'h'},
-            {"verbose",     no_argument, 0, 'v'},
-
-            {"skip-minimizer-step",     no_argument, 0, 'S'},
-            {"keep-minimizers",     no_argument, 0, 'K'},
-            {"keep-temp-files",     no_argument, 0, 'k'},
-
-            {"directory",   required_argument, 0, 'd'},
-            {"filename",    required_argument, 0, 'f'},
-            {"compression", required_argument, 0, 'C'},
-            {"output",      required_argument, 0, 'o'},
-
-            {"limited-mem",        no_argument, &limited_memory,    1},
-            {"unlimited-mem",     no_argument, &limited_memory,    0},
-            {"ways",      required_argument, 0, 'w'},
-
-            {"max-files",      required_argument, 0,  'x'},
-            {"threads",      required_argument, 0,  't'},
-            {"threads-minz", required_argument, 0,  'm'},
-            {"threads-merge",required_argument, 0,  'g'},
-            {"sorter",      required_argument, 0, 's'},
-            {"GB",           required_argument, 0, 'G'},
-            {"MB",           required_argument, 0, 'M'},
-            {0, 0, 0, 0}
-    };
-
-
-    /* getopt_long stores the option index here. */
-    int option_index = 0;
-    int c;
-    while( true )
-    {
-        c = getopt_long(argc, argv, "d:f:t:m:g:x:vhkKsSCo:w:s:M:G:", long_options, &option_index);
-
-        if (c == -1)
-            break;
-
-        switch ( c )
-        {
-            case 'd':
-                directory = optarg;
-                break;
-
-            case 'f':
-                filename = optarg;
-                break;
-
-            case 'S':
-                skip_minimizer_step = true;
-                break;
-
-            case 'K':
-                keep_minimizer_files = true;
-                break;
-
-            case 'k':
-                keep_merge_files     = true;
-            break;
-
-            case 'o':
-                file_out = optarg;
-                break;
-
-            case 'w':
-                merge_step = std::atoi( optarg );
-                break;
-
-            case 'C':
-                extension  = ".";
-                extension += optarg;
-                break;
-
-            case 't':
-                threads_minz  = std::atoi( optarg );
-                threads_merge = std::atoi( optarg );
-                break;
-
-            case 'm':
-                threads_minz  = std::atoi( optarg );
-                break;
-
-            case 'g':
-                threads_merge = std::atoi( optarg );
-                break;
-
-            case 'x':
-                file_limit = std::atoi( optarg );
-                break;
-
-            case 's':
-                algo = optarg;
-                break;
-
-            case 'M':
-                ram_value = std::atoi( optarg );
-                break;
-
-            case 'G':
-                ram_value = 1024 * std::atoi( optarg );
-                break;
-
-            case 'v':
-                verbose_flag = true;
-                break;
-
-            case 'h':
-                help_flag = true;
-                break;
-
-            case '?':
-                help_flag = true;
-                break;
-
-            default:
-                abort ();
-        }
-    }
-
-    /*
-     * Print any remaining command line arguments (not options).
-     * */
-    if ( (optind < argc) || (help_flag == true) || ((directory.size() == 0) && (filename.size() == 0)))
-    {
-        printf ("Usage :\n");
-        printf ("./BreiZHMinimizer -d <directory to process>              [options]\n");
-        printf ("./BreiZHMinimizer -f <file with list of file to process> [options] (NOT WORKING YET !)\n");
-        printf ("\n");
-        printf ("Common options :\n");
-        printf ("  --threads <int>       (-t) : \n");
-        printf ("  --skip-minimizer-step (-s) : \n");
-        printf ("  --keep-temp-files     (-k) : \n");
-        printf ("  --output <string>     (-o) : the name of the output file that containt minimizers at the end\n");
-
-        printf ("\n");
-        printf ("Minimizer engine options :\n");
-        printf (" --sorter <string> (-s) : the name of the sorting algorithm to apply\n");
-        printf("                        + std::sort       :\n");
-        printf("                        + std_2cores      :\n");
-        printf("                        + std_4cores      :\n");
-        printf("                        + crumsort        : default\n");
-        printf("                        + crumsort_2cores :\n");
-        printf (" --sorter <string>     (-s) : \n");
-        printf (" --MB             (-M) [int]    : maximum memory usage in MBytes\n");
-        printf (" --GB             (-G) [int]    : maximum memory usage in GBytes\n");
-        printf ("\n");
-
-        printf ("Others :\n");
-        printf (" --verbose        (-v)          : display debug informations\n");
-        printf (" --help           (-h)          : display debug informations\n");
-        putchar ('\n');
-        exit( EXIT_FAILURE );
-    }
-
-
-    //
-    // On recuperer la liste des fichiers que l'on doit traiter. Ce nombre de fichiers doit
-    // être multiple de 2 pour que la premiere étape de fusion soit faite pour tous les fichier
-    // (ajout de la donnée uint64_t pour la couleur). Ce n'est pas un probleme scientifique mais
-    // technique, un peu plus de code a developper plus tard...
-    //
-    std::vector<std::string> t_files = file_list_cpp(directory);
-    std::sort(t_files.begin(), t_files.end());
-
-    printf("(II) Searching for files\n");
-    printf("(II) - Number of identified files : %zu\n", t_files.size());
-
-    //
-    // On filtre les fichiers que l'on souhaite traiter car dans les repertoires il peut y avoir
-    // de la doc, etc.
-    //
-    std::vector<std::string> filelist;
-    for( int i = 0; i < t_files.size(); i += 1 )
-    {
-        std::string t_file = t_files[i];
-        if( (skip_minimizer_step == false) &&
-                (
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "lz4")   ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "bz2")   ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "gz")    ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "fastx") ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "fasta") ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "fastq") ||
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "fna")
-                )
-            ){
-            filelist.push_back( t_file );
-        }else if( (skip_minimizer_step == true) &&
-            (
-                    (t_file.substr(t_file.find_last_of(".") + 1) == "raw")
-            )
-            ){
-            //
-            // raw files are mainly used for debbuging purpose !
-            //
-            filelist.push_back( t_file );
-        }else{
-            warning_section();
-            printf ("(WW)   > discarding %s\n", t_file.c_str());
-            reset_section();
-        }
-    }
-
-    printf("(II) - Number of selected   files : %zu\n", filelist.size());
-    printf("(II)\n");
-
-    //
-    // Si nous n'avons aucun fichier c'est que l'utilisateur a du faire une erreur
-    //
-    if( filelist.size() == 0 )
-    {
-        error_section();
-        printf("(EE) The provided directory does not contain valid file(s) \n");
-        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-        reset_section();
-        exit( EXIT_FAILURE );
-    }
-
-    //
-    // On limite le nombre de fichiers a traiter, utile lors des phases de debug
-    // pour ne pas avoir a traiter tous les fichiers d'un repo
-    //
-    if ( filelist.size() > file_limit ) {
-        warning_section();
-        printf ("(WW) Reducing the number of files to process (file_limit = %d)\n", file_limit);
-        reset_section();
-        while (filelist.size() > file_limit) {
-            filelist.pop_back();
-        }
-    }
 
 
     //
@@ -359,11 +69,7 @@ int main(int argc, char *argv[])
         uint64_t in_mbytes = 0;
         uint64_t ou_mbytes = 0;
 
-        printf("(II) Generating minimizers from DNA - %d thread(s)\n", threads_minz);
-        if( limited_memory == true )
-            printf("(II) - Limited memory mode : true\n");
-        else
-            printf("(II) - Limited memory mode : false\n");
+        printf("(II) Generating minimizers from DNA - %d thread(s)\n", threads);
 
         CTimer minzr_timer( true );
 
@@ -371,27 +77,24 @@ int main(int argc, char *argv[])
         // On predimentionne le vecteur de sortie car on connait sa taille. Cela evite les
         // problemes liés à la fonction push_back qui a l'air incertaine avec OpenMP
         //
-        n_files.resize( filelist.size() );
+        n_files.resize( filenames.size() );
 
         int counter = 0;
-        omp_set_num_threads(threads_minz);
+        omp_set_num_threads(threads);
 #pragma omp parallel for default(shared)
-        for(int i = 0; i < filelist.size(); i += 1)
+        for(int i = 0; i < filenames.size(); i += 1)
         {
             CTimer minimizer_t( true );
 
             //
             // On mesure la taille des fichiers d'entrée
             //
-            const file_stats i_file( filelist[i] );
-            const std::string t_file = "data_n" + to_number(i, (int)filelist.size()) + ".raw";
+            const file_stats i_file( filenames[i] );
+            const std::string t_file = "data_n" + to_number(i, (int)filenames.size()) + ".raw";
             in_mbytes += i_file.size_mb;
 
             /////
-            if( limited_memory == true )
-                minimizer_processing_v4(i_file.name, t_file, algo, ram_value, true, false, false, 31, 19);
-            else
-                minimizer_processing_v2(i_file.name, t_file, algo, ram_value, true, false, false);
+            minimizer_processing_v4(i_file.name, t_file, algo, ram_value, true, false, false, k, m);
             /////
 
             //
@@ -399,14 +102,14 @@ int main(int argc, char *argv[])
             //
             const file_stats o_file(t_file);
             ou_mbytes += o_file.size_mb;
-            if(verbose_flag == true )
+            if(verbose == true )
             {
                 //
                 // Mesure du temps d'execution
                 //
                 std::string nname = shorten(i_file.name, 32);
                 counter += 1;
-                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, filelist.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
+                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, filenames.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
 
             }
 
@@ -437,11 +140,11 @@ int main(int argc, char *argv[])
     //
     //
     //
-    printf("(II) Tree-based %d-ways merging of sorted minimizer files - %d thread(s)\n", 64, threads_merge);
-    if(verbose_flag == true )
+    printf("(II) Tree-based %d-ways merging of sorted minimizer files - %d thread(s)\n", 64, threads);
+    if(verbose == true )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
     n_files.resize( (l_files.size() + 63) / 64 ); // pur éviter le push_back qui semble OpenMP unsafe !
-    omp_set_num_threads(threads_merge); // on regle le niveau de parallelisme accessible dans cette partie
+    omp_set_num_threads(threads); // on regle le niveau de parallelisme accessible dans cette partie
     int cnt = 0;
 #pragma omp parallel for
     for(int ll = 0; ll < l_files.size(); ll += 64)
@@ -453,7 +156,7 @@ int main(int argc, char *argv[])
             liste.push_back( l_files[ll + ff].name );   // at the input
 
         std::string t_file = "data_n" + to_number(ll/64, l_files.size()/64) + ".";
-        t_file            += std::to_string(max_files) + "c" + extension;
+        t_file            += std::to_string(max_files) + "c";
 
 //      printf("(II) %d - Creating %s\n", ll, t_file.c_str());
 
@@ -475,7 +178,7 @@ int main(int argc, char *argv[])
         //
         // Information reporting for the user
         //
-        if(verbose_flag == true ){
+        if(verbose == true ){
             const file_stats t_file( o_file.name );
             printf("%6d | %s .... ", cnt, l_files[ll            ].name.c_str());
             printf("%s ",                 l_files[ll+max_files-1].name.c_str());
@@ -487,7 +190,7 @@ int main(int argc, char *argv[])
         }
         cnt += 1;
     }
-    if(verbose_flag == true )
+    if(verbose == true )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
     //
@@ -501,13 +204,13 @@ int main(int argc, char *argv[])
     //
     std::vector<CMergeFile> vrac_names;
 
-    printf("(II) Tree-based %d-ways merging of first stage files - %d thread(s)\n", merge_step, threads_merge);
+    printf("(II) Tree-based %d-ways merging of first stage files - %d thread(s)\n", merge_step, threads);
     const auto start_merge = std::chrono::steady_clock::now();
     int colors = 64;
-    omp_set_num_threads(threads_merge); // on regle le niveau de parallelisme accessible dans cette partie
+    omp_set_num_threads(threads); // on regle le niveau de parallelisme accessible dans cette partie
     while( l_files.size() > 1 )
     {
-        if( verbose_flag )
+        if( verbose )
             printf("(II)   - %d-ways merging %4zu files with %4d color(s)\n", merge_step, l_files.size(), colors);
         else{
             printf("(II)   - %d-ways merging %4zu files | %4d color(s) | ",   merge_step, l_files.size(), colors);
@@ -515,7 +218,7 @@ int main(int argc, char *argv[])
         }
         const auto start_merge = std::chrono::steady_clock::now();
 
-        if(verbose_flag == true )
+        if(verbose == true )
             printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
 
@@ -556,10 +259,10 @@ int main(int argc, char *argv[])
             //
             std::string t_file   = "data_n";
             t_file += to_number(ll/merge_step, l_files.size()/merge_step) + ".";
-            t_file += std::to_string(final_real_color) + "c" + extension;
+            t_file += std::to_string(final_real_color) + "c";
 
             //
-            // Creation of the filelist
+            // Creation of the filenames
             //
             std::vector<std::string> tmp_list;
             for(int ff = 0; ff < max_files; ff += 1)
@@ -599,7 +302,7 @@ int main(int argc, char *argv[])
             //
             // Information reporting for the user
             //
-            if(verbose_flag == true ){
+            if(verbose == true ){
                 printf("%6d | %s .... ", cnt, l_files[ll            ].name.c_str());
                 printf("%s ",                 l_files[ll+max_files-1].name.c_str());
                 printf("   == %d x MERGE =>   ", merge_step);
@@ -614,7 +317,7 @@ int main(int argc, char *argv[])
         const auto  end_merge = std::chrono::steady_clock::now();
 
         const float elapsed_file = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_merge - start_merge).count() / 1000.f;
-        if( verbose_flag ){
+        if( verbose ){
             const float d_in = (float)in_mbytes / elapsed_file;
             const float d_ou = (float)ou_mbytes / elapsed_file;
             printf("(II)     + Step done in %6.2f seconds | in: %6d MB/s | out: %6d |\n", elapsed_file, (int)d_in, (int)d_ou);
@@ -675,7 +378,7 @@ int main(int argc, char *argv[])
     }
 
 
-    if( verbose_flag )
+    if( verbose )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
 
@@ -687,7 +390,7 @@ int main(int argc, char *argv[])
     }
 
 
-    if( verbose_flag )
+    if( verbose )
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
 
@@ -711,7 +414,7 @@ int main(int argc, char *argv[])
             const CMergeFile i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
                   CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
 
-            o_file.name = "data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c" + extension;
+            o_file.name = "data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c";
 
 //            printf("- %20.20s (%lld) + %20.20s (%lld)\n", i_file_1.name.c_str(), i_file_1.real_colors, i_file_2.name.c_str(), i_file_2.real_colors);
 
@@ -735,7 +438,7 @@ int main(int argc, char *argv[])
             //
             // Information reporting for the user
             //
-            if(verbose_flag == true ){
+            if(verbose == true ){
                 printf("%6d | %s and %s   == 2-way x MERGE =>   ", cnt, i_file_1.name.c_str(), i_file_2.name.c_str());
                 const file_stats t_file( o_file.name   );
                 t_file.printf_size();
@@ -770,7 +473,7 @@ int main(int argc, char *argv[])
     if( vrac_names.size() == 1 )
     {
         const CMergeFile lastfile = vrac_names[0];
-        const std::string o_file = file_out + "." + std::to_string(lastfile.real_colors) + "c" + extension;
+        const std::string o_file = output + "." + std::to_string(lastfile.real_colors) + "c";
         std::rename(lastfile.name.c_str(), o_file.c_str());
         printf("(II) Renaming final file : %s\n", o_file.c_str());
     }else{
@@ -784,6 +487,4 @@ int main(int argc, char *argv[])
     //
     printf("(II)\n");
     printf("(II) - Total execution time : %1.2f seconds\n", timer_full.get_time_sec());
-
-    return 0;
 }
