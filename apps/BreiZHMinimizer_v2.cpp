@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
             {"directory",   required_argument, 0, 'd'},
             {"filename",    required_argument, 0, 'f'},
             {"compression", required_argument, 0, 'C'},
-            {"output",      required_argument, 0, 'O'},
+            {"output",      required_argument, 0, 'o'},
 
             {"limited-mem",        no_argument, &limited_memory,    1},
             {"unlimited-mem",     no_argument, &limited_memory,    0},
@@ -150,7 +150,8 @@ int main(int argc, char *argv[])
     int c;
     while( true )
     {
-        c = getopt_long (argc, argv, "d:f:t:vhks", long_options, &option_index);
+        c = getopt_long(argc, argv, "d:f:t:m:g:x:vhkKsSCo:w:s:M:G:", long_options, &option_index);
+
         if (c == -1)
             break;
 
@@ -176,7 +177,7 @@ int main(int argc, char *argv[])
                 keep_merge_files     = true;
             break;
 
-            case 'O':
+            case 'o':
                 file_out = optarg;
                 break;
 
