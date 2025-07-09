@@ -8,6 +8,7 @@
 
 #include "../src/minimizer/minimizer_v2.hpp"
 #include "../src/minimizer/minimizer_v3.hpp"
+#include "../src/minimizer/minimizer_v4.hpp"
 #include "../src/merger/in_file/merger_in.hpp"
 #include "../src/merger/CMergeFile.hpp"
 
@@ -108,7 +109,7 @@ int main(int argc, char *argv[])
     int   help_flag           = 0;
     int   threads_minz        = 1;
     int   threads_merge       = 1;
-    int   ram_value           = 1024;
+    int   ram_value           = 1024; //MB
     int   limited_memory      = 1;
     int   merge_step          = 8;
 
@@ -387,7 +388,7 @@ int main(int argc, char *argv[])
 
             /////
             if( limited_memory == true )
-                minimizer_processing_v3(i_file.name, t_file, algo, ram_value, true, false, false);
+                minimizer_processing_v4(i_file.name, t_file, algo, ram_value, true, false, false, 31, 19);
             else
                 minimizer_processing_v2(i_file.name, t_file, algo, ram_value, true, false, false);
             /////

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
 option(BUILD_MACOS_INTEL "Build test programs" OFF)
-option(BUILD_MACOS_ARM   "Build test programs" ON)
-option(BUILD_LINUX_INTEL "Build test programs" OFF)
+option(BUILD_MACOS_ARM   "Build test programs" OFF)
+option(BUILD_LINUX_INTEL "Build test programs" ON)
 option(BUILD_LINUX_ARM   "Build test programs" OFF)
 
 option(ENABLE_LTO    "Build test programs" OFF)
