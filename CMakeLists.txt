@@ -116,6 +116,20 @@ endif ()
 
 if(ENABLE_LTO)
     message("LINK time optimization (LTO) is enable")
+    
+    # Only set if not already defined by the parent project/toolchain
+    if(NOT CMAKE_AR)
+        find_program(CMAKE_AR gcc-ar)
+    endif()
+
+    if(NOT CMAKE_RANLIB)
+        find_program(CMAKE_RANLIB gcc-ranlib)
+    endif()
+
+    if(NOT CMAKE_NM)
+        find_program(CMAKE_NM gcc-nm)
+    endif()
+
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 endif ()
