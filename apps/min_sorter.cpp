@@ -9,8 +9,6 @@
 #include <sstream>
 #include <getopt.h>
 
-#include "../src/progress/progressbar.h"
-
 #include "../src/front/fastx/read_fastx_file.hpp"
 #include "../src/front/fastx_bz2/read_fastx_bz2_file.hpp"
 

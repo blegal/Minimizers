@@ -116,7 +116,7 @@ endif ()
 
 if(ENABLE_LTO)
     message("LINK time optimization (LTO) is enable")
-    
+
     # Only set if not already defined by the parent project/toolchain
     if(NOT CMAKE_AR)
         find_program(CMAKE_AR gcc-ar)
@@ -142,7 +142,7 @@ project(BreiZHMinimizer)
 file(GLOB_RECURSE src_sources ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
 file(GLOB_RECURSE lib_sources ${CMAKE_CURRENT_SOURCE_DIR}/lib/*)
 add_library(BreiZHMinimizerLib STATIC ${src_sources} ${lib_sources})
-target_link_libraries(BreiZHMinimizerLib PUBLIC z bz2 curses)
+target_link_libraries(BreiZHMinimizerLib PUBLIC z bz2)
 
 
 # --- Helper macro to add executables using common sources + app sources ---
@@ -150,7 +150,7 @@ target_link_libraries(BreiZHMinimizerLib PUBLIC z bz2 curses)
 macro(add_app exe_name app_source)
     file(GLOB_RECURSE app_sources "${app_source}")
     add_executable(${exe_name} ${src_sources} ${lib_sources} ${app_sources})
-    target_link_libraries(${exe_name} PRIVATE z bz2 curses)
+    target_link_libraries(${exe_name} PRIVATE z bz2)
 endmacro()
 
 # --- Main executable, uses the lib ---
