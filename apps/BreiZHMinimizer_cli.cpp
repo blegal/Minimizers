@@ -39,15 +39,16 @@ int main(int argc, char *argv[])
     int   verbose_flag        = 0;
     bool  skip_minimizer_step = 0;
 
-    bool  keep_merge_files     = false;
     bool  keep_minimizer_files = false;
-
+    bool  keep_merge_files     = false;
+    
     int   help_flag           = 0;
-    int   threads_minz        = 1;
-    int   threads_merge       = 1;
+    int   threads             = 4;
     int   ram_value           = 1024; //MB
-    int   limited_memory      = 1;
     int   merge_step          = 8;
+
+    int kmer_size = 31; // k-mer size
+    int minimizer_size = 19; // minimizer size
 
     int   file_limit          = 65536;
 
@@ -57,23 +58,21 @@ int main(int argc, char *argv[])
             {"help",        no_argument, 0, 'h'},
             {"verbose",     no_argument, 0, 'v'},
 
-            {"skip-minimizer-step",     no_argument, 0, 'S'},
-            {"keep-minimizers",     no_argument, 0, 'K'},
-            {"keep-temp-files",     no_argument, 0, 'k'},
+            {"skip-minimizer-step",     no_argument, 0, 's'},
+            {"keep-minimizer-files",     no_argument, 0, 'n'},
+            {"keep-merge-files",     no_argument, 0, 'N'},
 
             {"directory",   required_argument, 0, 'd'},
             {"filename",    required_argument, 0, 'f'},
             {"output",      required_argument, 0, 'o'},
 
-            {"limited-mem",        no_argument, &limited_memory,    1},
-            {"unlimited-mem",     no_argument, &limited_memory,    0},
-            {"ways",      required_argument, 0, 'w'},
+            {"kmer-size", required_argument, 0, 'k'},
+            {"minimizer-size", required_argument, 0, 'm'},
+            {"merge-step",      required_argument, 0, 'w'},
 
             {"max-files",      required_argument, 0,  'x'},
             {"threads",      required_argument, 0,  't'},
-            {"threads-minz", required_argument, 0,  'm'},
-            {"threads-merge",required_argument, 0,  'g'},
-            {"sorter",      required_argument, 0, 's'},
+            {"sorter-algo",      required_argument, 0, 'a'},
             {"GB",           required_argument, 0, 'G'},
             {"MB",           required_argument, 0, 'M'},
             {0, 0, 0, 0}
@@ -85,7 +84,7 @@ int main(int argc, char *argv[])
     int c;
     while( true )
     {
-        c = getopt_long(argc, argv, "d:f:t:m:g:x:vhkKsSo:w:s:M:G:", long_options, &option_index);
+        c = getopt_long(argc, argv, "d:f:snNo:k:m:w:t:x:a:M:G:vh", long_options, &option_index);
 
         if (c == -1)
             break;
@@ -100,20 +99,28 @@ int main(int argc, char *argv[])
                 filename = optarg;
                 break;
 
-            case 'S':
+            case 's':
                 skip_minimizer_step = true;
                 break;
 
-            case 'K':
+            case 'n':
                 keep_minimizer_files = true;
                 break;
 
-            case 'k':
+            case 'N':
                 keep_merge_files     = true;
-            break;
+                break;
 
             case 'o':
                 file_out = optarg;
+                break;
+
+            case 'k':
+                kmer_size = std::atoi( optarg );
+                break;
+
+            case 'm':
+                minimizer_size = std::atoi( optarg );
                 break;
 
             case 'w':
@@ -121,23 +128,14 @@ int main(int argc, char *argv[])
                 break;
 
             case 't':
-                threads_minz  = std::atoi( optarg );
-                threads_merge = std::atoi( optarg );
-                break;
-
-            case 'm':
-                threads_minz  = std::atoi( optarg );
-                break;
-
-            case 'g':
-                threads_merge = std::atoi( optarg );
+                threads  = std::atoi( optarg );
                 break;
 
             case 'x':
                 file_limit = std::atoi( optarg );
                 break;
 
-            case 's':
+            case 'a':
                 algo = optarg;
                 break;
 
@@ -157,10 +155,6 @@ int main(int argc, char *argv[])
                 help_flag = true;
                 break;
 
-            case '?':
-                help_flag = true;
-                break;
-
             default:
                 abort ();
         }
@@ -176,27 +170,32 @@ int main(int argc, char *argv[])
         printf ("./BreiZHMinimizer -f <file with list of file to process> [options] (NOT WORKING YET !)\n");
         printf ("\n");
         printf ("Common options :\n");
-        printf ("  --threads <int>       (-t) : \n");
-        printf ("  --skip-minimizer-step (-s) : \n");
-        printf ("  --keep-temp-files     (-k) : \n");
-        printf ("  --output <string>     (-o) : the name of the output file that containt minimizers at the end\n");
+        printf ("  --output <string>      (-o) : the name of the output file that containt minimizers at the end (default: result)\n");
+        printf ("  --kmer-size <int>      (-k) : (default: 31)\n");
+        printf ("  --minimizer-size <int> (-m) : (default: 19)\n");
+        printf ("  --threads <int>        (-t) : (default: 4)\n");
+        printf ("  --skip-minimizer-step  (-s) : (default: OFF)\n");
+        printf ("  --keep-minimizer-files (-n) : (default: OFF)\n");
+        printf ("  --keep-merge-files     (-N) : (default: OFF)\n");
+        printf ("  --max-files <int>      (-x) : Max number of files considered in dir or file of files (default: 65536)\n");
+        
 
         printf ("\n");
         printf ("Minimizer engine options :\n");
-        printf (" --sorter <string> (-s) : the name of the sorting algorithm to apply\n");
+        printf (" --sorter-algo <string> (-a) : the name of the sorting algorithm to apply\n");
         printf("                        + std::sort       :\n");
         printf("                        + std_2cores      :\n");
         printf("                        + std_4cores      :\n");
         printf("                        + crumsort        : default\n");
         printf("                        + crumsort_2cores :\n");
-        printf (" --sorter <string>     (-s) : \n");
-        printf (" --MB             (-M) [int]    : maximum memory usage in MBytes\n");
-        printf (" --GB             (-G) [int]    : maximum memory usage in GBytes\n");
+        printf (" --merge-step     (-w) [int]    : w-way merge, number of files merged together (default: 8)\n");
+        printf (" --MB             (-M) [int]    : maximum memory usage in MBytes (default: 1024)\n");
+        printf (" --GB             (-G) [int]    : maximum memory usage in GBytes (default: 1)\n");
         printf ("\n");
 
         printf ("Others :\n");
-        printf (" --verbose        (-v)          : display debug informations\n");
-        printf (" --help           (-h)          : display debug informations\n");
+        printf (" --verbose        (-v)          : display this help message\n");
+        printf (" --help           (-h)          : display this help message\n");
         putchar ('\n');
         exit( EXIT_FAILURE );
     }
@@ -284,10 +283,10 @@ int main(int argc, char *argv[])
         filelist,
         file_out,
         tmp_dir,
-        threads_minz,
+        threads,
         ram_value,
-        31, // k-mer size
-        19, // minimizer size
+        kmer_size, // k-mer size
+        minimizer_size, // minimizer size
         merge_step,
         algo,
         skip_minimizer_step,
