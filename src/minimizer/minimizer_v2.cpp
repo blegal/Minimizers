@@ -445,9 +445,9 @@ void minimizer_processing_v2(
     if( verbose_flag == true )
     {
         printf("(II) Vector deduplication step\n");
-        printf("(II) - #m-mer before = %llu\n", before);
-        printf("(II) - #m-mer after  = %llu\n", after);
-        printf("(II) - #m-mer saving = %llu\n", diffr);
+        printf("(II) - #m-mer before = %lu\n", before);
+        printf("(II) - #m-mer after  = %lu\n", after);
+        printf("(II) - #m-mer saving = %lu\n", diffr);
         printf("(II)\n");
     }
 

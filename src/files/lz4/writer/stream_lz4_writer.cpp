@@ -90,10 +90,10 @@ int stream_lz4_writer::write(void* buffer, int eSize, int eCount)
         reset_section();
         exit( EXIT_FAILURE );
     }
-    if( ret != (eSize * eCount) ){
+    if( static_cast<int>(ret) != (eSize * eCount) ){
         warning_section();
         printf("(WW) La fonction LZ4F_write n'a pas compressé toutes les données:\n");
-        printf("(WW) - Amount of data wrote    (ret)    : %d\n", ret);
+        printf("(WW) - Amount of data wrote    (ret)    : %lu\n", ret);
         printf("(WW) - Amount of data to write (eSize)  : %d\n", eSize);
         printf("(WW) - Amount of data to write (eCount) : %d\n", eCount);
         printf("(WW) Error location : %s %d\n", __FILE__, __LINE__);

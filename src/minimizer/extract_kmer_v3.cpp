@@ -135,8 +135,8 @@ void extract_kmer_v3(
     //
 
     std::vector<uint64_t> liste_mini( max_in_ram );
-    int64_t n_elements = 0;
-    int64_t n_kmers    = 0;
+    uint64_t n_elements = 0;
+    uint64_t n_kmers    = 0;
     //
     // Defining counters for statistics
     //
@@ -240,7 +240,7 @@ void extract_kmer_v3(
                 if( n_elements == max_in_ram )
                 {
                     const int64_t MB = n_kmers / 1024 / 1024;
-                    printf("- On flush ! (%lld M-kmers)\n", MB);
+                    printf("- On flush ! (%ld M-kmers)\n", MB);
 
                     // On est obligé de flush sur le disque les données
                     std::string t_file = o_file + "." + std::to_string( file_list.size() );
@@ -417,9 +417,9 @@ void extract_kmer_v3(
     //
     if( verbose_flag )
     {
-        for(int i = 0; i < liste_mini.size(); i += 1)
+        for(size_t i = 0; i < liste_mini.size(); i += 1)
         {
-            printf("%2d : ", i);
+            printf("%2ld : ", i);
             print_kmer(liste_mini[i], kmer_size);
             printf(" - %6d\n", liste_cntr[i]);
         }
@@ -429,9 +429,9 @@ void extract_kmer_v3(
     printf("  No. of k-mers below min. threshold :            0\n");
     printf("  No. of k-mers above max. threshold :            0\n");
     printf("  No. of unique k-mers               : %12zu\n",  liste_mini.size());
-    printf("  No. of unique counted k-mers       : %12lld\n", liste_mini.size());
-    printf("  Total no. of k-mers                : %12lld\n", n_kmers);
-    printf("  Total no. of sequences             : %12lld\n", n_sequences);
+    printf("  No. of unique counted k-mers       : %12ld\n", liste_mini.size());
+    printf("  Total no. of k-mers                : %12ld\n", n_kmers);
+    printf("  Total no. of sequences             : %12ld\n", n_sequences);
     printf("  Total no. of super-k-mers          :            0\n");
 
     printf("Elapsed time %1.3f\n", start_gen.get_time_sec());

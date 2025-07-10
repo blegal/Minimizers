@@ -79,7 +79,7 @@ void extract_kmer_v4(
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */
-    uint64_t max_in_ram = 1024 * 1024* (uint64_t)ram_limit_in_MB / sizeof(uint64_t); // on parle en elements de type uint64_t
+    //uint64_t max_in_ram = 1024 * 1024* (uint64_t)ram_limit_in_MB / sizeof(uint64_t); // on parle en elements de type uint64_t
     uint64_t max_ou_ram = 1024 * 1024* (uint64_t)ram_limit_ou_MB / sizeof(uint64_t); // on parle en elements de type uint64_t
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -112,7 +112,7 @@ void extract_kmer_v4(
 
     std::vector<uint64_t> liste_mini( max_ou_ram );
     int64_t stream_ptr  = 0;
-    int64_t n_elements  = 0;
+    uint64_t n_elements  = 0;
     int64_t n_kmers     = 0;
     int64_t n_non_valid = 0;
     int64_t n_sequences = 0;
@@ -176,7 +176,7 @@ void extract_kmer_v4(
         // on est a la fin du fichier alors on quitte
         // le kernel de traitement
         if( (stream_ptr == n_nucleotides) && (is_ended == true) ) {
-            printf("FSM (Header => End)\n", stream_ptr);
+            printf("FSM (Header => End) %ld\n", stream_ptr);
             goto end;
         }
         if( stream_ptr == n_nucleotides )
@@ -193,7 +193,7 @@ void extract_kmer_v4(
         n_sequences += 1;
 
         if( stream_ptr > n_nucleotides ) {
-            printf("(A) stream_ptr = %d | n_nucleotides = %d | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
+            printf("(A) stream_ptr = %ld | n_nucleotides = %ld | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
         }
 
         goto kernel_init;
@@ -241,7 +241,7 @@ void extract_kmer_v4(
 
             if( verbose_flag )
             {
-                printf("%2d [%c] ", stream_ptr-1, nucleo);
+                printf("%2ld [%ld] ", stream_ptr-1, nucleo);
                 print_kmer(current_mmer, kmer_size); printf(" - ");
                 print_kmer(cur_inv_mmer, kmer_size); printf("\n");
             }
@@ -261,7 +261,7 @@ void extract_kmer_v4(
 
         }
         if( stream_ptr > n_nucleotides ) {
-            printf("(0) stream_ptr = %d | n_nucleotides = %d | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
+            printf("(0) stream_ptr = %ld | n_nucleotides = %ld | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
         }
 
         goto kernel_loop;
@@ -271,7 +271,7 @@ void extract_kmer_v4(
         printf("FSM (kernel_loop)\n");
 #endif
         if( stream_ptr > n_nucleotides ) {
-            printf("(1) stream_ptr = %d | n_nucleotides = %d | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
+            printf("(1) stream_ptr = %ld | n_nucleotides = %ld | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
         }
 
 //        printf("position de debut de kmer = %lld\n", stream_ptr);
@@ -315,7 +315,7 @@ void extract_kmer_v4(
 
             if( verbose_flag )
             {
-                printf("%2d [%c] ", stream_ptr, nucleo);
+                printf("%2ld [%ld] ", stream_ptr, nucleo);
                 print_kmer(current_mmer, kmer_size); printf(" - ");
                 print_kmer(cur_inv_mmer, kmer_size); printf(" ==> ");
                 print_kmer(canonnic, kmer_size); printf("\n");
@@ -337,13 +337,13 @@ void extract_kmer_v4(
             n_kmers                 += 1;
 
             if( stream_ptr > n_nucleotides ) {
-                printf("(2) stream_ptr = %d | n_nucleotides = %d | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
+                printf("(2) stream_ptr = %ld | n_nucleotides = %ld | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
             }
             // On stocke sur disque
             if( n_elements == max_ou_ram )
             {
                 const int64_t MB = n_kmers / 1024 / 1024;
-                printf("- On flush ! (%lld M-kmers)\n", MB);
+                printf("- On flush ! (%ld M-kmers)\n", MB);
 
                 // On est obligé de flush sur le disque les données
                 std::string t_file = o_file + "." + std::to_string( file_list.size() );
@@ -369,7 +369,7 @@ void extract_kmer_v4(
 
         if( stream_ptr > n_nucleotides )
         {
-            printf("stream_ptr = %d | n_nucleotides = %d | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
+            printf("stream_ptr = %ld | n_nucleotides = %ld | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
             printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
             exit( EXIT_FAILURE );
         }
@@ -379,7 +379,7 @@ void extract_kmer_v4(
 #ifdef _debug_fsm_
     printf("FSM (end)\n");
 #endif
-    printf("stream_ptr = %d | n_nucleotides = %d | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
+    printf("stream_ptr = %ld | n_nucleotides = %ld | is_ended = %d\n", stream_ptr, n_nucleotides, is_ended);
     printf("[Parser] Elapsed time %1.3f\n", start_gen.get_time_sec());
 
 
@@ -509,9 +509,9 @@ void extract_kmer_v4(
     //
     if( verbose_flag )
     {
-        for(int i = 0; i < liste_mini.size(); i += 1)
+        for(size_t i = 0; i < liste_mini.size(); i += 1)
         {
-            printf("%2d : ", i);
+            printf("%2ld : ", i);
             print_kmer(liste_mini[i], kmer_size);
             printf(" - %6d\n", liste_cntr[i]);
         }
@@ -521,20 +521,20 @@ void extract_kmer_v4(
     printf("  No. of k-mers below min. threshold :            0\n");
     printf("  No. of k-mers above max. threshold :            0\n");
     printf("  No. of unique k-mers               : %12zu\n",  liste_mini.size());
-    printf("  No. of unique counted k-mers       : %12lld\n", liste_mini.size());
-    printf("  Total no. of k-mers                : %12lld\n", n_kmers);
-    printf("  Total no. of sequences             : %12lld\n", n_sequences);
+    printf("  No. of unique counted k-mers       : %12ld\n", liste_mini.size());
+    printf("  Total no. of k-mers                : %12ld\n", n_kmers);
+    printf("  Total no. of sequences             : %12ld\n", n_sequences);
     printf("  Total no. of super-k-mers          :            0\n");
-    printf("  Total no. non valid nucleotides    : %12lld\n", n_non_valid);
+    printf("  Total no. non valid nucleotides    : %12ld\n", n_non_valid);
 
     const int64_t kbytes_read =  bytes_read / 1024;
     const int64_t mbytes_read = kbytes_read / 1024;
     const float   gbytes_read = (float)mbytes_read / 1024.f;
 
     printf("IOs:\n");
-    printf("  Total no. of  bytes reads          : %12lld\n",  bytes_read);
-    printf("  Total no. of Kbytes reads          : %12lld\n", kbytes_read);
-    printf("  Total no. of Mbytes reads          : %12lld\n", mbytes_read);
+    printf("  Total no. of  bytes reads          : %12ld\n",  bytes_read);
+    printf("  Total no. of Kbytes reads          : %12ld\n", kbytes_read);
+    printf("  Total no. of Mbytes reads          : %12ld\n", mbytes_read);
     printf("  Total no. of Gbytes reads          : %12.3f\n", gbytes_read);
 
     printf("Elapsed time %1.3f\n", start_gen.get_time_sec());

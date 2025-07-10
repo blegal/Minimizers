@@ -9,7 +9,7 @@ void merge_n_files_less_than_64_colors(
     if( (file_list.size() < 1) || (file_list.size() > 64) )
     {
         printf("(EE) The number of files to merge is not in the accepted range (1 <= x <= 64)\n");
-        printf("(EE) The current value is : %d\n", file_list.size());
+        printf("(EE) The current value is : %ld\n", file_list.size());
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
@@ -21,7 +21,7 @@ void merge_n_files_less_than_64_colors(
     // On ouvre tous les fichiers que l'on doit fusionner
     //
     std::vector<stream_reader*> i_files (file_list.size());
-    for(int i = 0; i < file_list.size(); i += 1)
+    for(size_t i = 0; i < file_list.size(); i += 1)
     {
         stream_reader* f = stream_reader_library::allocate( file_list[i] );
         if( f == NULL )
@@ -37,7 +37,7 @@ void merge_n_files_less_than_64_colors(
     // On cree les buffers pour tamponner les lectures
     //
     std::vector<uint64_t*> i_buffer(i_files.size());
-    for(int i = 0; i < i_files.size(); i += 1)
+    for(size_t i = 0; i < i_files.size(); i += 1)
         i_buffer[i] = new uint64_t[_iBuff_];
 
 
@@ -51,7 +51,7 @@ void merge_n_files_less_than_64_colors(
     // disponible dans chacun des flux
     //
     std::vector<int64_t> nElements(i_files.size());
-    for(int i = 0; i < i_files.size(); i += 1)
+    for(size_t i = 0; i < i_files.size(); i += 1)
         nElements[i] = 0;
 
 
@@ -60,7 +60,7 @@ void merge_n_files_less_than_64_colors(
     // dans chacun des flux
     //
     std::vector<int64_t> counter(i_files.size());
-    for(int i = 0; i < i_files.size(); i += 1)
+    for(size_t i = 0; i < i_files.size(); i += 1)
         counter[i] = 0;
 
     //
@@ -69,7 +69,7 @@ void merge_n_files_less_than_64_colors(
     //
     const uint64_t one_bit = 1;
     std::vector<int64_t> color(i_files.size());
-    for(int i = 0; i < i_files.size(); i += 1)
+    for(size_t i = 0; i < i_files.size(); i += 1)
         color[i] = one_bit << i;
 
     //
@@ -94,7 +94,7 @@ void merge_n_files_less_than_64_colors(
         //
         // On verifie sur tous les fichiers ouverts que l'on a des données
         //
-        for(int i = 0; i < i_files.size(); i += 1)
+        for(size_t i = 0; i < i_files.size(); i += 1)
         {
             //
             // Doit'on recharger des données dans le flux ?
@@ -134,7 +134,7 @@ void merge_n_files_less_than_64_colors(
             //
             curr_index = -1;
             curr_value = 0xFFFFFFFFFFFFFFFF; // la première du premier flux
-            for(int i = 0; i < i_files.size(); i += 1)
+            for(size_t i = 0; i < i_files.size(); i += 1)
             {
                 const int       pos = counter [i];
                 const uint64_t* buf = i_buffer[i];

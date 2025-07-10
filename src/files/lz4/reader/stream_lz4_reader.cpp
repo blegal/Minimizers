@@ -83,7 +83,7 @@ int  stream_lz4_reader::read(void* buffer, int eSize, int eCount)
         reset_section();
         exit( EXIT_FAILURE );
     }
-    is_foef |= ( (eCount * eSize) != nread ); // a t'on atteint la fin du fichier ?
+    is_foef |= ( (eCount * eSize) != static_cast<int>(nread) ); // a t'on atteint la fin du fichier ?
     return (nread / eSize); // nombre d'éléments lu et NON PAS le nombre de bytes !
 }
 //

@@ -45,12 +45,12 @@ int main(int argc, char *argv[])
     int   help_flag           = 0;
     int   threads             = 4;
     int   ram_value           = 1024; //MB
-    int   merge_step          = 8;
+    uint64_t   merge_step          = 8;
 
     int kmer_size = 31; // k-mer size
     int minimizer_size = 19; // minimizer size
 
-    int   file_limit          = 65536;
+    uint64_t   file_limit          = 65536;
 
     std::string algo = "crumsort";
 
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
     // de la doc, etc.
     //
     std::vector<std::string> filelist;
-    for( int i = 0; i < t_files.size(); i += 1 )
+    for(size_t i = 0; i < t_files.size(); i += 1 )
     {
         std::string t_file = t_files[i];
         if( (skip_minimizer_step == false) &&
@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
     //
     if ( filelist.size() > file_limit ) {
         warning_section();
-        printf ("(WW) Reducing the number of files to process (file_limit = %d)\n", file_limit);
+        printf ("(WW) Reducing the number of files to process (file_limit = %ld)\n", file_limit);
         reset_section();
         while (filelist.size() > file_limit) {
             filelist.pop_back();

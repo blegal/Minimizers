@@ -1,4 +1,3 @@
-#pragma once
 #include "crumsort_2cores.hpp"
 
 static void local_crumsort(

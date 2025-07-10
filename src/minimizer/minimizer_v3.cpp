@@ -106,9 +106,9 @@ void minimizer_processing_v3(
     // Defining counters for statistics
     //
 
-    uint32_t kmer_cnt = 0;
-    int n_minizer     = 0;
-    int n_skipper     = 0;
+    uint64_t kmer_cnt = 0;
+    uint64_t n_minizer     = 0;
+    uint64_t n_skipper     = 0;
 
     std::tuple<int, bool> mTuple = reader->next_sequence(seq_value, 4096);
 

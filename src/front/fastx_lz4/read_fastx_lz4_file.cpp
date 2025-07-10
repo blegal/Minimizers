@@ -225,7 +225,7 @@ bool read_fastx_lz4_file::reload()
         exit( EXIT_FAILURE );
     }
 
-    no_more_load |= ( n_len != nread ); // a t'on atteint la fin du fichier ?
+    no_more_load |= ( n_len != static_cast<int>(nread) ); // a t'on atteint la fin du fichier ?
     c_ptr        = 0;                       // on remet a zero le pointeur de lecture
     n_data       = nread + reste;           // on met a jour le nombre de données dans le buffer
     return true;

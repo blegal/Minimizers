@@ -13,7 +13,7 @@ void ram_merge_n_files(
     // On ouvre tous les fichiers que l'on doit fusionner
     //
     std::vector<FILE*> i_files (file_list.size());
-    for(int i = 0; i < file_list.size(); i += 1)
+    for(size_t i = 0; i < file_list.size(); i += 1)
     {
         FILE *f = fopen(file_list[i].c_str(), "r");
         if( f == NULL )
@@ -29,7 +29,7 @@ void ram_merge_n_files(
     // On cree les buffers pour tamponner les lectures
     //
     std::vector<uint64_t*> i_buffer(i_files.size());
-    for(int i = 0; i < i_files.size(); i += 1)
+    for(size_t i = 0; i < i_files.size(); i += 1)
         i_buffer[i] = new uint64_t[_iBuff_];
 
 
@@ -40,12 +40,12 @@ void ram_merge_n_files(
 
 
     std::vector<int64_t> nElements(i_files.size());
-    for(int i = 0; i < i_files.size(); i += 1)
+    for(size_t i = 0; i < i_files.size(); i += 1)
         nElements[i] = 0;
 
 
     std::vector<int64_t> counter(i_files.size());
-    for(int i = 0; i < i_files.size(); i += 1)
+    for(size_t i = 0; i < i_files.size(); i += 1)
         counter[i] = 0;
 
     //
@@ -70,7 +70,7 @@ void ram_merge_n_files(
         //
         // On verifie sur tous les fichiers ouverts que l'on a des données
         //
-        for(int i = 0; i < i_files.size(); i += 1)
+        for(size_t i = 0; i < i_files.size(); i += 1)
         {
             //
             // Doit'on recharger des données dans le flux ?
@@ -105,7 +105,7 @@ void ram_merge_n_files(
             //
             curr_index = -1;
             curr_value = 0xFFFFFFFFFFFFFFFF; // la premmière du premier flux
-            for(int i = 0; i < i_files.size(); i += 1)
+            for(size_t i = 0; i < i_files.size(); i += 1)
             {
                 const int       pos = counter [i];
                 const uint64_t* buf = i_buffer[i];

@@ -32,7 +32,7 @@ void generate_minimizers(
     const int ram_value, 
     const int k, 
     const int m, 
-    const int merge_step,
+    const uint64_t merge_step,
     const std::string &algo, 
     size_t verbose,
     bool skip_minimizer_step = false, 

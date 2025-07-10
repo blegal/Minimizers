@@ -24,11 +24,11 @@ bool SaveMiniToTxtFile(const std::string filename, const std::vector<uint64_t> l
     }
 
     const int n_lines = list_hash.size();
-    const int prog_step = n_lines / 100;
+    //const int prog_step = n_lines / 100;
 
     for(int y = 0; y < n_lines; y += 1)
     {
-        fprintf(f, "%16.16llX\n", list_hash[y]);
+        fprintf(f, "%16.16lX\n", list_hash[y]);
     }
 
     fclose( f );
@@ -70,7 +70,7 @@ bool SaveMiniToTxtFile_v2(const std::string filename, const std::vector<uint64_t
         exit( EXIT_FAILURE );
     }
 
-    const int prog_step = n_lines / 100;
+    //const int prog_step = n_lines / 100;
     const int buffer_size = 64 * 1024 * 1024;
     char* tampon = new char[ buffer_size ];
 

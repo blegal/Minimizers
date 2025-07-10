@@ -227,7 +227,7 @@ void CFileBuffer::write_to_disk()
     const int nwrite = fwrite(data.data(), sizeof(uint64_t), data.size(), stream);
     fclose( stream );
 
-    const bool is_ok = (nwrite != data.size());
+    const bool is_ok = (nwrite != static_cast<int>(data.size()));
     if( is_ok == false )
     {
         error_section();

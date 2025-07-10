@@ -11,7 +11,7 @@ int  kmer_counter(std::vector<uint64_t>& values, std::vector<int>& counters, con
     uint64_t* ptr_i = values.data  () + 1;
     uint64_t* ptr_o = values.data  () + 1;
     int*      ptr_c = counters.data();
-    int64_t length  = values.size  ();
+    //int64_t length  = values.size  ();
 
     uint64_t value = values[0];
     uint64_t count = 1;

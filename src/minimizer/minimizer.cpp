@@ -69,12 +69,12 @@ void minimizer_processing(
         printf("(II) m-mer length       : %10d nuc.\n", mmer);
         printf("(II) # m-mer/k-mer      : %10d\n", z);
         printf("(II)\n");
-        printf("(II) # k-mer            : %10llu\n", nb_kmer);
-        printf("(II) # m-mer            : %10llu\n", nb_mmer);
-        printf("(II) # minimizers       : %10llu\n", nb_mini);
+        printf("(II) # k-mer            : %10lu\n", nb_kmer);
+        printf("(II) # m-mer            : %10lu\n", nb_mmer);
+        printf("(II) # minimizers       : %10lu\n", nb_mini);
         printf("(II)\n");
-        printf("(II) mem required (max) : %6llu MB\n", max_MB   );
-        printf("(II) mem required (est) : %6llu MB\n", estim_MB );
+        printf("(II) mem required (max) : %6lu MB\n", max_MB   );
+        printf("(II) mem required (est) : %6lu MB\n", estim_MB );
         printf("(II)\n");
     }
 
@@ -105,7 +105,7 @@ void minimizer_processing(
         exit( EXIT_FAILURE );
     }
 
-    const int prog_step = n_lines / 100;
+    //const int prog_step = n_lines / 100;
 
     //
     // For all the lines in the file => load and convert
@@ -228,7 +228,7 @@ void minimizer_processing(
             printf("(+)-  min = | %16.16llX |\n", minv);
         }
 #endif
-        printf("(+)-  min = | %16.16llX |\n", minv);
+        printf("(+)-  min = | %16.16lX |\n", minv);
         //
         // On pousse le premier minimiser dans la liste
         //
@@ -310,7 +310,7 @@ void minimizer_processing(
             }else{
                 n_skipper += 1;
             }
-            printf("(+)   min = | %16.16llX |\n", minv);
+            printf("(+)   min = | %16.16lX |\n", minv);
 
 /*
             if( liste_mini[liste_mini.size()-1] != minv )

@@ -65,7 +65,7 @@ void merge_level_64_n_t(
                     if( (ndst == 0) || (ndst%(2 * n_u64_per_min + 1) != 0) )
                     {
                         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-                        printf("(EE) ndst = %d\n", ndst);
+                        printf("(EE) ndst = %ld\n", ndst);
                         printf("(EE) n_u64_per_min = %d\n", n_u64_per_min);
                         exit( EXIT_FAILURE );
                     }
@@ -87,7 +87,7 @@ void merge_level_64_n_t(
                     if( (ndst == 0) || (ndst%(2 * n_u64_per_min + 1) != 0) )
                     {
                         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-                        printf("(EE) ndst          = %d\n", ndst);
+                        printf("(EE) ndst          = %ld\n", ndst);
                         printf("(EE) n_u64_per_min = %d\n", n_u64_per_min);
                         exit( EXIT_FAILURE );
                     }

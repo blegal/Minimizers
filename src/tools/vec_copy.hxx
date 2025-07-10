@@ -32,7 +32,7 @@ inline void vec_copy(T* dst, const T* src, const int length)
 template<class T = uint64_t>
 inline void vec_copy(std::vector<T>& dst, uint64_t* src, const int length)
 {
-    if(dst.size() != length)
+    if(static_cast<int>(dst.size()) != length)
         dst.resize( length );
 
     vec_copy(dst.data(), src, length);

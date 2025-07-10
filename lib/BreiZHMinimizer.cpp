@@ -24,7 +24,7 @@ std::string shorten(const std::string fname, const int length)
     //
     // Removing file path
     //
-    int name_pos       = fname.find_last_of("/");
+    uint64_t name_pos       = fname.find_last_of("/");
     std::string nstr   = fname;
     if( name_pos != std::string::npos )
         nstr  = fname.substr(name_pos + 1);
@@ -49,7 +49,7 @@ void generate_minimizers(
     const int ram_value, 
     const int k, 
     const int m, 
-    const int merge_step,
+    const uint64_t merge_step,
     const std::string &algo, 
     size_t verbose,
     bool skip_minimizer_step, 
@@ -82,7 +82,7 @@ void generate_minimizers(
         int counter = 0;
         omp_set_num_threads(threads);
 #pragma omp parallel for default(shared)
-        for(int i = 0; i < filenames.size(); i += 1)
+        for(size_t i = 0; i < filenames.size(); i += 1)
         {
             CTimer minimizer_t( true );
 
@@ -109,7 +109,7 @@ void generate_minimizers(
                 //
                 std::string nname = shorten(i_file.name, 32);
                 counter += 1;
-                printf("%5d | %5d/%5d | %32s | %6lld MB | ==========> | %20s | %6lld MB | %5.2f sec.\n", i, counter, filenames.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
+                printf("%5ld | %5d/%5ld | %32s | %6ld MB | ==========> | %20s | %6ld MB | %5.2f sec.\n", i, counter, filenames.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
 
             }
 
@@ -147,7 +147,7 @@ void generate_minimizers(
     omp_set_num_threads(threads); // on regle le niveau de parallelisme accessible dans cette partie
     int cnt = 0;
 #pragma omp parallel for
-    for(int ll = 0; ll < l_files.size(); ll += 64)
+    for(size_t ll = 0; ll < l_files.size(); ll += 64)
     {
         const auto start_file = std::chrono::steady_clock::now();
         const int64_t max_files = (l_files.size() - ll) < 64 ? (l_files.size() - ll) : 64;
@@ -204,16 +204,16 @@ void generate_minimizers(
     //
     std::vector<CMergeFile> vrac_names;
 
-    printf("(II) Tree-based %d-ways merging of first stage files - %d thread(s)\n", merge_step, threads);
+    printf("(II) Tree-based %ld-ways merging of first stage files - %d thread(s)\n", merge_step, threads);
     const auto start_merge = std::chrono::steady_clock::now();
     int colors = 64;
     omp_set_num_threads(threads); // on regle le niveau de parallelisme accessible dans cette partie
     while( l_files.size() > 1 )
     {
         if( verbose )
-            printf("(II)   - %d-ways merging %4zu files with %4d color(s)\n", merge_step, l_files.size(), colors);
+            printf("(II)   - %ld-ways merging %4zu files with %4d color(s)\n", merge_step, l_files.size(), colors);
         else{
-            printf("(II)   - %d-ways merging %4zu files | %4d color(s) | ",   merge_step, l_files.size(), colors);
+            printf("(II)   - %ld-ways merging %4zu files | %4d color(s) | ",   merge_step, l_files.size(), colors);
             fflush(stdout);
         }
         const auto start_merge = std::chrono::steady_clock::now();
@@ -230,7 +230,7 @@ void generate_minimizers(
 
         int cnt = 0;
 #pragma omp parallel for
-        for(int ll = 0; ll < l_files.size(); ll += merge_step) // On merge par 8, ce choix est discutable
+        for(size_t ll = 0; ll < l_files.size(); ll += merge_step) // On merge par 8, ce choix est discutable
         {
             //
             // Gathering statistic informations about the merging process
@@ -305,7 +305,7 @@ void generate_minimizers(
             if(verbose == true ){
                 printf("%6d | %s .... ", cnt, l_files[ll            ].name.c_str());
                 printf("%s ",                 l_files[ll+max_files-1].name.c_str());
-                printf("   == %d x MERGE =>   ", merge_step);
+                printf("   == %ld x MERGE =>   ", merge_step);
                 o_file.printf_size();
                 const auto  end_file = std::chrono::steady_clock::now();
                 const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
@@ -382,11 +382,11 @@ void generate_minimizers(
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
 
-    for(int i = 0; i < vrac_names.size(); i += 1)
+    for(size_t i = 0; i < vrac_names.size(); i += 1)
     {
         const file_stats t_file( vrac_names[i].name   );
         t_file.printf_size();
-        printf("(II) Remaining file : %5d | %20s | num_colors = %6lld | real_colors = %6lld | size = %6lld MB\n", i, vrac_names[i].name.c_str(),  vrac_names[i].numb_colors,  vrac_names[i].real_colors, t_file.size_mb);
+        printf("(II) Remaining file : %5ld | %20s | num_colors = %6ld | real_colors = %6ld | size = %6ld MB\n", i, vrac_names[i].name.c_str(),  vrac_names[i].numb_colors,  vrac_names[i].real_colors, t_file.size_mb);
     }
 
 
