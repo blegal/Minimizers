@@ -33,15 +33,6 @@ bool compare_elements(const element& e1, const element& e2) {
     return e1.minmer > e2.minmer;
 }
 
-bool a_lt_b(const uint64_t* a, const uint64_t* b, size_t n_blocks) {
-    // elements comparison (by color) 
-    for (size_t i = 0; i < n_blocks; ++i) {
-        if (a[1 + i] < b[1 + i]) return true;  // colors start at offset 1
-        if (a[1 + i] > b[1 + i]) return false;
-    }
-    return a[0] < b[0];  // minimizer comparison as tiebreaker
-}
-
 
 void print_first_n_elements(const std::string& filename, size_t n) {
     FILE* f = fopen(filename.c_str(), "rb");
@@ -66,6 +57,87 @@ void print_first_n_elements(const std::string& filename, size_t n) {
     }
     fclose(f);
 }
+
+void random_example(
+    const std::string& outfile,
+    size_t n_elements
+) {
+    std::vector<element> random_elements;
+    random_elements.reserve(n_elements);
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<uint64_t> minmer_dist(0, 1000000000);
+    std::uniform_int_distribution<uint64_t> color_dist(0, 20);
+
+    for (size_t i = 0; i < n_elements; ++i) {
+        element e;
+        e.minmer = minmer_dist(gen);
+        for (size_t j = 0; j < N_UINT_PER_COLOR; ++j) {
+            e.colors[j] = color_dist(gen);
+        }
+        random_elements.push_back(e);
+    }
+
+    FILE* fout = fopen(outfile.c_str(), "wb");
+    if (!fout) {
+        std::cerr << "Error opening file for writing elements." << std::endl;
+        return;
+    }
+    for (const auto& e : random_elements) {
+        fwrite(&e.minmer, sizeof(uint64_t), 1, fout);
+        fwrite(e.colors.data(), sizeof(uint64_t), N_UINT_PER_COLOR, fout);
+    }
+    fclose(fout);
+}
+
+
+void internal_sort(
+    const std::string& infile,
+    const std::string& outfile
+) {
+    // for comparison
+
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+    const uint64_t size_bytes = get_file_size(infile);
+    const uint64_t n_elements = size_bytes / sizeof(uint64_t) / (N_UINT_PER_COLOR + 1);
+
+    
+    FILE* fi = fopen(infile.c_str(), "rb");
+    if (!fi) {
+        std::cerr << "Error opening file: " << infile << std::endl;
+        return;
+    }
+    std::vector<element> elements;
+    elements.resize(n_elements);
+
+    size_t read_count = fread(elements.data(), sizeof(element), n_elements, fi);
+    if (read_count != n_elements) {
+        std::cerr << "Error reading file: " << infile << std::endl;
+        fclose(fi);
+        return;
+    }
+    fclose(fi);
+
+    std::sort(elements.begin(), elements.end(), compare_elements);
+
+    FILE* fo = fopen(outfile.c_str(), "wb");
+    if (!fo) {
+        std::cerr << "Error opening file for writing: " << outfile << std::endl;
+        return;
+    }
+
+    for (const auto& elem : elements) {
+        fwrite(&elem.minmer, sizeof(uint64_t), 1, fo);
+        fwrite(elem.colors.data(), sizeof(uint64_t), N_UINT_PER_COLOR, fo);
+    }
+    fclose(fo);
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Internal sorting took: " << elapsed.count() << " seconds." << std::endl;
+
+}    
 
 
 
@@ -312,66 +384,11 @@ int main(){
     std::uint64_t nb_elements = 1000000; // Example number of elements
     std::cout << "Number of elements: " << nb_elements << std::endl;
     
-    
+    random_example(infile, nb_elements);
 
-    std::vector<element> random_elements;
-    random_elements.reserve(nb_elements);
-    std::random_device rd;
-    std::mt19937_64 gen(rd());
-    std::uniform_int_distribution<uint64_t> minmer_dist(0, 1000000000);
-    std::uniform_int_distribution<uint64_t> color_dist(0, 20);
+    internal_sort(infile, outfile);
 
-
-    for (size_t i = 0; i < nb_elements; ++i) {
-        element e;
-        e.minmer = minmer_dist(gen);
-        for (size_t j = 0; j < N_UINT_PER_COLOR; ++j) {
-            e.colors[j] = color_dist(gen);
-        }
-        random_elements.push_back(e);
-    }
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    std::sort(random_elements.begin(), random_elements.end(), compare_elements);
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "RAM Sorting took: " << elapsed.count() << " seconds." << std::endl;
-
-
-
-    random_elements.clear();
-    for (size_t i = 0; i < nb_elements; ++i) {
-        element e;
-        e.minmer = minmer_dist(gen);
-        for (size_t j = 0; j < N_UINT_PER_COLOR; ++j) {
-            e.colors[j] = color_dist(gen);
-        }
-        random_elements.push_back(e);
-    }
-
-    FILE* fout = fopen(infile.c_str(), "wb");
-    if (!fout) {
-        std::cerr << "Error opening file for writing elements." << std::endl;
-        return 1;
-    }
-    for (const auto& e : random_elements) {
-        fwrite(&e.minmer, sizeof(uint64_t), 1, fout);
-        fwrite(&e.colors, sizeof(uint64_t), N_UINT_PER_COLOR, fout);
-    }
-    fclose(fout);
-
-    // example creation side
-    // -------------------------------------------------------------------------
-    // external sort side
-
-    external_sort(
-        infile,
-        outfile,
-        tmp_dir,
-        32*64, // Example number of colors
-        100, // Example RAM value in MB
-        true, // Keep temporary files (infile aswell)
-        true // Enable verbose output
-    );
+    external_sort(infile, outfile, tmp_dir, 32*64, 100, true, true);
 
     print_first_n_elements(outfile, 10);
 }
