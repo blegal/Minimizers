@@ -174,8 +174,6 @@ void external_sort(
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
         const uint64_t n_elements_per_buff = max_elements_in_RAM / (n_chunks+1); // need to open n_chunks input buffer + 1 output buffer
-        const uint64_t _Buff_ = n_elements_per_buff * n_uint_per_element; // input buffer size
-
 
 
         // Open chunks
@@ -213,11 +211,10 @@ void external_sort(
             counter[i] = 0;
 
         // Open output file
-        std::string o_file = "/home/vlevallo/tmp/test_bertrand/result_sorted"; 
-        stream_writer* fdst = stream_writer_library::allocate( o_file );
+        stream_writer* fdst = stream_writer_library::allocate( outfile );
         if( fdst == NULL )
         {
-            printf("(EE) File does not exist (%s))\n", o_file.c_str());
+            printf("(EE) File does not exist (%s))\n", outfile.c_str());
             printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
             exit( EXIT_FAILURE );
         }
