@@ -305,20 +305,44 @@ void external_sort(
             }
         }
     } //end of n-way merge
-
-    
-
 }
 
 int main(){
+    std::string infile = "/home/vlevallo/tmp/test_bertrand/random_1M_elements.bin";
+    std::string outfile = "/home/vlevallo/tmp/test_bertrand/sorted_elements.bin";
+    std::string tmp_dir = "/home/vlevallo/tmp/test_bertrand/tmp";
+
+    std::uint64_t nb_elements = 1000000; // Example number of elements
+    std::cout << "Number of elements: " << nb_elements << std::endl;
+    
+    
+
     std::vector<element> random_elements;
-    random_elements.reserve(1000000);
+    random_elements.reserve(nb_elements);
     std::random_device rd;
     std::mt19937_64 gen(rd());
     std::uniform_int_distribution<uint64_t> minmer_dist(0, 1000000000);
     std::uniform_int_distribution<uint64_t> color_dist(0, 20);
 
-    for (size_t i = 0; i < 1000000; ++i) {
+
+    for (size_t i = 0; i < nb_elements; ++i) {
+        element e;
+        e.minmer = minmer_dist(gen);
+        for (size_t j = 0; j < N_UINT_PER_COLOR; ++j) {
+            e.colors[j] = color_dist(gen);
+        }
+        random_elements.push_back(e);
+    }
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    std::sort(random_elements.begin(), random_elements.end(), compare_elements);
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "RAM Sorting took: " << elapsed.count() << " seconds." << std::endl;
+
+
+
+    random_elements.clear();
+    for (size_t i = 0; i < nb_elements; ++i) {
         element e;
         e.minmer = minmer_dist(gen);
         for (size_t j = 0; j < N_UINT_PER_COLOR; ++j) {
@@ -327,7 +351,7 @@ int main(){
         random_elements.push_back(e);
     }
 
-    FILE* fout = fopen("/home/vlevallo/tmp/test_bertrand/random_1M_elements.bin", "wb");
+    FILE* fout = fopen(infile.c_str(), "wb");
     if (!fout) {
         std::cerr << "Error opening file for writing elements." << std::endl;
         return 1;
@@ -343,14 +367,14 @@ int main(){
     // external sort side
 
     external_sort(
-        "/home/vlevallo/tmp/test_bertrand/random_1M_elements.bin",
-        "/home/vlevallo/tmp/test_bertrand/result_sorted.bin",
-        "/home/vlevallo/tmp/test_bertrand/tmp",
+        infile,
+        outfile,
+        tmp_dir,
         32*64, // Example number of colors
         100, // Example RAM value in MB
         true, // Keep temporary files (infile aswell)
         true // Enable verbose output
     );
 
-    print_first_n_elements("/home/vlevallo/tmp/test_bertrand/result_sorted", 10);
+    print_first_n_elements(outfile, 10);
 }
