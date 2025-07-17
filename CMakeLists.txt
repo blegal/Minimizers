@@ -10,6 +10,18 @@ option(BUILD_PROFILE "Build test programs" OFF)
 option(BUILD_DEBUG   "Build test programs" OFF)
 option(BUILD_INFOS   "Build test programs" OFF)
 
+
+if(NOT DEFINED N_COLORS)
+    set(N_COLORS 64)  # default
+    message(WARNING "N_COLORS not set. Using default value: ${N_COLORS}. You can override with -DN_COLORS=<value>.")
+endif()
+
+math(EXPR N_UINT_PER_COLOR "((${N_COLORS} + 63) / 64)")
+
+# Pass both values to the compiler
+add_compile_definitions(N_COLORS=${N_COLORS})
+add_compile_definitions(N_UINT_PER_COLOR=${N_UINT_PER_COLOR})
+
 #
 #if(BUILD_MACOS_ARM)
 #    message("BUILD_MACOS_ARM is not OFF/FALSE/0")
@@ -176,6 +188,7 @@ target_link_libraries(BreiZHMinimizer PRIVATE BreiZHMinimizerLib)
 #add_app(color_sort_and_dump "apps/color_sort_and_dump.cpp")
 #add_app(kmer_sorter         "apps/kmer_sorter.cpp")
 #add_app(merge_all           "apps/merge_all.cpp")
+add_app(ext_sort             "src/sorting/external_sort/external_sort.cpp")
 
 # --- Special case raw_dump: includes extra include dirs ---
 # UNCOMMENT TO BUILD raw_dump exe

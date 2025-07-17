@@ -1,7 +1,5 @@
 #include "crumsort.hpp"
 
-typedef int CMPFUNC (const void *a, const void *b);
-
 //#define cmp(a,b) (*(a) > *(b))
 
 #ifndef QUADSORT_H

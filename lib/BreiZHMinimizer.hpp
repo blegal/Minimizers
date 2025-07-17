@@ -29,7 +29,7 @@ void generate_minimizers(
     const std::string &output,
     const std::string &tmp_dir, 
     const int threads, 
-    const int ram_value, 
+    const uint64_t ram_value, 
     const int k, 
     const int m, 
     const uint64_t merge_step,

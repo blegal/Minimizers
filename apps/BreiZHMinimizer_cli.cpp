@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
     std::string filename  = "";
     //std::string extension = "";
     std::string file_out  = "result";
+    std::string tmp_dir = "./";
 
     int   verbose_flag        = 0;
     bool  skip_minimizer_step = 0;
@@ -44,7 +45,7 @@ int main(int argc, char *argv[])
     
     int   help_flag           = 0;
     int   threads             = 4;
-    int   ram_value           = 1024; //MB
+    uint64_t   ram_value           = 1024; //MB
     uint64_t   merge_step          = 8;
 
     int kmer_size = 31; // k-mer size
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
             {"directory",   required_argument, 0, 'd'},
             {"filename",    required_argument, 0, 'f'},
             {"output",      required_argument, 0, 'o'},
+            {"tmp-dir",      required_argument, 0, 'u'},
 
             {"kmer-size", required_argument, 0, 'k'},
             {"minimizer-size", required_argument, 0, 'm'},
@@ -135,6 +137,10 @@ int main(int argc, char *argv[])
                 file_limit = std::atoi( optarg );
                 break;
 
+            case 'u':
+                tmp_dir = optarg;
+                break;
+
             case 'a':
                 algo = optarg;
                 break;
@@ -174,6 +180,7 @@ int main(int argc, char *argv[])
         printf ("  --kmer-size <int>      (-k) : (default: 31)\n");
         printf ("  --minimizer-size <int> (-m) : (default: 19)\n");
         printf ("  --threads <int>        (-t) : (default: 4)\n");
+        printf ("  --tmp-dir <string>     (-u) : (default: ./)\n");
         printf ("  --skip-minimizer-step  (-s) : (default: OFF)\n");
         printf ("  --keep-minimizer-files (-n) : (default: OFF)\n");
         printf ("  --keep-merge-files     (-N) : (default: OFF)\n");
@@ -276,8 +283,6 @@ int main(int argc, char *argv[])
             filelist.pop_back();
         }
     }
-
-    auto tmp_dir = "./";
 
     generate_minimizers(
         filelist,
