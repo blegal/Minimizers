@@ -20,6 +20,8 @@
 #include "../src/merger/in_file/merger_n_files_lt64.hpp"
 #include "../src/merger/in_file/merger_n_files_ge64.hpp"
 
+#include "../src/sorting/external_sort/external_sort.hpp"
+
 #include "../src/tools/colors.hpp"
 #include "../src/tools/CTimer/CTimer.hpp"
 #include "../src/tools/file_stats.hpp"

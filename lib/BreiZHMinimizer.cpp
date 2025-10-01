@@ -46,7 +46,7 @@ void generate_minimizers(
     const std::string &output,
     const std::string &tmp_dir, 
     const int threads, 
-    const uint64_t ram_value, 
+    const uint64_t ram_value_MB, 
     const int k, 
     const int m, 
     const uint64_t merge_step,
@@ -94,7 +94,7 @@ void generate_minimizers(
             in_mbytes += i_file.size_mb;
 
             /////
-            minimizer_processing_v4(i_file.name, t_file, algo, ram_value, true, false, false, k, m);
+            minimizer_processing_v4(i_file.name, t_file, algo, ram_value_MB, true, false, false, k, m);
             /////
 
             //
@@ -474,17 +474,37 @@ void generate_minimizers(
     {
         const CMergeFile lastfile = vrac_names[0];
         const std::string o_file = output + "." + std::to_string(lastfile.real_colors) + "c";
-        std::rename(lastfile.name.c_str(), o_file.c_str());
-        printf("(II) Renaming final file : %s\n", o_file.c_str());
+
+        //
+        // Pour l'instant: minimizers dédupliqués et colors en désordre, objectif trier par couleur 
+        // pour les dedupliquer par la suite
+        //
+
+        printf("(II) Sorting final file : %s\n", o_file.c_str());
+        CTimer timer_color_sort( true );
+
+        external_sort(
+            lastfile.name,
+            o_file,
+            tmp_dir,
+            ram_value_MB,
+            false,
+            true
+        );
+
+        
+        printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort.get_time_sec());
     }else{
         printf("(EE) Something strange happened !!!\n");
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
 
-    //
-    // Il faudrait que l'on gere les fichiers que l'on a mis de coté lors du processus de fusion...
-    //
+    
+
+    
+
+
     printf("(II)\n");
     printf("(II) - Total execution time : %1.2f seconds\n", timer_full.get_time_sec());
 }

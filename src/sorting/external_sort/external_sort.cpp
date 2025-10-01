@@ -40,6 +40,16 @@ void print_first_n_elements(const std::string& filename, size_t n) {
         std::cerr << "Error opening file: " << filename << std::endl;
         return;
     }
+
+    uint64_t header;
+    size_t header_read = fread(&header, sizeof(uint64_t), 1, f);
+    if (header_read != 1) {
+        std::cerr << "Error reading header from file: " << filename << std::endl;
+        fclose(f);
+        return;
+    }
+    std::cout << "Header: " << header << std::endl;
+
     for (size_t i = 0; i < n; ++i) {
         element e;
         size_t read1 = fread(&e.minmer, sizeof(uint64_t), 1, f);
@@ -121,7 +131,7 @@ void internal_sort(
 
     std::sort(elements.begin(), elements.end(), compare_elements);
 
-    FILE* fo = fopen(outfile.c_str(), "wb");
+    FILE* fo = fopen(outfile.c_str(), "wb+");
     if (!fo) {
         std::cerr << "Error opening file for writing: " << outfile << std::endl;
         return;
@@ -146,13 +156,14 @@ void external_sort(
     const std::string& outfile,
     const std::string& tmp_dir,
     const uint64_t n_colors,
-    const uint64_t ram_value,
+    const uint64_t ram_value_MB,
     const bool keep_tmp_files,
     const bool verbose_flag)
 {
     // Implementation of external sort algorithm
     // This function will handle the sorting of large files
     // using external memory techniques.
+    // outfile contains header(1 uint64_t) with number of distinct color-vectors, then sorted elements
     
     if (verbose_flag) {
         std::cout << "Starting external sort on file: " << infile << std::endl;
@@ -168,7 +179,7 @@ void external_sort(
     const uint64_t n_elements = size_bytes / sizeof(uint64_t) / n_uint_per_element;
 
     const uint64_t bytes_per_element = n_uint_per_element * sizeof(uint64_t);
-    uint64_t max_elements_in_RAM = (ram_value * 1024 * 1024) / bytes_per_element;
+    uint64_t max_elements_in_RAM = (ram_value_MB * 1024 * 1024) / bytes_per_element;
 
     uint64_t n_chunks = n_elements / max_elements_in_RAM;
     if (n_elements % max_elements_in_RAM != 0) {
@@ -275,7 +286,7 @@ void external_sort(
         for(size_t i = 0; i < i_files.size(); i += 1)
             nElements[i] = 0;
 
-        int64_t ndst = 0; // Number of elements in output buffer
+        uint64_t ndst = 0; // Number of elements in output buffer
 
         // Create vector to store current position in each buffer
         std::vector<int64_t> counter(i_files.size());
@@ -283,13 +294,23 @@ void external_sort(
             counter[i] = 0;
 
         // Open output file
-        stream_writer* fdst = stream_writer_library::allocate( outfile );
+        FILE* fdst = fopen(outfile.c_str(), "wb");
         if( fdst == NULL )
         {
             printf("(EE) File does not exist (%s))\n", outfile.c_str());
             printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
             exit( EXIT_FAILURE );
         }
+
+
+        // placeholder for number of distinct color-vectors
+        uint64_t placeholder = 0;
+        fwrite(&placeholder, sizeof(uint64_t), 1, fdst);
+
+        // to track distinct color-vectors
+        std::array<uint64_t, N_UINT_PER_COLOR> last_seen;
+        bool first_seen = true;
+        uint64_t distinct_color_vectors = 0;
 
         
         while (true) {
@@ -340,13 +361,20 @@ void external_sort(
                     }
                 }
 
+                // count distinct color-vectors
+                if (first_seen || curr_ptr->colors != last_seen) {
+                    last_seen = curr_ptr->colors;
+                    distinct_color_vectors++;
+                    first_seen = false;
+                }
+
 
                 dest[ndst++] = *curr_ptr;
                 counter[curr_index] += 1;
                 
                 if (ndst == n_elements_per_buff) {
-                    //fwrite(dest, sizeof(uint64_t), ndst - 1 - oSize, fdst);
-                    fdst->write(dest.data(), sizeof(element), ndst);
+                    fwrite(dest.data(), sizeof(element), ndst, fdst);
+
                     ndst = 0;
                 }
 
@@ -355,9 +383,13 @@ void external_sort(
         }
 
         if (ndst != 0) {
-            fdst->write(dest.data(), sizeof(element), ndst);
+            fwrite(dest.data(), sizeof(element), ndst, fdst);
             ndst = 0;
         }
+
+        // go back to beginning of file and write distinct color-vectors
+        fseek(fdst, 0, SEEK_SET);
+        fwrite(&distinct_color_vectors, sizeof(uint64_t), 1, fdst);
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         std::chrono::duration<double> elapsed = end - start;
@@ -365,7 +397,7 @@ void external_sort(
             std::cout << "N-way merge took: " << elapsed.count() << " seconds." << std::endl;
         }
 
-        delete fdst;
+        fclose(fdst);
 
         if (!keep_tmp_files) {
             for (const auto& fname : chunknames) {
@@ -376,7 +408,7 @@ void external_sort(
     } //end of n-way merge
 }
 
-int main(){
+/* int main(){
     std::string infile = "/home/vlevallo/tmp/test_bertrand/random_1M_elements.bin";
     std::string outfile = "/home/vlevallo/tmp/test_bertrand/sorted_elements.bin";
     std::string tmp_dir = "/home/vlevallo/tmp/test_bertrand/tmp";
@@ -391,4 +423,6 @@ int main(){
     external_sort(infile, outfile, tmp_dir, 32*64, 100, true, true);
 
     print_first_n_elements(outfile, 10);
-}
+
+    return 0;
+} */
