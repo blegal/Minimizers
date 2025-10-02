@@ -7,11 +7,16 @@
 #include <random>
 #include <chrono>
 #include <array>
+#include <cstring>
 
 
-struct element { 
-    uint64_t minmer;    
-    std::array<uint64_t, N_UINT_PER_COLOR> colors;
+struct element {
+    uint64_t* data; // points to the start of the element
+
+    // Compare colors lexicographically (skip minimizer)
+    bool operator<(const element& other) const {
+        return std::memcmp(data + 1, other.data + 1, (size_t)data[0] * sizeof(uint64_t)) < 0;
+    }
 };
 
 
@@ -24,31 +29,13 @@ uint64_t get_file_size(const std::string& filen) {
     return file_status.st_size;
 }
 
-bool compare_elements(const element& e1, const element& e2) {
-    for (size_t i = 0; i < N_UINT_PER_COLOR; ++i) {
-        if (e1.colors[i] != e2.colors[i]) {
-            return e1.colors[i] < e2.colors[i];
-        }
-    }
-    return e1.minmer > e2.minmer;
-}
 
-
-void print_first_n_elements(const std::string& filename, size_t n) {
+/* void print_first_n_elements(const std::string& filename, size_t n) {
     FILE* f = fopen(filename.c_str(), "rb");
     if (!f) {
         std::cerr << "Error opening file: " << filename << std::endl;
         return;
     }
-
-    uint64_t header;
-    size_t header_read = fread(&header, sizeof(uint64_t), 1, f);
-    if (header_read != 1) {
-        std::cerr << "Error reading header from file: " << filename << std::endl;
-        fclose(f);
-        return;
-    }
-    std::cout << "Header: " << header << std::endl;
 
     for (size_t i = 0; i < n; ++i) {
         element e;
@@ -66,9 +53,9 @@ void print_first_n_elements(const std::string& filename, size_t n) {
         std::cout << "]" << std::endl;
     }
     fclose(f);
-}
+} */
 
-void random_example(
+/* void random_example(
     const std::string& outfile,
     size_t n_elements
 ) {
@@ -98,10 +85,10 @@ void random_example(
         fwrite(e.colors.data(), sizeof(uint64_t), N_UINT_PER_COLOR, fout);
     }
     fclose(fout);
-}
+} */
 
 
-void internal_sort(
+/* void internal_sort(
     const std::string& infile,
     const std::string& outfile
 ) {
@@ -147,9 +134,116 @@ void internal_sort(
     std::chrono::duration<double> elapsed = end - start;
     std::cout << "Internal sorting took: " << elapsed.count() << " seconds." << std::endl;
 
-}    
+}     */
 
+struct ChunkEntry {
+    std::vector<uint64_t> buffer;
+    size_t pos = 0;
+    size_t count = 0;
+    FILE* f = nullptr;
+};
 
+// comparator for heap
+struct EntryCmp {
+    const uint64_t n_uint_per_element;
+    EntryCmp(uint64_t n) : n_uint_per_element(n) {}
+    bool operator()(const std::pair<uint64_t*, size_t>& a,
+                    const std::pair<uint64_t*, size_t>& b) const {
+        return memcmp(a.first + 1, b.first + 1,
+                      (n_uint_per_element - 1) * sizeof(uint64_t)) > 0;
+    }
+};
+
+void nway_merge(const std::vector<std::string>& chunknames,
+                const std::string& outfile,
+                uint64_t n_uint_per_element,
+                uint64_t max_elements_in_RAM,
+                bool verbose_flag) {
+
+    // Buffers per chunk
+    size_t n_chunks = chunknames.size();
+    uint64_t buf_elems = max_elements_in_RAM / (n_chunks + 1); // fair share
+
+    std::vector<ChunkEntry> chunks(n_chunks);
+    for (size_t i = 0; i < n_chunks; i++) {
+        chunks[i].buffer.resize(buf_elems * n_uint_per_element);
+        chunks[i].f = fopen(chunknames[i].c_str(), "rb");
+        if (!chunks[i].f) throw std::runtime_error("Cannot open chunk file");
+        chunks[i].count = fread(chunks[i].buffer.data(),
+                              n_uint_per_element * sizeof(uint64_t),
+                              buf_elems,
+                              chunks[i].f);
+        chunks[i].pos = 0;
+    }
+
+    FILE* fout = fopen(outfile.c_str(), "wb");
+    if (!fout) throw std::runtime_error("Cannot open output file");
+    std::vector<uint64_t> outbuf(buf_elems * n_uint_per_element);
+
+    // Min-heap over (pointer to element, chunk_index)
+    std::vector<std::pair<uint64_t*, size_t>> heap;
+    for (size_t i = 0; i < n_chunks; i++) {
+        if (chunks[i].count > 0) {
+            heap.push_back({ chunks[i].buffer.data(), i });
+        }
+    }
+    EntryCmp cmp(n_uint_per_element);
+    std::make_heap(heap.begin(), heap.end(), cmp);
+
+    size_t outcount = 0;
+
+    while (!heap.empty()) {
+        std::pop_heap(heap.begin(), heap.end(), cmp);
+        auto [ptr, idx] = heap.back();
+        heap.pop_back();
+
+        // write element to output buffer
+        memcpy(&outbuf[outcount * n_uint_per_element],
+               ptr,
+               n_uint_per_element * sizeof(uint64_t));
+        outcount++;
+
+        if (outcount == buf_elems) {
+            fwrite(outbuf.data(),
+                   n_uint_per_element * sizeof(uint64_t),
+                   buf_elems,
+                   fout);
+            outcount = 0;
+        }
+
+        // advance this chunk
+        chunks[idx].pos++;
+        if (chunks[idx].pos == chunks[idx].count) {
+            // refill buffer
+            chunks[idx].count = fread(chunks[idx].buffer.data(),
+                                    n_uint_per_element * sizeof(uint64_t),
+                                    buf_elems,
+                                    chunks[idx].f);
+            chunks[idx].pos = 0;
+            if (chunks[idx].count == 0) {
+                fclose(chunks[idx].f);
+                continue;
+            }
+        }
+        heap.push_back({ chunks[idx].buffer.data() + chunks[idx].pos * n_uint_per_element, idx });
+        std::push_heap(heap.begin(), heap.end(), cmp);
+    }
+
+    if (outcount > 0) {
+        fwrite(outbuf.data(),
+               n_uint_per_element * sizeof(uint64_t),
+               outcount,
+               fout);
+    }
+
+    fclose(fout);
+
+    if (verbose_flag) {
+        std::cerr << "N-way merge complete into: " << outfile << std::endl;
+    }
+}
+
+//to try : create element<>() for element seen & only half mem used to sort, other one to reorder and writ one single chunk of memory
 
 void external_sort(
     const std::string& infile,
@@ -171,14 +265,12 @@ void external_sort(
     //
     // INPUT DATA
     //
-    const uint64_t size_bytes = get_file_size(infile);
-
-    const uint64_t n_uint_per_element = N_UINT_PER_COLOR + 1;
-
-    const uint64_t n_elements = size_bytes / sizeof(uint64_t) / n_uint_per_element;
-
-    const uint64_t bytes_per_element = n_uint_per_element * sizeof(uint64_t);
-    uint64_t max_elements_in_RAM = (ram_value_MB * 1024 * 1024) / bytes_per_element;
+    const uint64_t size_bytes           = get_file_size(infile);
+    const uint64_t n_uint_per_element   = (n_colors + 63) / 64 + 1;
+    const uint64_t n_elements           = size_bytes / sizeof(uint64_t) / n_uint_per_element;
+    const uint64_t bytes_per_element    = n_uint_per_element * sizeof(uint64_t);
+    uint64_t max_elements_in_RAM        = static_cast<uint64_t>((ram_value_MB * 1024 * 1024 * 0.9) / bytes_per_element);
+    //only 90% of RAM for buffer, then 10% for pointers to swap
 
     uint64_t n_chunks = n_elements / max_elements_in_RAM;
     if (n_elements % max_elements_in_RAM != 0) {
@@ -199,7 +291,6 @@ void external_sort(
     // CREATE TMP CHUNKS
     //
     std::vector<std::string> chunknames(n_chunks);
-    if (true)
     {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
@@ -209,34 +300,42 @@ void external_sort(
             return;
         }
 
-        for (size_t chunk=0; chunk < n_chunks; chunk++){
-            std::vector<element> minimizer_color(max_elements_in_RAM);
+        auto cmp = [&](const uint64_t* a, const uint64_t* b) {
+            return memcmp(a + 1, b + 1, (n_uint_per_element - 1) * sizeof(uint64_t)) < 0;
+        };
 
-            size_t n_read = fread(
-                minimizer_color.data(), 
-                sizeof(element), 
+        for (size_t chunk=0; chunk < n_chunks; chunk++){
+            std::vector<uint64_t> input_buffer(max_elements_in_RAM * n_uint_per_element);
+
+            size_t got = fread(
+                input_buffer.data(), 
+                bytes_per_element, 
                 max_elements_in_RAM, 
                 fi);
-            std::cerr << "Read " << n_read << " elements for chunk " << chunk << std::endl;
-            minimizer_color.resize(n_read);
 
-            std::sort(minimizer_color.begin(), minimizer_color.end(), compare_elements);
+            std::cerr << "Read " << got << " elements for chunk " << chunk << std::endl;
+            //input_buffer.resize(got);
+            std::vector<uint64_t*> ptrs(got);
+            for (size_t i = 0; i < got; i++) {
+                ptrs[i] = &input_buffer[i * n_uint_per_element];
+            }
+                
+            sort(ptrs.begin(), ptrs.end(), cmp);
 
             std::string tmp_filename = tmp_dir + "/chunk_" + std::to_string(chunk) + ".bin";
             chunknames[chunk] = tmp_filename;
 
-            FILE* fo = fopen(tmp_filename.c_str(), "wb");
-            if (!fo) {
+            FILE* fout = fopen(tmp_filename.c_str(), "wb");
+            if (!fout) {
                 std::cerr << "Error creating temporary file: " << tmp_filename << std::endl
                             << " during external sort." << std::endl;
                 fclose(fi);
                 return;
             }
-            for (const auto& elem : minimizer_color) {
-                fwrite(&elem.minmer, sizeof(uint64_t), 1, fo);
-                fwrite(&elem.colors, sizeof(uint64_t), N_UINT_PER_COLOR, fo);
+            for (size_t i = 0; i < got; i++) {
+                fwrite(ptrs[i], bytes_per_element, 1, fout);
             }
-            fclose(fo);
+            fclose(fout);
         }
 
         fclose(fi);
@@ -252,154 +351,38 @@ void external_sort(
     //
     // N-WAY MERGE SORTED CHUNKS
     //
-    if (true) {
+    {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
-        const uint64_t n_elements_per_buff = max_elements_in_RAM / (n_chunks+1); // need to open n_chunks input buffer + 1 output buffer
-
-
-        // Open chunks
-        std::vector<stream_reader*> i_files (n_chunks);
-        for(size_t i = 0; i < n_chunks; i += 1)
-        {
-            stream_reader* f = stream_reader_library::allocate( chunknames[i] );
-            if( f == NULL )
-            {
-                printf("(EE) File does not exist (%s))\n", chunknames[i].c_str());
-                printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-                exit( EXIT_FAILURE );
-            }
-            i_files[i] = f;
-        }
-
-        // Create buffers for reading
-        std::vector< std::vector<element> > i_buffer(i_files.size());
-        for(size_t i = 0; i < i_files.size(); i += 1)
-            i_buffer[i] = std::vector<element>(n_elements_per_buff);
-
-        // Create output buffer
-        std::vector<element> dest(n_elements_per_buff);
-
-        // Create vector to store number of elements in each buffer
-        std::vector<int64_t> nElements(i_files.size());
-        for(size_t i = 0; i < i_files.size(); i += 1)
-            nElements[i] = 0;
-
-        uint64_t ndst = 0; // Number of elements in output buffer
-
-        // Create vector to store current position in each buffer
-        std::vector<int64_t> counter(i_files.size());
-        for(size_t i = 0; i < i_files.size(); i += 1)
-            counter[i] = 0;
-
-        // Open output file
-        FILE* fdst = fopen(outfile.c_str(), "wb");
-        if( fdst == NULL )
-        {
-            printf("(EE) File does not exist (%s))\n", outfile.c_str());
-            printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-            exit( EXIT_FAILURE );
-        }
-
-        while (true) {
-            // check data for every buff
-            for(size_t i = 0; i < i_files.size(); i += 1)
-            {
-                // try to reload
-                if (counter[i] == nElements[i])
-                {
-                    nElements[i] = i_files[i]->read(i_buffer[i].data(), sizeof(element), n_elements_per_buff);
-
-                    std::cerr << "Read " << nElements[i] << " elements for chunk " << i << std::endl;
-
-                    counter  [i] = 0;
-                    if( nElements[i] == 0 )
-                    {
-                        // eof, delete the file
-                        delete i_files[i];
-                        i_files.erase  ( i_files.begin()   + i );
-                        i_buffer.erase ( i_buffer.begin()  + i );
-                        nElements.erase( nElements.begin() + i );
-                        counter.erase  ( counter.begin()   + i );
-                        i -= 1;
-                    }
-                }
-            }
-
-            // no more flux = no more merge
-            if(i_files.size() == 0)
-                break;
-
-
-            uint64_t curr_index;
-            
-            do{
-                // look for min in all buffers
-                curr_index = -1; // = max value
-                element* curr_ptr = nullptr;
-
-                for(size_t i = 0; i < i_files.size(); i += 1)
-                {
-                    const int pos  = counter[i];
-                    element* buf  = &i_buffer[i][pos];
-                    if (curr_ptr == nullptr || compare_elements(*buf, *curr_ptr))
-                    {
-                        curr_ptr = buf;
-                        curr_index = i;
-                    }
-                }
-
-
-                dest[ndst++] = *curr_ptr;
-                counter[curr_index] += 1;
-                
-                if (ndst == n_elements_per_buff) {
-                    fwrite(dest.data(), sizeof(element), ndst, fdst);
-
-                    ndst = 0;
-                }
-
-            }while( counter[curr_index] != nElements[curr_index] );
-
-        }
-
-        if (ndst != 0) {
-            fwrite(dest.data(), sizeof(element), ndst, fdst);
-            ndst = 0;
-        }
+        nway_merge(chunknames, outfile, n_uint_per_element, max_elements_in_RAM, verbose_flag);
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         std::chrono::duration<double> elapsed = end - start;
         if (verbose_flag) {
-            std::cout << "N-way merge took: " << elapsed.count() << " seconds." << std::endl;
-        }
-
-        fclose(fdst);
+            std::cout << "nway merge took: " << elapsed.count() << " seconds." << std::endl;
+        } 
 
         if (!keep_tmp_files) {
             for (const auto& fname : chunknames) {
                 std::remove(fname.c_str());
-                std::remove(infile.c_str());
             }
+            std::remove(infile.c_str());
         }
     } //end of n-way merge
 }
 
 /* int main(){
-    std::string infile = "/home/vlevallo/tmp/test_bertrand/random_1M_elements.bin";
+    std::string infile = "/home/vlevallo/tmp/test_bertrand/data_n0.3682c";
     std::string outfile = "/home/vlevallo/tmp/test_bertrand/sorted_elements.bin";
     std::string tmp_dir = "/home/vlevallo/tmp/test_bertrand/tmp";
-
-    std::uint64_t nb_elements = 1000000; // Example number of elements
-    std::cout << "Number of elements: " << nb_elements << std::endl;
     
-    random_example(infile, nb_elements);
+    //random_example(infile, nb_elements);
 
-    internal_sort(infile, outfile);
+    //internal_sort(infile, outfile);
 
-    external_sort(infile, outfile, tmp_dir, 32*64, 100, true, true);
+    external_sort(infile, outfile, tmp_dir, 3682, 1024, true, true);
 
-    print_first_n_elements(outfile, 10);
+    //print_first_n_elements(outfile, 10);
 
     return 0;
-} */
+}  */
