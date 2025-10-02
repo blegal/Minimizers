@@ -301,17 +301,6 @@ void external_sort(
             printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
             exit( EXIT_FAILURE );
         }
-
-
-        // placeholder for number of distinct color-vectors
-        uint64_t placeholder = 0;
-        fwrite(&placeholder, sizeof(uint64_t), 1, fdst);
-
-        // to track distinct color-vectors
-        std::array<uint64_t, N_UINT_PER_COLOR> last_seen;
-        bool first_seen = true;
-        uint64_t distinct_color_vectors = 0;
-
         
         while (true) {
             // check data for every buff
@@ -361,14 +350,6 @@ void external_sort(
                     }
                 }
 
-                // count distinct color-vectors
-                if (first_seen || curr_ptr->colors != last_seen) {
-                    last_seen = curr_ptr->colors;
-                    distinct_color_vectors++;
-                    first_seen = false;
-                }
-
-
                 dest[ndst++] = *curr_ptr;
                 counter[curr_index] += 1;
                 
@@ -386,10 +367,6 @@ void external_sort(
             fwrite(dest.data(), sizeof(element), ndst, fdst);
             ndst = 0;
         }
-
-        // go back to beginning of file and write distinct color-vectors
-        fseek(fdst, 0, SEEK_SET);
-        fwrite(&distinct_color_vectors, sizeof(uint64_t), 1, fdst);
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         std::chrono::duration<double> elapsed = end - start;

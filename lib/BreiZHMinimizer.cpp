@@ -90,7 +90,7 @@ void generate_minimizers(
             // On mesure la taille des fichiers d'entrée
             //
             const file_stats i_file( filenames[i] );
-            const std::string t_file = "data_n" + to_number(i, (int)filenames.size()) + ".raw";
+            const std::string t_file = tmp_dir + "/data_n" + to_number(i, (int)filenames.size()) + ".raw";
             in_mbytes += i_file.size_mb;
 
             /////
@@ -155,7 +155,7 @@ void generate_minimizers(
         for(int ff = 0; ff < max_files; ff += 1)        // in this first stage all the file are not colored
             liste.push_back( l_files[ll + ff].name );   // at the input
 
-        std::string t_file = "data_n" + to_number(ll/64, l_files.size()/64) + ".";
+        std::string t_file = tmp_dir + "/data_n" + to_number(ll/64, l_files.size()/64) + ".";
         t_file            += std::to_string(max_files) + "c";
 
 //      printf("(II) %d - Creating %s\n", ll, t_file.c_str());
@@ -257,7 +257,7 @@ void generate_minimizers(
             //
             // Generation of the name of the output file
             //
-            std::string t_file   = "data_n";
+            std::string t_file   = tmp_dir + "/data_n";
             t_file += to_number(ll/merge_step, l_files.size()/merge_step) + ".";
             t_file += std::to_string(final_real_color) + "c";
 
@@ -414,7 +414,7 @@ void generate_minimizers(
             const CMergeFile i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
                   CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
 
-            o_file.name = "data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c";
+            o_file.name = tmp_dir + "/data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c";
 
 //            printf("- %20.20s (%lld) + %20.20s (%lld)\n", i_file_1.name.c_str(), i_file_1.real_colors, i_file_2.name.c_str(), i_file_2.real_colors);
 
@@ -480,13 +480,14 @@ void generate_minimizers(
         // pour les dedupliquer par la suite
         //
 
-        printf("(II) Sorting final file : %s\n", o_file.c_str());
+        printf("(II) Sorting final file : %s\n", lastfile.name.c_str());
         CTimer timer_color_sort( true );
 
         external_sort(
             lastfile.name,
             o_file,
             tmp_dir,
+            lastfile.real_colors,
             ram_value_MB,
             false,
             true
