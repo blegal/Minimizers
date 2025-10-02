@@ -93,8 +93,14 @@ void generate_minimizers(
             const std::string t_file = tmp_dir + "/data_n" + to_number(i, (int)filenames.size()) + ".raw";
             in_mbytes += i_file.size_mb;
 
+            auto allocated = ram_value_MB;
+            if (allocated >= 1024){
+                auto filesize = get_file_size(filenames[0]);
+                allocated = (filesize/1024/1024 < 10) ? 16 : 1024; // 16MB for bacteria/small genomes, 1GB for other genomes
+            }
+
             /////
-            minimizer_processing_v4(i_file.name, t_file, algo, ram_value_MB, true, false, false, k, m);
+            minimizer_processing_v4(i_file.name, t_file, algo, allocated, true, false, false, k, m);
             /////
 
             //
@@ -480,14 +486,14 @@ void generate_minimizers(
         // pour les dedupliquer par la suite
         //
 
-        printf("(II) Sorting final file : %s\n", lastfile.name.c_str());
+        printf("(II) Sorting final file : %s\n", o_file.c_str());
         CTimer timer_color_sort( true );
 
         external_sort(
             lastfile.name,
             o_file,
             tmp_dir,
-            lastfile.real_colors,
+            filenames.size(),
             ram_value_MB,
             false,
             true

@@ -26,6 +26,8 @@
 #include "../src/tools/CTimer/CTimer.hpp"
 #include "../src/tools/file_stats.hpp"
 
+uint64_t get_file_size(const std::string& filen);
+
 void generate_minimizers(
     std::vector<std::string> filenames, 
     const std::string &output,

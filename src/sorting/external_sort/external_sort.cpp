@@ -164,9 +164,8 @@ void external_sort(
     // This function will handle the sorting of large files
     // using external memory techniques.
     // outfile contains header(1 uint64_t) with number of distinct color-vectors, then sorted elements
-    
     if (verbose_flag) {
-        std::cout << "Starting external sort on file: " << infile << std::endl;
+        std::cerr << "Starting external sort on file: " << infile << std::endl;
     }    
 
     //
@@ -245,7 +244,7 @@ void external_sort(
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         std::chrono::duration<double> elapsed = end - start;
         if (verbose_flag) {
-            std::cout << "Chunk creation took: " << elapsed.count() << " seconds." << std::endl;
+            std::cout << "Chunks creation took: " << elapsed.count() << " seconds." << std::endl;
         } 
     } //end of chunk creation
 
@@ -301,7 +300,7 @@ void external_sort(
             printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
             exit( EXIT_FAILURE );
         }
-        
+
         while (true) {
             // check data for every buff
             for(size_t i = 0; i < i_files.size(); i += 1)
@@ -349,6 +348,7 @@ void external_sort(
                         curr_index = i;
                     }
                 }
+
 
                 dest[ndst++] = *curr_ptr;
                 counter[curr_index] += 1;
