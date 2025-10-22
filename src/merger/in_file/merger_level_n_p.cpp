@@ -238,9 +238,6 @@ void merge_level_n_p_t(
     delete [] in_2;
     delete [] dest;
 }
-// familly affair
-// chair et le feu
-// Un automne pour pardonner
 
 void merge_level_n_p(
         const std::string& ifile_1,
