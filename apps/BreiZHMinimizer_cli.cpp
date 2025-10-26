@@ -294,10 +294,10 @@ int main(int argc, char *argv[])
         minimizer_size, // minimizer size
         merge_step,
         algo,
+        verbose_flag,
         skip_minimizer_step,
         keep_minimizer_files,
-        keep_merge_files,
-        verbose_flag
+        keep_merge_files
     );
 
 

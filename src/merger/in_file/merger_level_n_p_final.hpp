@@ -12,17 +12,11 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-extern void merger_in(
-        const std::string& ifile_1,
-        const std::string& ifile_2,
-        const std::string& o_file,
-        const int level_1,
-        const int level_2);
-
-extern void merger_in( //final merge, split colors by density
+extern void merge_level_n_p_final(
         const std::string& ifile_1,
         const std::string& ifile_2,
         const std::string& o_file,
         const std::string& o_file_sparse,
         const int level_1,
         const int level_2);
+

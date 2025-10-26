@@ -59,9 +59,6 @@ void generate_minimizers(
     CTimer timer_full( true );
 
 
-    //
-    //
-    //
     std::vector<CMergeFile> n_files;
     std::vector<CMergeFile> l_files;
     if( skip_minimizer_step == false )
@@ -196,13 +193,13 @@ void generate_minimizers(
     //
     // The first merging stage is now ended, it is time to prepare the future ones
     //
-    l_files = n_files;
-    n_files.clear();
+    l_files = n_files; //l_files entrée
+    n_files.clear(); //n_files sortie
 
     //
     //
     //
-    std::vector<CMergeFile> vrac_names;
+    std::vector<CMergeFile> vrac_names; //vrac_names sortie pour ceux laissés de côté
 
     printf("(II) Tree-based %ld-ways merging of first stage files - %d thread(s)\n", merge_step, threads);
     const auto start_merge = std::chrono::steady_clock::now();
@@ -287,8 +284,11 @@ void generate_minimizers(
 //            if(
 //                    (keep_merge_files == false) && !((skip_minimizer_step || keep_minimizer_files) && (colors == 1)) ) // sinon on supprime nos fichier d'entrée !
 //            {
-            for(int ff = 0; ff < max_files; ff += 1)
-                std::remove( l_files[ll+ff].name.c_str() );
+            if (keep_merge_files == false)
+            {
+                for(int ff = 0; ff < max_files; ff += 1)
+                    std::remove( l_files[ll + ff].name.c_str() );
+            }
 
             const file_stats o_file( t_file );
             ou_mbytes += o_file.size_mb;
@@ -397,7 +397,7 @@ void generate_minimizers(
     //
     //
     //
-    if( vrac_names.size() > 1 )
+    if( vrac_names.size() > 2 )
     {
         printf("(II) Comb-based 2-ways merging of sorted minimizer files\n");
         CTimer timer_merge( true );
@@ -406,7 +406,7 @@ void generate_minimizers(
 
         printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
 
-        while( vrac_names.size() != 1 )
+        while( vrac_names.size() > 2 )
         {
             const auto  start_file = std::chrono::steady_clock::now();
 
@@ -415,16 +415,6 @@ void generate_minimizers(
                   CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
 
             o_file.name = tmp_dir + "/data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c";
-
-//            printf("- %20.20s (%lld) + %20.20s (%lld)\n", i_file_1.name.c_str(), i_file_1.real_colors, i_file_2.name.c_str(), i_file_2.real_colors);
-
-            //
-            // On lance le processus de merging sur les 2 fichiers
-            //
-//            printf("  %20.20s (%lld) + %20.20s (%lld) ===> %20.20s (%lld)\n",
-//                   i_file_1.name.c_str(), i_file_1.real_colors,
-//                   i_file_2.name.c_str(), i_file_2.real_colors,
-//                   o_file.name.c_str(),   o_file.real_colors);
 
             merger_in(
                     i_file_1.name,
@@ -466,11 +456,71 @@ void generate_minimizers(
     }
 
 
+    if( vrac_names.size() == 2 ) //final merge, use it to split dense and sparse colors
+    {
+        printf("(II) FINAL Comb-based 2-ways merging of sorted minimizer files\n");
+        CTimer timer_merge( true );
+
+        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
+
+
+        const auto  start_file = std::chrono::steady_clock::now();
+
+        const CMergeFile i_file_1 = vrac_names[1]; // le plus grand est tjs le second
+        const CMergeFile i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
+                CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
+                CMergeFile o_file_sparse  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
+
+        o_file.name = tmp_dir + "/data_n_final." + std::to_string( o_file.real_colors ) + "c";
+        o_file_sparse.name = tmp_dir + "/data_n_final_sparse." + std::to_string( o_file.real_colors ) + "c";
+
+        merger_in(
+                i_file_1.name,
+                i_file_2.name,
+                o_file.name,
+                o_file_sparse.name,
+                i_file_1.real_colors,
+                i_file_2.real_colors
+        );
+        vrac_names[1] = o_file;
+        vrac_names.push_back( o_file_sparse );
+
+        //
+        // Information reporting for the user
+        //
+        if(verbose == true ){
+            printf("%6d | %s and %s   == 2-way x MERGE =>   ", cnt, i_file_1.name.c_str(), i_file_2.name.c_str());
+            const file_stats t_file( o_file.name   );
+            t_file.printf_size();
+            const auto  end_file = std::chrono::steady_clock::now();
+            const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
+            printf("in  %6.2fs\n", elapsed_file);
+        }
+
+        //
+        // On supprime le premier élément du tableau
+        //
+        vrac_names.erase( vrac_names.begin() );
+
+        //
+        // On supprime les fichiers source
+        //
+        if( keep_merge_files == false )
+        {
+            std::remove( i_file_1.name.c_str() ); // delete file
+            std::remove( i_file_2.name.c_str() ); // delete file
+        }
+        
+        printf("(II) - Execution time : %1.2f seconds\n", timer_merge.get_time_sec());
+        printf("(II)\n");
+    }
+
+
     //
-    // Normalement on a un fichier en sortie du processus de fusion, sinon c'est que quelque-chose
+    // Normalement on a un (deux avec sparse) fichier en sortie du processus de fusion, sinon c'est que quelque-chose
     // a merdé dans le processus de fusion
     //
-    if( vrac_names.size() == 1 )
+    if( vrac_names.size() == 2 )
     {
         const CMergeFile lastfile = vrac_names[0];
         const std::string o_file = output + "." + std::to_string(lastfile.real_colors) + "c";
@@ -489,12 +539,40 @@ void generate_minimizers(
             tmp_dir,
             filenames.size(),
             ram_value_MB,
-            false,
-            true
+            true,
+            verbose,
+            threads
         );
-
         
         printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort.get_time_sec());
+
+        const CMergeFile lastfile_sparse = vrac_names[1];
+        const std::string o_file_sparse = output + "_sparse." + std::to_string(lastfile_sparse.real_colors) + "c";
+
+        //
+        // Pour l'instant: minimizers dédupliqués et colors en désordre, objectif trier par couleur 
+        // pour les dedupliquer par la suite
+        //
+
+        printf("(II) Sorting final file : %s\n", o_file_sparse.c_str());
+        CTimer timer_color_sort( true );
+
+        external_sort_sparse(
+            lastfile_sparse.name,
+            o_file_sparse,
+            tmp_dir,
+            filenames.size(),
+            ram_value_MB,
+            true,
+            verbose,
+            threads
+        );
+        
+        printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort.get_time_sec());
+
+
+
+
     }else{
         printf("(EE) Something strange happened !!!\n");
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);

@@ -89,7 +89,8 @@ if(BUILD_LINUX_INTEL)
 
     SET(CMAKE_CXX_FLAGS "-Wall")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mtune=native")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math -fopenmp")
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -ffast-math -fopenmp")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3 -fsanitize=address -fno-omit-frame-pointer -fopenmp")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_MKL_")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g3")  #Uncomment to debug with valgrind
@@ -167,8 +168,8 @@ endmacro()
 
 # --- Main executable, uses the lib ---
 
-add_executable(BreiZHMinimizer apps/BreiZHMinimizer_cli.cpp)
-target_link_libraries(BreiZHMinimizer PRIVATE BreiZHMinimizerLib)
+#add_executable(BreiZHMinimizer apps/BreiZHMinimizer_cli.cpp)
+#target_link_libraries(BreiZHMinimizer PRIVATE BreiZHMinimizerLib)
 
 # --- All other executables, standalone tools ---
 # UNCOMMENT TO BUILD
@@ -188,7 +189,7 @@ target_link_libraries(BreiZHMinimizer PRIVATE BreiZHMinimizerLib)
 #add_app(color_sort_and_dump "apps/color_sort_and_dump.cpp")
 #add_app(kmer_sorter         "apps/kmer_sorter.cpp")
 #add_app(merge_all           "apps/merge_all.cpp")
-#add_app(ext_sort            "src/sorting/external_sort/external_sort.cpp") #main() is commented out
+add_app(ext_sort            "src/sorting/external_sort/external_sort.cpp") #main() is commented out
 
 # --- Special case raw_dump: includes extra include dirs ---
 # UNCOMMENT TO BUILD raw_dump exe
