@@ -554,8 +554,8 @@ void generate_minimizers(
         // pour les dedupliquer par la suite
         //
 
-        printf("(II) Sorting final file : %s\n", o_file_sparse.c_str());
-        CTimer timer_color_sort( true );
+        printf("(II) Sorting final file (sparse) : %s\n", o_file_sparse.c_str());
+        CTimer timer_color_sort_sparse( true );
 
         external_sort_sparse(
             lastfile_sparse.name,
@@ -568,7 +568,7 @@ void generate_minimizers(
             threads
         );
         
-        printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort.get_time_sec());
+        printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort_sparse.get_time_sec());
 
 
 

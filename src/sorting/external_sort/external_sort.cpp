@@ -509,7 +509,7 @@ void external_sort( const std::string& infile,
 }
 
 
-#if 1
+#if 0
 int main(){
     std::string infile = "/home/vlevallo/tmp/test_bertrand/data_n0.3682c";
     std::string random_file = "/home/vlevallo/tmp/test_bertrand/random.10000c";

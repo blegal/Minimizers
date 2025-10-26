@@ -168,8 +168,8 @@ endmacro()
 
 # --- Main executable, uses the lib ---
 
-#add_executable(BreiZHMinimizer apps/BreiZHMinimizer_cli.cpp)
-#target_link_libraries(BreiZHMinimizer PRIVATE BreiZHMinimizerLib)
+add_executable(BreiZHMinimizer apps/BreiZHMinimizer_cli.cpp)
+target_link_libraries(BreiZHMinimizer PRIVATE BreiZHMinimizerLib)
 
 # --- All other executables, standalone tools ---
 # UNCOMMENT TO BUILD
@@ -189,7 +189,7 @@ endmacro()
 #add_app(color_sort_and_dump "apps/color_sort_and_dump.cpp")
 #add_app(kmer_sorter         "apps/kmer_sorter.cpp")
 #add_app(merge_all           "apps/merge_all.cpp")
-add_app(ext_sort            "src/sorting/external_sort/external_sort.cpp") #main() is commented out
+#add_app(ext_sort            "src/sorting/external_sort/external_sort.cpp") #main() is commented out
 
 # --- Special case raw_dump: includes extra include dirs ---
 # UNCOMMENT TO BUILD raw_dump exe
