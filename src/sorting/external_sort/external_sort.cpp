@@ -69,7 +69,7 @@ void generate_random_example(const std::string& filename,
 bool check_file_sorted(
     const std::string& filename,
     uint64_t n_uint_per_element,
-    bool verbose_flag = true
+    bool verbose_flag
 ) {
     if (n_uint_per_element < 2) {
         std::cerr << "Error: n_uint_per_element must be >= 2 (minimizer + at least one color word).\n";

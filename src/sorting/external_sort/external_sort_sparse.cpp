@@ -31,7 +31,6 @@ struct CompareElement {
 
 
 
-
 static int fread_element(FILE* f, Element &out, uint64_t bits_per_color, uint64_t colors_per_word) 
 {
     uint64_t minimizer;
@@ -53,6 +52,56 @@ static int fread_element(FILE* f, Element &out, uint64_t bits_per_color, uint64_
         fread(out.payload.data() + 1, sizeof(uint64_t), n_color_words - 1, f);
     }
     return (1+n_color_words);
+}
+
+
+bool check_file_sorted_sparse(
+    const std::string& filename,
+    uint64_t bits_per_color,
+    bool verbose_flag
+) {
+    FILE* f = fopen(filename.c_str(), "rb");
+    if (!f) {
+        std::cerr << "Error: cannot open " << filename << " for reading.\n";
+        return false;
+    }
+
+    uint64_t colors_per_word = 64 / bits_per_color;
+
+    Element el;
+    fread_element(f, el, bits_per_color, colors_per_word); // read first element
+
+    uint64_t idx = 0;
+
+    while (true) {
+        Element e2;
+        int got = fread_element(f, e2, bits_per_color, colors_per_word);
+        if (got == 0) break;
+
+        // compare el and e2
+        if (element_color_cmp(e2, el)) {
+            std::cerr << "File not sorted by color at element index " << idx + 1
+                      << " (0-based). Previous color > current color.\n";
+            if (verbose_flag) {
+                std::cerr << "Prev color: ";
+                for (size_t j = 0; j < el.payload.size(); ++j) std::cerr << el.payload[j] << " ";
+                std::cerr << "\nCurr color: ";
+                for (size_t j = 0; j < e2.payload.size(); ++j) std::cerr << e2.payload[j] << " ";
+                std::cerr << std::endl;
+            }
+            fclose(f);
+            return false;
+        }
+        el = std::move(e2);
+        idx++;
+    }
+
+    fclose(f);
+    if (verbose_flag) {
+        std::cerr << "File " << filename << " is correctly sorted by color ("
+                  << idx << " elements checked).\n";
+    }
+    return true;
 }
 
 

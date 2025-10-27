@@ -58,6 +58,49 @@ void generate_minimizers(
 {
     CTimer timer_full( true );
 
+    //
+    // TEST
+    //
+
+    external_sort(
+            "/WORKS/vlevallois/test/tmp_gut/data_n_final.10000c",
+            "/WORKS/vlevallois/test/tmp_gut/result.10000c",
+            "/WORKS/vlevallois/test/tmp_gut",
+            10000,
+            32768,
+            true,
+            true,
+            16
+        );
+
+    check_file_sorted(
+            "/WORKS/vlevallois/test/tmp_gut/result.10000c",
+            (10000 + 63) / 64 + 1,
+            true
+        );
+
+    external_sort_sparse(
+            "/WORKS/vlevallois/test/tmp_gut/data_n_final_sparse.10000c",
+            "/WORKS/vlevallois/test/tmp_gut/result_sparse.10000c",
+            "/WORKS/vlevallois/test/tmp_gut",
+            10000,
+            32768,
+            true,
+            true,
+            16
+        );
+
+    check_file_sorted_sparse(
+            "/WORKS/vlevallois/test/tmp_gut/result_sparse.10000c",
+            16,
+            true
+        );
+
+    exit(0);
+    //
+    // TEST
+    //
+
 
     std::vector<CMergeFile> n_files;
     std::vector<CMergeFile> l_files;

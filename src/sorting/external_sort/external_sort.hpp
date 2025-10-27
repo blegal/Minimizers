@@ -40,3 +40,15 @@ void external_sort_sparse (
     const bool verbose_flag,
     int n_threads
 );
+
+bool check_file_sorted(
+    const std::string& filename,
+    uint64_t n_uint_per_element,
+    bool verbose_flag = true
+);
+
+bool check_file_sorted_sparse(
+    const std::string& filename,
+    uint64_t bits_per_color,
+    bool verbose_flag = true
+);
