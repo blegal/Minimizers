@@ -139,14 +139,6 @@ bool check_file_sorted(
     return true;
 }
 
-uint64_t get_file_size(const std::string& filen) {
-    struct stat file_status;
-    if (stat(filen.c_str(), &file_status) < 0) {
-        return -1;
-    }
-    return file_status.st_size;
-}
-
 // ------------------------------------------------------------
 // ChunkEntry + comparator structs
 // ------------------------------------------------------------
@@ -468,10 +460,15 @@ void external_sort( const std::string& infile,
     const uint64_t bytes_per_element  = n_uint_per_element * sizeof(uint64_t);
     uint64_t max_elements_in_RAM      = static_cast<uint64_t>((ram_value_MB * 1024 * 1024) / bytes_per_element);
 
-    uint64_t n_chunks = n_elements / (max_elements_in_RAM / n_threads);
-    if (n_elements % (max_elements_in_RAM / n_threads) != 0) {
-        n_chunks += 1;
+    uint64_t n_chunks = 1;
+    // use multiple chunks (and thus threads) only if file is bigger than RAM
+    if (size_bytes / sizeof(uint64_t) > max_elements_in_RAM){
+        n_chunks = n_elements / (max_elements_in_RAM / n_threads);
+        if (n_elements % (max_elements_in_RAM / n_threads) != 0) {
+            n_chunks += 1;
+        }
     }
+    
 
     if (verbose_flag) {
         std::cout << "File size in bytes: " << size_bytes << std::endl;
@@ -488,6 +485,14 @@ void external_sort( const std::string& infile,
                                              bytes_per_element,
                                              verbose_flag,
                                              n_threads);
+
+    if (n_chunks == 1) {
+        // Single chunk, just rename
+        std::filesystem::rename(chunknames[0], outfile);
+        if (verbose_flag)
+            std::cout << "Only one chunk created, renamed to " << outfile << "\n";
+        return;
+    }
 
     // Phase 2: sequential n-way merge (can be parallelized later)
     multi_pass_nway_merge(chunknames, outfile,
@@ -534,6 +539,12 @@ int main(){
         true,
         true,
         8
+    );
+
+    check_file_sorted_sparse(
+        outfile,
+        16,
+        true
     );
 
 

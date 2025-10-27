@@ -97,13 +97,9 @@ void merge_level_n_p_final(
     stream_writer* fdst  = stream_writer_library::allocate( o_file  );
     stream_writer* fdst_sparse  = stream_writer_library::allocate( o_file_sparse  );
 
-    //std::cerr << "starting main loop\n";
     while (true) {
-        //std::cerr << "main loop iteration " << (++cntt) << " A / B " << counterA << " / " << counterB << "\n";
         if (counterA == nElementsA) {
-            //std::cerr << "\treading more from A ... ";
             nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuffA_);
-            //std::cerr << " got " << nElementsA << " elements\n";
             if (nElementsA == 0) {
                 break;
             }
@@ -111,9 +107,7 @@ void merge_level_n_p_final(
 
         }
         if (counterB == nElementsB) {
-            //std::cerr << "\treading more from B ... ";
             nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuffB_);
-            //std::cerr << " got " << nElementsB << " elements\n";
             if (nElementsB == 0) {
                 break;
             };
@@ -128,7 +122,6 @@ void merge_level_n_p_final(
             // v1 = v2
             ///////////
             if (v1 == v2) {
-                //if (cntt >= 8) //std::cerr << "\t\tmerging equal v1/v2: \n";
                 uint64_t density = 0; 
                 for(int c = 0; c < n_u64_per_cols_1; c +=1){
                     density += popcount64( in_1[counterA + 1 + c] );
@@ -189,14 +182,12 @@ void merge_level_n_p_final(
 
                 counterA  += (1 + n_u64_per_cols_1);
                 counterB  += (1 + n_u64_per_cols_2);
-                //if (counterB > 3072) //std::cerr << "error v1=v2 counterB > 3072\n";
             }
 
             ///////////
             // v1 < v2
             ///////////
             else if (v1 < v2) {
-                //if (cntt >= 8) //std::cerr << "\t\t case adding from A \n";
                 uint64_t density = 0; 
                 for(int c = 0; c < n_u64_per_cols_1; c +=1){
                     density += popcount64( in_1[counterA + 1 + c] );
@@ -281,11 +272,7 @@ void merge_level_n_p_final(
                         dest[ndst++] = 0;
                 }
                 counterB  += (1 + n_u64_per_cols_2);
-                //if (counterB > 3072) //std::cerr << "error v1>v2 counterB > 3072\n";
-            }
-
-            //std::cerr << "End of interior loop iteration " << cntt << " A / B " << counterA << " / " << counterB << "\n";
-           
+            }           
         }
 
         //
@@ -299,16 +286,9 @@ void merge_level_n_p_final(
         
     }
 
-    std::cerr << "Finished main loop, going 1 file\n";
 
     if (nElementsA == 0) {
-        std::cerr << "(II) finishing remaining elements from file (" << ifile_2 << ")\n";
-        int64_t dbg_cnt = -1;
-        int64_t dbg_dense_cnt = -1;
-        int64_t dbg_sparse_cnt = -1;
-
         while (true) {
-            dbg_cnt ++;
             if (counterB == nElementsB) {
                 nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuffB_);
                 counterB = 0;
@@ -325,10 +305,7 @@ void merge_level_n_p_final(
             }
 
             if (density <= dense_threshold){ //encode colors w/ list of int
-                dbg_sparse_cnt ++;
-                std::cerr << "(III) Merging sparse element #" << dbg_sparse_cnt << " (total " << dbg_cnt << ") with minimizer " << v2 << " (density: " << density << ")\n";
                 if (ndst_sparse + ((density+granularity-1) / granularity) >= _o_sparse_Buff_) {
-                    std::cerr << "writing sparse dest in final flush loop\n";
                     fdst_sparse->write(dest_sparse, sizeof(uint64_t), ndst_sparse);
                     ndst_sparse = 0;
                 }
@@ -354,8 +331,6 @@ void merge_level_n_p_final(
                 }                    
             } 
             else { //encode w/ bitmap
-                dbg_dense_cnt ++;
-                std::cerr << "(III) Merging dense element #" << dbg_dense_cnt << " (total " << dbg_cnt << ") with minimizer " << v2 << " (density: " << density << ")\n";
                 dest[ndst++] = v2;
                 for(int c = 0; c < n_u64_per_cols_1; c +=1)
                     dest[ndst++] = 0;
@@ -363,7 +338,6 @@ void merge_level_n_p_final(
                     dest[ndst++] = in_2[counterB + 1 + c];
 
                 if (ndst >= _oBuff_) { 
-                    std::cerr << "writing dest in final flush loop\n";
                     fdst->write(dest, sizeof(uint64_t), ndst);
                     ndst = 0;
                 }
@@ -374,13 +348,7 @@ void merge_level_n_p_final(
     }
 
     else if (nElementsB == 0) {
-        std::cerr << "(II) Ffinishing remaining elements from file (" << ifile_1 << ")\n";
-        int64_t dbg_cnt = -1;
-        int64_t dbg_dense_cnt = -1;
-        int64_t dbg_sparse_cnt = -1;
-
         while (true) {
-            dbg_cnt ++;
             if (counterA == nElementsA) {
                 nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuffA_);
                 counterA = 0;
@@ -397,10 +365,7 @@ void merge_level_n_p_final(
             }
 
             if (density <= dense_threshold){ //encode colors w/ list of int
-                dbg_sparse_cnt ++;
-                std::cerr << "(III) Merging sparse element #" << dbg_sparse_cnt << " (total " << dbg_cnt << ") with minimizer " << v1 << " (density: " << density << ")\n";
                 if (ndst_sparse + ((density+granularity-1) / granularity) >= _o_sparse_Buff_) {
-                    std::cerr << "writing sparse dest in final flush loop\n";
                     fdst_sparse->write(dest_sparse, sizeof(uint64_t), ndst_sparse);
                     ndst_sparse = 0;
                 }
@@ -426,8 +391,6 @@ void merge_level_n_p_final(
                 }                    
             } 
             else { //encode w/ bitmap
-                dbg_dense_cnt ++;
-                std::cerr << "(III) Merging dense element #" << dbg_dense_cnt << " (total " << dbg_cnt << ") with minimizer " << v1 << " (density: " << density << ")\n";
                 dest[ndst++] = v1;
                 for(int c = 0; c < n_u64_per_cols_1; c +=1)
                     dest[ndst++] = in_1[counterA + 1 + c];
@@ -435,7 +398,6 @@ void merge_level_n_p_final(
                     dest[ndst++] = 0;
 
                 if (ndst >= _oBuff_) { 
-                    std::cerr << "writing dest in final flush loop\n";
                     fdst->write(dest, sizeof(uint64_t), ndst);
                     ndst = 0;
                 }
@@ -445,12 +407,8 @@ void merge_level_n_p_final(
         }
     }
 
-    std::cerr << "end of loop, writing in dest\n";
-
     fdst->write(dest, sizeof(uint64_t), ndst);
     fdst_sparse->write(dest_sparse, sizeof(uint64_t), ndst_sparse);
-
-    std::cerr << "the end\n";
 
     delete fin_1;
     delete fin_2;

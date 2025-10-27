@@ -3,11 +3,12 @@
 std::string to_number(int value, const int maxv)
 {
     int digits = 1;
-    if     (maxv > 100000) digits = 6;
-    else if(maxv >  10000) digits = 5;
-    else if(maxv >   1000) digits = 4;
-    else if(maxv >    100) digits = 3;
-    else if(maxv >     10) digits = 2;
+    if     (maxv > 1000000) digits = 7;
+    else if(maxv >  100000) digits = 6;
+    else if(maxv >   10000) digits = 5;
+    else if(maxv >    1000) digits = 4;
+    else if(maxv >     100) digits = 3;
+    else if(maxv >      10) digits = 2;
     std::string number;
     while(digits--)
     {
@@ -28,16 +29,7 @@ std::string shorten(const std::string fname, const int length)
     std::string nstr   = fname;
     if( name_pos != std::string::npos )
         nstr  = fname.substr(name_pos + 1);
-/*
-    if( nstr.size() > length ){
-        int suffix_pos     = nstr.find_last_of(".");
-        std::string suffix = nstr.substr(suffix_pos);
-        int prefix_length = length - suffix.size() - 3;
-        return nstr.substr(0,prefix_length) + ".." + suffix;
-    }else{
-        return nstr;
-    }
-*/
+
     return nstr;
 }
 
@@ -57,50 +49,6 @@ void generate_minimizers(
     bool keep_merge_files)
 {
     CTimer timer_full( true );
-
-    //
-    // TEST
-    //
-
-    external_sort(
-            "/WORKS/vlevallois/test/tmp_gut/data_n_final.10000c",
-            "/WORKS/vlevallois/test/tmp_gut/result.10000c",
-            "/WORKS/vlevallois/test/tmp_gut",
-            10000,
-            32768,
-            true,
-            true,
-            16
-        );
-
-    check_file_sorted(
-            "/WORKS/vlevallois/test/tmp_gut/result.10000c",
-            (10000 + 63) / 64 + 1,
-            true
-        );
-
-    external_sort_sparse(
-            "/WORKS/vlevallois/test/tmp_gut/data_n_final_sparse.10000c",
-            "/WORKS/vlevallois/test/tmp_gut/result_sparse.10000c",
-            "/WORKS/vlevallois/test/tmp_gut",
-            10000,
-            32768,
-            true,
-            true,
-            16
-        );
-
-    check_file_sorted_sparse(
-            "/WORKS/vlevallois/test/tmp_gut/result_sparse.10000c",
-            16,
-            true
-        );
-
-    exit(0);
-    //
-    // TEST
-    //
-
 
     std::vector<CMergeFile> n_files;
     std::vector<CMergeFile> l_files;
@@ -568,11 +516,6 @@ void generate_minimizers(
         const CMergeFile lastfile = vrac_names[0];
         const std::string o_file = output + "." + std::to_string(lastfile.real_colors) + "c";
 
-        //
-        // Pour l'instant: minimizers dédupliqués et colors en désordre, objectif trier par couleur 
-        // pour les dedupliquer par la suite
-        //
-
         printf("(II) Sorting final file : %s\n", o_file.c_str());
         CTimer timer_color_sort( true );
 
@@ -591,11 +534,6 @@ void generate_minimizers(
 
         const CMergeFile lastfile_sparse = vrac_names[1];
         const std::string o_file_sparse = output + "_sparse." + std::to_string(lastfile_sparse.real_colors) + "c";
-
-        //
-        // Pour l'instant: minimizers dédupliqués et colors en désordre, objectif trier par couleur 
-        // pour les dedupliquer par la suite
-        //
 
         printf("(II) Sorting final file (sparse) : %s\n", o_file_sparse.c_str());
         CTimer timer_color_sort_sparse( true );
@@ -621,10 +559,6 @@ void generate_minimizers(
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
         exit( EXIT_FAILURE );
     }
-
-    
-
-    
 
 
     printf("(II)\n");

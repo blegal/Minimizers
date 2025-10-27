@@ -19,6 +19,14 @@
 
 #include "../crumsort/crumsort.hpp"
 
+inline uint64_t get_file_size(const std::string& filen) {
+    struct stat file_status;
+    if (stat(filen.c_str(), &file_status) < 0) {
+        return -1;
+    }
+    return file_status.st_size;
+}
+
 void external_sort (
     const std::string& infile,
     const std::string& outfile,
