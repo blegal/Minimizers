@@ -406,7 +406,7 @@ void external_sort_sparse(const std::string& infile,
     }
 
     // Phase 2: Merge
-    nway_merge_sparse(chunk_files, outfile, bits_per_color, verbose_flag);
+    nway_merge_sparse(chunk_files, outfile, bits_per_color, verbose_flag, bytes_in_RAM);
 
     // Cleanup temporary files if requested
     if (!keep_tmp_files) {
