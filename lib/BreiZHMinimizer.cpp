@@ -358,14 +358,18 @@ void generate_minimizers(
     //
     //
     //
+    bool skip_final_merge = false;
     if(vrac_names.size() == 0)
     {
         //
         // On n'a qu'un seul fichier suite au premier processus de fusion (64), donc on ne passe
         // pas par la seconde étape de fusion => mise à jour du vecteur de sortie
+        // OU
+        // le nombre de fichier était multiple de 64 TODO: gérer le split sparse/dense ici aussi
         //
         const CMergeFile single = l_files[0];
         vrac_names.push_back( single );
+        skip_final_merge = true;
     }
 
 
@@ -511,7 +515,7 @@ void generate_minimizers(
     // Normalement on a un (deux avec sparse) fichier en sortie du processus de fusion, sinon c'est que quelque-chose
     // a merdé dans le processus de fusion
     //
-    if( vrac_names.size() == 2 )
+    if( vrac_names.size() == 2 || skip_final_merge == true ) //sparse + dense
     {
         const CMergeFile lastfile = vrac_names[0];
         const std::string o_file = output + "." + std::to_string(lastfile.real_colors) + "c";
@@ -532,28 +536,28 @@ void generate_minimizers(
         
         printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort.get_time_sec());
 
-        const CMergeFile lastfile_sparse = vrac_names[1];
-        const std::string o_file_sparse = output + "_sparse." + std::to_string(lastfile_sparse.real_colors) + "c";
+        if (!skip_final_merge){
 
-        printf("(II) Sorting final file (sparse) : %s\n", o_file_sparse.c_str());
-        CTimer timer_color_sort_sparse( true );
+            const CMergeFile lastfile_sparse = vrac_names[1];
+            const std::string o_file_sparse = output + "_sparse." + std::to_string(lastfile_sparse.real_colors) + "c";
 
-        external_sort_sparse(
-            lastfile_sparse.name,
-            o_file_sparse,
-            tmp_dir,
-            filenames.size(),
-            ram_value_MB,
-            true,
-            verbose,
-            threads
-        );
-        
-        printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort_sparse.get_time_sec());
+            printf("(II) Sorting final file (sparse) : %s\n", o_file_sparse.c_str());
+            CTimer timer_color_sort_sparse( true );
 
+            external_sort_sparse(
+                lastfile_sparse.name,
+                o_file_sparse,
+                tmp_dir,
+                filenames.size(),
+                ram_value_MB,
+                true,
+                verbose,
+                threads
+            );
+            
+            printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort_sparse.get_time_sec());
 
-
-
+        }
     }else{
         printf("(EE) Something strange happened !!!\n");
         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
