@@ -144,47 +144,43 @@ void merge_level_n_p_final(
                     for (int c = 0; c < n_u64_per_cols_1; ++c) {
                         uint64_t col_data = in_1[counterA + 1 + c];
                         while (col_data) {
-                            // find index of least-significant set bit
                             unsigned int b = __builtin_ctzll(col_data);
-
                             uint64_t color_value = c * 64 + b;
 
-                            if (cnt % granularity == 0) {
-                                dest_sparse[ndst_sparse++] =
-                                    (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                            uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+
+                            if ((cnt & (granularity - 1)) == 0) {
+                                // = if (cnt % granularity == 0)
+                                dest_sparse[ndst_sparse++] = (color_value << offset);
                             } else {
-                                dest_sparse[ndst_sparse - 1] |=
-                                    (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                                dest_sparse[ndst_sparse - 1] |= (color_value << offset);
                             }
                             cnt++;
-
                             // clear that bit
                             col_data &= col_data - 1;
                         }
-                    }
+                    }            
 
                     // encode colors from file 2
                     for (int c = 0; c < n_u64_per_cols_2; ++c) {
                         uint64_t col_data = in_2[counterB + 1 + c];
                         while (col_data) {
-                            // find index of least-significant set bit
                             unsigned int b = __builtin_ctzll(col_data);
-
                             uint64_t color_value = c * 64 + b;
 
-                            if (cnt % granularity == 0) {
-                                dest_sparse[ndst_sparse++] =
-                                    (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                            uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+
+                            if ((cnt & (granularity - 1)) == 0) {
+                                // = if (cnt % granularity == 0)
+                                dest_sparse[ndst_sparse++] = (color_value << offset);
                             } else {
-                                dest_sparse[ndst_sparse - 1] |=
-                                    (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                                dest_sparse[ndst_sparse - 1] |= (color_value << offset);
                             }
                             cnt++;
-
                             // clear that bit
                             col_data &= col_data - 1;
                         }
-                    }          
+                    }            
                 } 
                 else { //encode w/ bitmap
                     dest[ndst++] = v1;
@@ -221,24 +217,22 @@ void merge_level_n_p_final(
                     for (int c = 0; c < n_u64_per_cols_1; ++c) {
                         uint64_t col_data = in_1[counterA + 1 + c];
                         while (col_data) {
-                            // find index of least-significant set bit
                             unsigned int b = __builtin_ctzll(col_data);
-
                             uint64_t color_value = c * 64 + b;
 
-                            if (cnt % granularity == 0) {
-                                dest_sparse[ndst_sparse++] =
-                                    (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                            uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+
+                            if ((cnt & (granularity - 1)) == 0) {
+                                // = if (cnt % granularity == 0)
+                                dest_sparse[ndst_sparse++] = (color_value << offset);
                             } else {
-                                dest_sparse[ndst_sparse - 1] |=
-                                    (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                                dest_sparse[ndst_sparse - 1] |= (color_value << offset);
                             }
                             cnt++;
-
                             // clear that bit
                             col_data &= col_data - 1;
                         }
-                    }                 
+                    }                            
                 } 
                 else { //encode w/ bitmap
                     dest[ndst++] = v1;
@@ -273,24 +267,22 @@ void merge_level_n_p_final(
                     for (int c = 0; c < n_u64_per_cols_2; ++c) {
                         uint64_t col_data = in_2[counterB + 1 + c];
                         while (col_data) {
-                            // find index of least-significant set bit
                             unsigned int b = __builtin_ctzll(col_data);
-
                             uint64_t color_value = c * 64 + b;
 
-                            if (cnt % granularity == 0) {
-                                dest_sparse[ndst_sparse++] =
-                                    (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                            uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+
+                            if ((cnt & (granularity - 1)) == 0) {
+                                // = if (cnt % granularity == 0)
+                                dest_sparse[ndst_sparse++] = (color_value << offset);
                             } else {
-                                dest_sparse[ndst_sparse - 1] |=
-                                    (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                                dest_sparse[ndst_sparse - 1] |= (color_value << offset);
                             }
                             cnt++;
-
                             // clear that bit
                             col_data &= col_data - 1;
                         }
-                    }               
+                    }                      
                 } 
                 else { //encode w/ bitmap
                     dest[ndst++] = v2;
@@ -314,7 +306,7 @@ void merge_level_n_p_final(
         
     }
 
-
+    // remaining elements from file 2
     if (nElementsA == 0) {
         while (true) {
             if (counterB == nElementsB) {
@@ -346,24 +338,22 @@ void merge_level_n_p_final(
                 for (int c = 0; c < n_u64_per_cols_2; ++c) {
                     uint64_t col_data = in_2[counterB + 1 + c];
                     while (col_data) {
-                        // find index of least-significant set bit
                         unsigned int b = __builtin_ctzll(col_data);
-
                         uint64_t color_value = c * 64 + b;
 
-                        if (cnt % granularity == 0) {
-                            dest_sparse[ndst_sparse++] =
-                                (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                        uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+
+                        if ((cnt & (granularity - 1)) == 0) {
+                            // = if (cnt % granularity == 0)
+                            dest_sparse[ndst_sparse++] = (color_value << offset);
                         } else {
-                            dest_sparse[ndst_sparse - 1] |=
-                                (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                            dest_sparse[ndst_sparse - 1] |= (color_value << offset);
                         }
                         cnt++;
-
                         // clear that bit
                         col_data &= col_data - 1;
                     }
-                }                 
+                }            
             } 
             else { //encode w/ bitmap
                 dest[ndst++] = v2;
@@ -382,6 +372,7 @@ void merge_level_n_p_final(
         }
     }
 
+    // remaining elements from file 1
     else if (nElementsB == 0) {
         while (true) {
             if (counterA == nElementsA) {
@@ -407,26 +398,24 @@ void merge_level_n_p_final(
 
                 dest_sparse[ndst_sparse++] = v1;
                 dest_sparse[ndst_sparse++] = density << (64 - sparse_colors_bits);
-                // encode colors from file 2
+                // encode colors from file 1
                 uint64_t cnt = 1;
 
                 for (int c = 0; c < n_u64_per_cols_1; ++c) {
                     uint64_t col_data = in_1[counterA + 1 + c];
                     while (col_data) {
-                        // find index of least-significant set bit
                         unsigned int b = __builtin_ctzll(col_data);
-
                         uint64_t color_value = c * 64 + b;
 
-                        if (cnt % granularity == 0) {
-                            dest_sparse[ndst_sparse++] =
-                                (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                        uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+
+                        if ((cnt & (granularity - 1)) == 0) {
+                            // = if (cnt % granularity == 0)
+                            dest_sparse[ndst_sparse++] = (color_value << offset);
                         } else {
-                            dest_sparse[ndst_sparse - 1] |=
-                                (color_value << ((granularity - (cnt % granularity) - 1) * sparse_colors_bits));
+                            dest_sparse[ndst_sparse - 1] |= (color_value << offset);
                         }
                         cnt++;
-
                         // clear that bit
                         col_data &= col_data - 1;
                     }

@@ -109,6 +109,7 @@ void merge_n_files_less_than_64_colors(
                     // On est arrivé à la fin du fichier, donc on suppirme le flux
                     // du processus de fusion...
                     delete i_files[i];
+                    delete[] i_buffer[i];
                   //fclose         ( i_files[i]             );
                     i_files.erase  ( i_files.begin()   + i );
                     i_buffer.erase ( i_buffer.begin()  + i );
