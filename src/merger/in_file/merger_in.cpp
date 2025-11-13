@@ -6,11 +6,12 @@
 #include "merger_level_64_n.hpp"
 #include "merger_level_2_0.hpp"
 #include "merger_level_n_p.hpp"
+#include "merger_level_n_p_final.hpp"
 #include "merger_level_s.hpp"   // -s- for special case !
 
 void merger_in(
-        const std::string& ifile_1,
-        const std::string& ifile_2,
+        const std::string& ifile_1, //+grand
+        const std::string& ifile_2, //+petit
         const std::string& o_file,
         const int level_1,
         const int level_2)
@@ -67,4 +68,16 @@ void merger_in(
         else
             merge_level_n_p(ifile_1, ifile_2, o_file, level_1, level_2);
     }
+}
+
+void merger_in(
+        const std::string& ifile_1, //+grand
+        const std::string& ifile_2, //+petit
+        const std::string& o_file,
+        const std::string& o_file_sparse,
+        const int level_1,
+        const int level_2)
+
+{
+    merge_level_n_p_final(ifile_1, ifile_2, o_file, o_file_sparse, level_1, level_2);
 }

@@ -9,23 +9,23 @@ void merge_level_n_p_t(
         const int level_1,
         const int level_2)
 {
-    const int n_u64_per_min_1 = level_1 / 64; // En entrée de la fonction
-    const int n_u64_per_min_2 = level_2 / 64; // En entrée de la fonction
+    const int n_u64_per_cols_1 = level_1 / 64; // En entrée de la fonction
+    const int n_u64_per_cols_2 = level_2 / 64; // En entrée de la fonction
 
-    const int64_t _iBuffA_ = (1 + n_u64_per_min_1                  ) * 1024;
-    const int64_t _iBuffB_ = (1 +                   n_u64_per_min_2) * 1024;
-    const int64_t _oBuff_  = (1 + n_u64_per_min_1 + n_u64_per_min_2) * 1024;
+    const uint64_t _iBuffA_ = (1 + n_u64_per_cols_1                  ) * 1024;
+    const uint64_t _iBuffB_ = (1 +                   n_u64_per_cols_2) * 1024;
+    const uint64_t _oBuff_  = (1 + n_u64_per_cols_1 + n_u64_per_cols_2) * 1024;
 
     uint64_t *in_1 = new uint64_t[_iBuffA_];
     uint64_t *in_2 = new uint64_t[_iBuffB_];
     uint64_t *dest = new uint64_t[_oBuff_ ];
 
-    int64_t nElementsA = 0; // nombre d'éléments chargés en mémoire
-    int64_t nElementsB = 0; // nombre d'éléments chargés en mémoire
+    uint64_t nElementsA = 0; // nombre d'éléments chargés en mémoire
+    uint64_t nElementsB = 0; // nombre d'éléments chargés en mémoire
 
-    int64_t counterA = 0; // nombre de données lues dans le flux
-    int64_t counterB = 0; // nombre de données lues dans le flux
-    int64_t ndst     = 0; // nombre de données écrites dans le flux
+    uint64_t counterA = 0; // nombre de données lues dans le flux
+    uint64_t counterB = 0; // nombre de données lues dans le flux
+    uint64_t ndst     = 0; // nombre de données écrites dans le flux
 
     stream_reader* fin_1 = stream_reader_library::allocate( ifile_1 );
     stream_reader* fin_2 = stream_reader_library::allocate( ifile_2 );
@@ -63,47 +63,47 @@ void merge_level_n_p_t(
                     // on ajoute notre minimizer dans la sortie
                     dest[ndst++] = v1;
                     // on insere notre couleur (A) dans la sortie
-                    for(int c = 0; c < n_u64_per_min_1; c +=1)
+                    for(int c = 0; c < n_u64_per_cols_1; c +=1)
                         dest[ndst++] = in_1[counterA + 1 + c];
-                    for(int c = 0; c < n_u64_per_min_2; c +=1)
+                    for(int c = 0; c < n_u64_per_cols_2; c +=1)
                         dest[ndst++] = 0;
                 }else{
-                    if( (ndst == 0) || (ndst%(n_u64_per_min_1 + n_u64_per_min_2 + 1) != 0) )
+                    if( (ndst == 0) || (ndst%(n_u64_per_cols_1 + n_u64_per_cols_2 + 1) != 0) )
                     {
                         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
                         printf("(EE) ndst            : %d\n", (int)ndst);
-                        printf("(EE) n_u64_per_min_1 : %d\n", n_u64_per_min_1);
-                        printf("(EE) n_u64_per_min_2 : %d\n", n_u64_per_min_2);
+                        printf("(EE) n_u64_per_cols_1 : %d\n", n_u64_per_cols_1);
+                        printf("(EE) n_u64_per_cols_2 : %d\n", n_u64_per_cols_2);
 
                         exit( EXIT_FAILURE );
                     }
                     // on recopie notre couleur (A) dans la sortie
-                    for(int c = 0; c < n_u64_per_min_1; c +=1)
-                        dest[ndst - n_u64_per_min_1 - n_u64_per_min_2 + c] = in_1[counterA + 1 + c];
+                    for(int c = 0; c < n_u64_per_cols_1; c +=1)
+                        dest[ndst - n_u64_per_cols_1 - n_u64_per_cols_2 + c] = in_1[counterA + 1 + c];
                 }
                 last_value = v1;
-                counterA  += (1 + n_u64_per_min_1);
+                counterA  += (1 + n_u64_per_cols_1);
             } else {
                 if (v2 != last_value){
                     dest[ndst++] = v2;
-                    for(int c = 0; c < n_u64_per_min_1; c +=1)
+                    for(int c = 0; c < n_u64_per_cols_1; c +=1)
                         dest[ndst++] = 0;
-                    for(int c = 0; c < n_u64_per_min_2; c +=1)
+                    for(int c = 0; c < n_u64_per_cols_2; c +=1)
                         dest[ndst++] = in_2[counterB + 1 + c];
                 }else{
-                    if( (ndst == 0) || (ndst%(n_u64_per_min_1 + n_u64_per_min_2 + 1) != 0) )
+                    if( (ndst == 0) || (ndst%(n_u64_per_cols_1 + n_u64_per_cols_2 + 1) != 0) )
                     {
                         printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
                         printf("(EE) ndst            : %d\n", (int)ndst);
-                        printf("(EE) n_u64_per_min_1 : %d\n", n_u64_per_min_1);
-                        printf("(EE) n_u64_per_min_2 : %d\n", n_u64_per_min_2);
+                        printf("(EE) n_u64_per_cols_1 : %d\n", n_u64_per_cols_1);
+                        printf("(EE) n_u64_per_cols_2 : %d\n", n_u64_per_cols_2);
                         exit( EXIT_FAILURE );
                     }
-                    for(int c = 0; c < n_u64_per_min_2; c +=1)
-                        dest[ndst - 1 * n_u64_per_min_2 + c] = in_2[counterB + 1 + c];
+                    for(int c = 0; c < n_u64_per_cols_2; c +=1)
+                        dest[ndst - 1 * n_u64_per_cols_2 + c] = in_2[counterB + 1 + c];
                 }
                 last_value = v2;
-                counterB  += (1 + n_u64_per_min_2);
+                counterB  += (1 + n_u64_per_cols_2);
             }
         }
 
@@ -111,14 +111,14 @@ void merge_level_n_p_t(
         // On flush le buffer en écriture
         //
         if (ndst >= _oBuff_) { // ATTENTION (>=) car on n'est pas tjs multiple
-            fdst->write(dest, sizeof(uint64_t), ndst - 1 - n_u64_per_min_1 - n_u64_per_min_2); // we should keep one element
+            fdst->write(dest, sizeof(uint64_t), ndst - 1 - n_u64_per_cols_1 - n_u64_per_cols_2); // we should keep one element
             //
             ndst = 0;
-            dest[ndst++] = dest[_oBuff_ - 1 - n_u64_per_min_1 - n_u64_per_min_2]; // we should keep the last value in case the next
-            for(int c = 0; c < n_u64_per_min_1; c +=1)
-                dest[ndst++] = dest[_oBuff_ - n_u64_per_min_1 - n_u64_per_min_2 + c];
-            for(int c = 0; c < n_u64_per_min_2; c +=1)
-                dest[ndst++] = dest[_oBuff_ - n_u64_per_min_2 + c];
+            dest[ndst++] = dest[_oBuff_ - 1 - n_u64_per_cols_1 - n_u64_per_cols_2]; // we should keep the last value in case the next
+            for(int c = 0; c < n_u64_per_cols_1; c +=1)
+                dest[ndst++] = dest[_oBuff_ - n_u64_per_cols_1 - n_u64_per_cols_2 + c];
+            for(int c = 0; c < n_u64_per_cols_2; c +=1)
+                dest[ndst++] = dest[_oBuff_ - n_u64_per_cols_2 + c];
             //fwrite(dest, sizeof(uint64_t), ndst, fdst);
             //ndst = 0;
         }
@@ -131,17 +131,17 @@ void merge_level_n_p_t(
     if (nElementsA == 0) {
         const uint64_t v2 = in_2[counterB];
         if (v2 == last_value) {
-            for(int c = 0; c < n_u64_per_min_2; c +=1)
-                dest[ndst - 1 * n_u64_per_min_2 + c] = in_2[counterB + 1 + c];
-            counterB += (1 + n_u64_per_min_2);
+            for(int c = 0; c < n_u64_per_cols_2; c +=1)
+                dest[ndst - 1 * n_u64_per_cols_2 + c] = in_2[counterB + 1 + c];
+            counterB += (1 + n_u64_per_cols_2);
         }
 
     }else if (nElementsB == 0) {
         const uint64_t v1        = in_1[counterA];
         if (v1 == last_value){
-            for(int c = 0; c < n_u64_per_min_1; c +=1)
-                dest[ndst - n_u64_per_min_1 - n_u64_per_min_2 + c] = in_1[counterA + 1 + c];
-            counterA  += (1 + n_u64_per_min_1);
+            for(int c = 0; c < n_u64_per_cols_1; c +=1)
+                dest[ndst - n_u64_per_cols_1 - n_u64_per_cols_2 + c] = in_1[counterA + 1 + c];
+            counterA  += (1 + n_u64_per_cols_1);
         }
     }
 
@@ -157,12 +157,12 @@ void merge_level_n_p_t(
         //
         // On insere les elements restant dans le buffer de dest.
         //
-        for(int i = counterB; i < nElementsB; i += 1 + n_u64_per_min_2)
+        for(int i = counterB; i < nElementsB; i += 1 + n_u64_per_cols_2)
         {
             dest[ndst++] = in_2[i];
-            for(int c = 0; c < n_u64_per_min_1; c +=1)
+            for(int c = 0; c < n_u64_per_cols_1; c +=1)
                 dest[ndst++] = 0;
-            for(int c = 0; c < n_u64_per_min_2; c +=1)
+            for(int c = 0; c < n_u64_per_cols_2; c +=1)
                 dest[ndst++] = in_2[i + 1 + c];
         }
         fdst->write(dest, sizeof(uint64_t), ndst);
@@ -173,12 +173,12 @@ void merge_level_n_p_t(
         do{
             nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuffB_);
 
-            for(int i = 0; i < nElementsB; i += 1 + n_u64_per_min_2) {
+            for(int i = 0; i < nElementsB; i += 1 + n_u64_per_cols_2) {
 //                printf("+B adds: %16.16llX\n", in_2[i]);
                 dest[ndst++] = in_2[i];
-                for (int c = 0; c < n_u64_per_min_1; c += 1)
+                for (int c = 0; c < n_u64_per_cols_1; c += 1)
                     dest[ndst++] = 0;
-                for (int c = 0; c < n_u64_per_min_2; c += 1)
+                for (int c = 0; c < n_u64_per_cols_2; c += 1)
                     dest[ndst++] = in_2[i + 1 + c];
             }
 
@@ -192,16 +192,16 @@ void merge_level_n_p_t(
         //
         // On insere les elements restant dans le buffer de dest.
         //
-        for(int i = counterA; i < nElementsA; i += 1 + n_u64_per_min_1)
+        for(int i = counterA; i < nElementsA; i += 1 + n_u64_per_cols_1)
         {
             // on ajoute notre minimizer dans la sortie
 //            printf("A adds: %16.16llX\n", in_1[i]);
             dest[ndst++] = in_1[i];
             // on insere notre couleur (A) dans la sortie
-            for(int c = 0; c < n_u64_per_min_1; c +=1)
+            for(int c = 0; c < n_u64_per_cols_1; c +=1)
                 dest[ndst++] = in_1[i + 1 + c];
             // on ajoute des zero pour les autres culeurs
-            for(int c = 0; c < n_u64_per_min_2; c +=1)
+            for(int c = 0; c < n_u64_per_cols_2; c +=1)
                 dest[ndst++] = 0;
         }
         fdst->write(dest, sizeof(uint64_t), ndst);
@@ -213,12 +213,12 @@ void merge_level_n_p_t(
         do{
             nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuffA_);
 
-            for(int i = 0; i < nElementsA; i += 1 + n_u64_per_min_1) {
+            for(int i = 0; i < nElementsA; i += 1 + n_u64_per_cols_1) {
 //                printf("+A adds: %16.16llX\n", in_1[i]);
                 dest[ndst++] = in_1[i];
-                for (int c = 0; c < n_u64_per_min_1; c += 1)
+                for (int c = 0; c < n_u64_per_cols_1; c += 1)
                     dest[ndst++] = in_1[i + 1 + c];
-                for (int c = 0; c < n_u64_per_min_2; c += 1)
+                for (int c = 0; c < n_u64_per_cols_2; c += 1)
                     dest[ndst++] = 0;
             }
 
