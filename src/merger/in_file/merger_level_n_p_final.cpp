@@ -48,7 +48,6 @@ void merge_level_n_p_final(
         const int level_1,
         const int level_2)
 {
-    std::cerr << "Starting final merge\n";
     const int n_u64_per_cols_1 = (level_1+63) / 64; // En entrée de la fonction
     const int n_u64_per_cols_2 = (level_2+63) / 64; // En entrée de la fonction
 
@@ -69,7 +68,7 @@ void merge_level_n_p_final(
     const uint64_t _oBuff_  = (1 + n_u64_per_cols_1 + n_u64_per_cols_2) * 1024;
     const uint64_t _o_sparse_Buff_  = 10240;
 
-    std::cerr << "n_u64_per_cols_1: " << n_u64_per_cols_1 << "\n";
+/*     std::cerr << "n_u64_per_cols_1: " << n_u64_per_cols_1 << "\n";
     std::cerr << "n_u64_per_cols_2: " << n_u64_per_cols_2 << "\n";
     std::cerr << "sparse_colors_bits: " << sparse_colors_bits << "\n";
     std::cerr << "granularity: " << granularity << "\n";
@@ -77,7 +76,7 @@ void merge_level_n_p_final(
     std::cerr << "_iBuffA_: " << _iBuffA_ << "\n";
     std::cerr << "_iBuffB_: " << _iBuffB_ << "\n";
     std::cerr << "_oBuff_: " << _oBuff_ << "\n";
-    std::cerr << "_o_sparse_Buff_: " << _o_sparse_Buff_ << "\n";
+    std::cerr << "_o_sparse_Buff_: " << _o_sparse_Buff_ << "\n"; */
 
     uint64_t *in_1 = new uint64_t[_iBuffA_];
     uint64_t *in_2 = new uint64_t[_iBuffB_];
@@ -147,13 +146,13 @@ void merge_level_n_p_final(
                             unsigned int b = __builtin_ctzll(col_data);
                             uint64_t color_value = c * 64 + b;
 
-                            uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+                            uint64_t shift = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
 
                             if ((cnt & (granularity - 1)) == 0) {
                                 // = if (cnt % granularity == 0)
-                                dest_sparse[ndst_sparse++] = (color_value << offset);
+                                dest_sparse[ndst_sparse++] = (color_value << shift);
                             } else {
-                                dest_sparse[ndst_sparse - 1] |= (color_value << offset);
+                                dest_sparse[ndst_sparse - 1] |= (color_value << shift);
                             }
                             cnt++;
                             // clear that bit
@@ -166,15 +165,15 @@ void merge_level_n_p_final(
                         uint64_t col_data = in_2[counterB + 1 + c];
                         while (col_data) {
                             unsigned int b = __builtin_ctzll(col_data);
-                            uint64_t color_value = c * 64 + b;
+                            uint64_t color_value = c * 64 + b + level_1;
 
-                            uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+                            uint64_t shift = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
 
                             if ((cnt & (granularity - 1)) == 0) {
                                 // = if (cnt % granularity == 0)
-                                dest_sparse[ndst_sparse++] = (color_value << offset);
+                                dest_sparse[ndst_sparse++] = (color_value << shift);
                             } else {
-                                dest_sparse[ndst_sparse - 1] |= (color_value << offset);
+                                dest_sparse[ndst_sparse - 1] |= (color_value << shift);
                             }
                             cnt++;
                             // clear that bit
@@ -220,13 +219,13 @@ void merge_level_n_p_final(
                             unsigned int b = __builtin_ctzll(col_data);
                             uint64_t color_value = c * 64 + b;
 
-                            uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+                            uint64_t shift = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
 
                             if ((cnt & (granularity - 1)) == 0) {
                                 // = if (cnt % granularity == 0)
-                                dest_sparse[ndst_sparse++] = (color_value << offset);
+                                dest_sparse[ndst_sparse++] = (color_value << shift);
                             } else {
-                                dest_sparse[ndst_sparse - 1] |= (color_value << offset);
+                                dest_sparse[ndst_sparse - 1] |= (color_value << shift);
                             }
                             cnt++;
                             // clear that bit
@@ -268,15 +267,15 @@ void merge_level_n_p_final(
                         uint64_t col_data = in_2[counterB + 1 + c];
                         while (col_data) {
                             unsigned int b = __builtin_ctzll(col_data);
-                            uint64_t color_value = c * 64 + b;
+                            uint64_t color_value = c * 64 + b + level_1;
 
-                            uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+                            uint64_t shift = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
 
                             if ((cnt & (granularity - 1)) == 0) {
                                 // = if (cnt % granularity == 0)
-                                dest_sparse[ndst_sparse++] = (color_value << offset);
+                                dest_sparse[ndst_sparse++] = (color_value << shift);
                             } else {
-                                dest_sparse[ndst_sparse - 1] |= (color_value << offset);
+                                dest_sparse[ndst_sparse - 1] |= (color_value << shift);
                             }
                             cnt++;
                             // clear that bit
@@ -339,15 +338,15 @@ void merge_level_n_p_final(
                     uint64_t col_data = in_2[counterB + 1 + c];
                     while (col_data) {
                         unsigned int b = __builtin_ctzll(col_data);
-                        uint64_t color_value = c * 64 + b;
+                        uint64_t color_value = c * 64 + b + level_1;
 
-                        uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+                        uint64_t shift = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
 
                         if ((cnt & (granularity - 1)) == 0) {
                             // = if (cnt % granularity == 0)
-                            dest_sparse[ndst_sparse++] = (color_value << offset);
+                            dest_sparse[ndst_sparse++] = (color_value << shift);
                         } else {
-                            dest_sparse[ndst_sparse - 1] |= (color_value << offset);
+                            dest_sparse[ndst_sparse - 1] |= (color_value << shift);
                         }
                         cnt++;
                         // clear that bit
@@ -407,13 +406,13 @@ void merge_level_n_p_final(
                         unsigned int b = __builtin_ctzll(col_data);
                         uint64_t color_value = c * 64 + b;
 
-                        uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
+                        uint64_t shift = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
 
                         if ((cnt & (granularity - 1)) == 0) {
                             // = if (cnt % granularity == 0)
-                            dest_sparse[ndst_sparse++] = (color_value << offset);
+                            dest_sparse[ndst_sparse++] = (color_value << shift);
                         } else {
-                            dest_sparse[ndst_sparse - 1] |= (color_value << offset);
+                            dest_sparse[ndst_sparse - 1] |= (color_value << shift);
                         }
                         cnt++;
                         // clear that bit

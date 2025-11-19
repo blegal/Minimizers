@@ -41,14 +41,11 @@ void minimizer_processing_v4(
         const std::string& algo      = "crumsort",
         const int  ram_limit_in_MB   = 1024,
         const bool file_save_output  = true,
-        const bool verbose_flag      = false,
         const bool file_save_debug   = false,
         const int kmer = 31,
         const int mmer = 19
 )
 {
-    bool verbose = false;
-    if (verbose) std::cerr << "minimizer_processing_v4" << std::endl;
     /*
      * Counting the number of SMER in the file (to allocate memory)
      */
@@ -140,7 +137,6 @@ void minimizer_processing_v4(
         uint64_t mask = mask_right(2 * mmer); // on masque
 
         // PREMIER M-MER
-        if (verbose) std::cout << "PREMIER M-MER" << std::endl;
         const char* ptr_kmer  = seq_value;  // la position de depart du k-mer
         uint64_t current_mmer = 0;
         uint64_t cur_inv_mmer = 0;
@@ -148,7 +144,6 @@ void minimizer_processing_v4(
 
         for(int x = 0; x < mmer - 1; x += 1)
         {
-            if (verbose) std::cout << cnt << " " << ptr_kmer[cnt] << std::endl;
             // Encode les nucleotides du premier s-mer
             const uint64_t encoded = ((ptr_kmer[cnt] >> 1) & 0b11);
             current_mmer <<= 2;
@@ -161,11 +156,9 @@ void minimizer_processing_v4(
 
         
         // PREMIER K-MER
-        if (verbose) std::cout << "PREMIER K-MER" << std::endl;
         uint64_t minv = UINT64_MAX;
         for(int m_pos = 0; m_pos <= z; m_pos += 1)
         {
-            if (verbose) std::cout << cnt << " " << ptr_kmer[cnt] << std::endl;
             // On calcule les m-mers
             const uint64_t encoded = ((ptr_kmer[cnt] >> 1) & 0b11); // conversion ASCII => 2bits (Yoann)
             current_mmer <<= 2;
@@ -188,16 +181,13 @@ void minimizer_processing_v4(
         //1st kmer done
         if( n_minizer == 0 ){
             liste_mini[n_minizer++] = minv;
-            if (verbose) std::cout << "add minmer " << minv << std::endl;
         }else if( liste_mini[n_minizer-1] != minv ){
             liste_mini[n_minizer++] = minv;
-            if (verbose) std::cout << "add minmer " << minv << std::endl;
         }else{
             n_skipper += 1;
         }
 
         //ALL OTHER KMERS
-        if (verbose) std::cout << "OTHER KMERS" << std::endl;
         int kmerStartIdx  = 1;
         int nELements     = std::get<0>(mTuple) - kmer + 1;
         int isNewSeq      = false;
@@ -206,7 +196,6 @@ void minimizer_processing_v4(
         {
             for(int k_pos = kmerStartIdx; k_pos < nELements; k_pos += 1) // On traite le reste des k-mers
             {
-                if (verbose) std::cout << cnt << " " << ptr_kmer[cnt] << std::endl;
                 const uint64_t encoded = ((ptr_kmer[cnt] >> 1) & 0b11); // conversion ASCII => 2bits (Yoann)
                 current_mmer <<= 2;                                     // fonctionne pour les MAJ et les MIN
                 current_mmer |= encoded;
@@ -241,7 +230,6 @@ void minimizer_processing_v4(
                 
                 if( liste_mini[n_minizer-1] != minv ){
                     liste_mini[n_minizer++] = minv;
-                    if (verbose) std::cout << "add minmer " << minv << std::endl;
 
                     if( n_minizer >= (max_in_ram - 2) )
                     {
@@ -322,14 +310,6 @@ void minimizer_processing_v4(
         SaveMiniToTxtFile_v2(o_file + ".non-sorted-v2.txt", liste_mini);
     }
 
-    if( verbose_flag == true ) {
-        printf("(II)\n");
-        printf("(II) Launching the sorting step\n");
-        printf("(II) - Sorting algorithm = %s\n", algo.c_str());
-        printf("(II) - Number of samples = %ld\n", liste_mini.size());
-    }
-
-    double start_time = omp_get_wtime();
     if( algo == "std::sort" ) {
         std::sort( liste_mini.begin(), liste_mini.end() );
     } else if( algo == "std_2cores" ) {
@@ -350,20 +330,11 @@ void minimizer_processing_v4(
         printf("(EE) - crumsort_2cores :\n");
         exit( EXIT_FAILURE );
     }
-    if( verbose_flag == true ) {
-        double end_time = omp_get_wtime();
-        printf("(II) - Execution time    = %f\n", end_time - start_time);
-    }
 
     if( file_save_debug )
     {
         SaveMiniToTxtFile_v2(o_file + ".sorted.txt", liste_mini);
         SaveRawToFile   (o_file + ".hash", liste_mini);
-    }
-
-    if( verbose_flag == true ) {
-        printf("(II)\n");
-        printf("(II) Vector deduplication step\n");
     }
 
     smer_deduplication( liste_mini );

@@ -48,8 +48,11 @@ void generate_minimizers(
     bool keep_minimizer_files, 
     bool keep_merge_files)
 {
-    CTimer timer_full( true );
 
+
+    ////////////////////////////////////////////////////////////////////////////
+    // STEP 1 : GENERATING MINIMIZERS FROM DNA SEQUENCES
+    ////////////////////////////////////////////////////////////////////////////
     std::vector<CMergeFile> n_files;
     std::vector<CMergeFile> l_files;
     if( skip_minimizer_step == false )
@@ -57,9 +60,12 @@ void generate_minimizers(
         uint64_t in_mbytes = 0;
         uint64_t ou_mbytes = 0;
 
-        printf("(II) Generating minimizers from DNA - %d thread(s)\n", threads);
+        if (verbose >= 1){
+            printf("[I] Step 1: Generating minimizers from DNA - %d thread(s)\n", threads);
+        }
+        
 
-        CTimer minzr_timer( true );
+        CTimer minimizers_timer( true );
 
         //
         // On predimentionne le vecteur de sortie car on connait sa taille. Cela evite les
@@ -82,7 +88,7 @@ void generate_minimizers(
             in_mbytes += i_file.size_mb;
 
             /////
-            minimizer_processing_v4(i_file.name, t_file, algo, (ram_value_MB/threads), true, false, false, k, m);
+            minimizer_processing_v4(i_file.name, t_file, algo, (ram_value_MB/threads), true, false, k, m);
             /////
 
             //
@@ -90,14 +96,14 @@ void generate_minimizers(
             //
             const file_stats o_file(t_file);
             ou_mbytes += o_file.size_mb;
-            if(verbose == true )
+            if(verbose >= 3)
             {
                 //
                 // Mesure du temps d'execution
                 //
                 std::string nname = shorten(i_file.name, 32);
                 counter += 1;
-                printf("%5ld | %5d/%5ld | %32s | %6ld MB | ==========> | %20s | %6ld MB | %5.2f sec.\n", i, counter, filenames.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
+                printf("[III] %5ld | %5d/%5ld | %32s | %6ld MB | ==========> | %20s | %6ld MB | %5.2f sec.\n", i, counter, filenames.size(), nname.c_str(), i_file.size_mb, o_file.name.c_str(), o_file.size_mb, minimizer_t.get_time_sec());
 
             }
 
@@ -116,21 +122,42 @@ void generate_minimizers(
         //
         //
         //
-        const float elapsed = minzr_timer.get_time_sec();
-        printf("(II) - Information loaded from files : %6d MB\n", (int)(in_mbytes));
-        printf("(II)   Information wrote to files    : %6d MB\n", (int)(ou_mbytes));
-        printf("(II) - Information throughput (in)   : %6d MB/s\n", (int)((float)(in_mbytes) / elapsed));
-        printf("(II)   Information throughput (out)  : %6d MB/s\n", (int)((float)(ou_mbytes) / elapsed));
-        printf("(II) - Execution time : %1.2f seconds\n", elapsed);
-        printf("(II)\n");
+        const float elapsed = minimizers_timer.get_time_sec();
+        if (verbose >= 3){
+            printf("[III] Information loaded from files : %6d MB\n", (int)(in_mbytes));
+            printf("[III] Information wrote to files    : %6d MB\n", (int)(ou_mbytes));
+            printf("[III] Information throughput (in)   : %6d MB/s\n", (int)((float)(in_mbytes) / elapsed));
+            printf("[III] Information throughput (out)  : %6d MB/s\n", (int)((float)(ou_mbytes) / elapsed));
+        }
+        if (verbose >= 1){
+            printf("[I] Step 1 (parsing minimizers) time : %1.2f seconds\n", elapsed);
+            printf("\n");
+        }
     }
 
-    //
-    //
-    //
-    printf("(II) Tree-based %d-ways merging of sorted minimizer files - %d thread(s)\n", 64, threads);
-    if(verbose == true )
-        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
+
+
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // STEP 2 : MERGING MINIMIZER FILES
+    ////////////////////////////////////////////////////////////////////////////
+
+    CTimer merge_total_timer( true );
+
+    if (verbose >= 1){
+        printf("[I] Step 2: Merging minimizer files - %d thread(s)\n", threads);
+    }
+
+    CTimer merge_64_timer( true );
+
+    if (verbose >= 2){
+        printf("[II] Step 2.1: Tree-based %d-ways merging of sorted minimizer files - %d thread(s)\n", 64, threads);
+    }
+    
+
     n_files.resize( (l_files.size() + 63) / 64 ); // pur éviter le push_back qui semble OpenMP unsafe !
     omp_set_num_threads(threads); // on regle le niveau de parallelisme accessible dans cette partie
     int cnt = 0;
@@ -145,8 +172,6 @@ void generate_minimizers(
 
         std::string t_file = tmp_dir + "/data_n" + to_number(ll/64, l_files.size()/64) + ".";
         t_file            += std::to_string(max_files) + "c";
-
-//      printf("(II) %d - Creating %s\n", ll, t_file.c_str());
 
         merge_n_files_less_than_64_colors( liste, t_file);
 
@@ -166,9 +191,9 @@ void generate_minimizers(
         //
         // Information reporting for the user
         //
-        if(verbose == true ){
+        if(verbose >= 3 ){
             const file_stats t_file( o_file.name );
-            printf("%6d | %s .... ", cnt, l_files[ll            ].name.c_str());
+            printf("[III] %6d | %s .... ", cnt, l_files[ll            ].name.c_str());
             printf("%s ",                 l_files[ll+max_files-1].name.c_str());
             printf("   == %d x MERGE =>   ", 8);
             t_file.printf_size();
@@ -178,8 +203,12 @@ void generate_minimizers(
         }
         cnt += 1;
     }
-    if(verbose == true )
-        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
+
+    const float elapsed_merge_64 = merge_64_timer.get_time_sec();
+    if (verbose >= 2){
+        printf("[II] Step 2.1 (64-ways merging) time : %1.2f seconds\n", elapsed_merge_64);
+        printf("\n");
+    }
 
     //
     // The first merging stage is now ended, it is time to prepare the future ones
@@ -187,28 +216,22 @@ void generate_minimizers(
     l_files = n_files; //l_files entrée
     n_files.clear(); //n_files sortie
 
-    //
-    //
-    //
     std::vector<CMergeFile> vrac_names; //vrac_names sortie pour ceux laissés de côté
 
-    printf("(II) Tree-based %ld-ways merging of first stage files - %d thread(s)\n", merge_step, threads);
-    const auto start_merge = std::chrono::steady_clock::now();
+    CTimer merge_8_timer( true );
+
+    if (verbose >= 1){
+        printf("[I] Step 2.2: Tree-based %ld-ways merging of first stage files - %d thread(s)\n", merge_step, threads);
+    }
+    
     int colors = 64;
     omp_set_num_threads(threads); // on regle le niveau de parallelisme accessible dans cette partie
     while( l_files.size() > 1 )
     {
-        if( verbose )
-            printf("(II)   - %ld-ways merging %4zu files with %4d color(s)\n", merge_step, l_files.size(), colors);
-        else{
-            printf("(II)   - %ld-ways merging %4zu files | %4d color(s) | ",   merge_step, l_files.size(), colors);
-            fflush(stdout);
+        if( verbose >= 3 ){
+            printf("[III]   - %ld-ways merging %4zu files with %4d color(s)\n", merge_step, l_files.size(), colors);
         }
         const auto start_merge = std::chrono::steady_clock::now();
-
-        if(verbose == true )
-            printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
-
 
         n_files.resize( (l_files.size() + merge_step - 1) / merge_step ); // pur éviter le push_back qui semble OpenMP unsafe !
 
@@ -256,25 +279,11 @@ void generate_minimizers(
             for(int ff = 0; ff < max_files; ff += 1)
                 tmp_list.push_back( l_files[ll + ff].name );
 
-            //
-            // We apply a 2->1 merging process
-            //
-//            merger_in(
-//                    l_files[ll    ].name,
-//                    l_files[ll + 1].name,
-//                    t_file,
-//                    l_files[ll + 1].numb_colors,
-//                    l_files[ll + 1].numb_colors
-//                    );    // couleurs homogenes
             merge_n_files_greater_than_64_colors(
                     tmp_list,
                     l_files[ll].numb_colors,
                 t_file);
 
-
-//            if(
-//                    (keep_merge_files == false) && !((skip_minimizer_step || keep_minimizer_files) && (colors == 1)) ) // sinon on supprime nos fichier d'entrée !
-//            {
             if (keep_merge_files == false)
             {
                 for(int ff = 0; ff < max_files; ff += 1)
@@ -293,8 +302,8 @@ void generate_minimizers(
             //
             // Information reporting for the user
             //
-            if(verbose == true ){
-                printf("%6d | %s .... ", cnt, l_files[ll            ].name.c_str());
+            if(verbose >= 3 ){
+                printf("[III] %6d | %s .... ", cnt, l_files[ll            ].name.c_str());
                 printf("%s ",                 l_files[ll+max_files-1].name.c_str());
                 printf("   == %ld x MERGE =>   ", merge_step);
                 o_file.printf_size();
@@ -308,15 +317,14 @@ void generate_minimizers(
         const auto  end_merge = std::chrono::steady_clock::now();
 
         const float elapsed_file = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end_merge - start_merge).count() / 1000.f;
-        if( verbose ){
-            const float d_in = (float)in_mbytes / elapsed_file;
-            const float d_ou = (float)ou_mbytes / elapsed_file;
-            printf("(II)     + Step done in %6.2f seconds | in: %6d MB/s | out: %6d |\n", elapsed_file, (int)d_in, (int)d_ou);
-        }
-        else{
-            const float d_in = (float)in_mbytes / elapsed_file;
-            const float d_ou = (float)ou_mbytes / elapsed_file;
-            printf("%6.2f seconds | in: %6d MB/s | out: %6d]\n", elapsed_file, (int)d_in, (int)d_ou);
+
+        if (verbose >= 3){
+            printf("[III] Information loaded from files : %6d MB\n", (int)(in_mbytes));
+            printf("[III] Information wrote to files    : %6d MB\n", (int)(ou_mbytes));
+            printf("[III] Information throughput (in)   : %6d MB/s\n", (int)((float)(in_mbytes) / elapsed_file));
+            printf("[III] Information throughput (out)  : %6d MB/s\n", (int)((float)(ou_mbytes) / elapsed_file));
+
+            printf("[III] Layer merging time : %1.2f seconds\n", elapsed_file);
         }
 
         //
@@ -331,9 +339,12 @@ void generate_minimizers(
             {
                 n_files.pop_back();
                 vrac_names.push_back ( d2_file );
-                warning_section();
-                printf("(II)     > Keeping (%s) file for later processing...\n", d2_file.name.c_str());
-                reset_section();
+                if (verbose >= 3){
+                    warning_section();
+                    printf("[III] Keeping (%s) file for later processing...\n", d2_file.name.c_str());
+                    reset_section();
+                }
+                
             }
         }
 
@@ -350,14 +361,14 @@ void generate_minimizers(
         n_files.clear();
         colors *= merge_step;
     }
-    const auto  end_merge = std::chrono::steady_clock::now();
-    const float elapsed_merge = std::chrono::duration_cast<std::chrono::milliseconds>(end_merge - start_merge).count() / 1000.f;
-    printf("(II) - Execution time : %1.2f seconds\n", elapsed_merge);
-    printf("(II)\n");
 
-    //
-    //
-    //
+    const float elapsed_merge_8 = merge_8_timer.get_time_sec();
+    if (verbose >= 2){
+        printf("[II] Step 2.2 (%ld-ways merging) time : %1.2f seconds\n", merge_step, elapsed_merge_8);
+        printf("\n");
+    }
+    
+
     bool skip_final_merge = false;
     if(vrac_names.size() == 0)
     {
@@ -373,36 +384,25 @@ void generate_minimizers(
     }
 
 
-    if( verbose )
-        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
-
-
-    for(size_t i = 0; i < vrac_names.size(); i += 1)
-    {
+    for(size_t i = 0; i < vrac_names.size(); i += 1) {
         const file_stats t_file( vrac_names[i].name   );
-        t_file.printf_size();
-        printf("(II) Remaining file : %5ld | %20s | num_colors = %6ld | real_colors = %6ld | size = %6ld MB\n", i, vrac_names[i].name.c_str(),  vrac_names[i].numb_colors,  vrac_names[i].real_colors, t_file.size_mb);
+        if (verbose >= 3){
+            t_file.printf_size();
+            printf("[III] Remaining file : %5ld | %20s | num_colors = %6ld | real_colors = %6ld | size = %6ld MB\n", i, vrac_names[i].name.c_str(),  vrac_names[i].numb_colors,  vrac_names[i].real_colors, t_file.size_mb);
+        }
     }
 
+    if( vrac_names.size() > 2 ) {
+        CTimer timer_leftovers_merge( true );
 
-    if( verbose )
-        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
-
-
-    //
-    //
-    //
-    if( vrac_names.size() > 2 )
-    {
-        printf("(II) Comb-based 2-ways merging of sorted minimizer files\n");
-        CTimer timer_merge( true );
+        if (verbose >= 2){
+            printf("[II] Step 2.3: Comb-based 2-ways merging of remaining sorted minimizer files \n");
+        }
+        
 
         int cnt = 0;
 
-        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
-
-        while( vrac_names.size() > 2 )
-        {
+        while( vrac_names.size() > 2 ) {
             const auto  start_file = std::chrono::steady_clock::now();
 
             const CMergeFile i_file_1 = vrac_names[1]; // le plus grand est tjs le second
@@ -423,7 +423,7 @@ void generate_minimizers(
             //
             // Information reporting for the user
             //
-            if(verbose == true ){
+            if(verbose == true ) {
                 printf("%6d | %s and %s   == 2-way x MERGE =>   ", cnt, i_file_1.name.c_str(), i_file_2.name.c_str());
                 const file_stats t_file( o_file.name   );
                 t_file.printf_size();
@@ -446,21 +446,24 @@ void generate_minimizers(
                 std::remove( i_file_2.name.c_str() ); // delete file
             }
         }
-        printf("(II) - Execution time : %1.2f seconds\n", timer_merge.get_time_sec());
-        printf("(II)\n");
+
+        const float elapsed_leftovers_merge = timer_leftovers_merge.get_time_sec();
+        if (verbose >= 2){
+            printf("[II] Step 2.3 (leftovers 2-ways merging) time : %1.2f seconds\n", elapsed_leftovers_merge);
+            printf("\n");
+        }
     }
+
 
 
     if( vrac_names.size() == 2 ) //final merge, use it to split dense and sparse colors
     {
-        printf("(II) FINAL Comb-based 2-ways merging of sorted minimizer files\n");
-        CTimer timer_merge( true );
+        CTimer timer_final_merge( true );
 
-        printf("------+----------------------+-----------+----------------------+-----------+-------------+----------------------+-----------+\n");
-
-
-        const auto  start_file = std::chrono::steady_clock::now();
-
+        if (verbose >= 2){
+            printf("[II] Step 2.4: Final 2-ways merging of remaining sorted minimizer files (split dense & sparse) \n");
+        }
+        
         const CMergeFile i_file_1 = vrac_names[1]; // le plus grand est tjs le second
         const CMergeFile i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
                 CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
@@ -483,12 +486,11 @@ void generate_minimizers(
         //
         // Information reporting for the user
         //
-        if(verbose == true ){
-            printf("%6d | %s and %s   == 2-way x MERGE =>   ", cnt, i_file_1.name.c_str(), i_file_2.name.c_str());
+        if(verbose >= 3 ){
+            printf("[III] %6d | %s and %s   == 2-way x MERGE =>   ", cnt, i_file_1.name.c_str(), i_file_2.name.c_str());
             const file_stats t_file( o_file.name   );
             t_file.printf_size();
-            const auto  end_file = std::chrono::steady_clock::now();
-            const float elapsed_file = std::chrono::duration_cast<std::chrono::milliseconds>(end_file - start_file).count() / 1000.f;
+            const float elapsed_file = timer_final_merge.get_time_sec();
             printf("in  %6.2fs\n", elapsed_file);
         }
 
@@ -506,9 +508,29 @@ void generate_minimizers(
             std::remove( i_file_2.name.c_str() ); // delete file
         }
         
-        printf("(II) - Execution time : %1.2f seconds\n", timer_merge.get_time_sec());
-        printf("(II)\n");
+        const float elapsed_final_merge = timer_final_merge.get_time_sec();
+        if (verbose >= 2){
+            printf("[II] Step 2.4 (final 2-ways merging) time : %1.2f seconds\n", elapsed_final_merge);
+            printf("\n");
+        }
     }
+
+    const float elapsed_merge_total = merge_total_timer.get_time_sec();
+    if (verbose >= 1){
+        printf("[I] Step 2 (merging) time : %1.2f seconds\n", elapsed_merge_total);
+        printf("\n");
+    }
+
+
+
+
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // STEP 3 : EXTERNAL SORTING OF THE FINAL MINIMIZE-COLORS
+    ////////////////////////////////////////////////////////////////////////////
 
 
     //
@@ -517,11 +539,15 @@ void generate_minimizers(
     //
     if( vrac_names.size() == 2 || skip_final_merge == true ) //sparse + dense
     {
+        CTimer timer_color_sort( true );
+
+        if (verbose >= 2) {
+            printf("[II] Post Step 2: External sorting of final minimize-colors files \n");
+        }
+        
+
         const CMergeFile lastfile = vrac_names[0];
         const std::string o_file = output + "." + std::to_string(lastfile.real_colors) + "c";
-
-        printf("(II) Sorting final file : %s\n", o_file.c_str());
-        CTimer timer_color_sort( true );
 
         external_sort(
             lastfile.name,
@@ -533,38 +559,36 @@ void generate_minimizers(
             verbose,
             threads
         );
-        
-        printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort.get_time_sec());
 
+        
         if (!skip_final_merge){
 
             const CMergeFile lastfile_sparse = vrac_names[1];
             const std::string o_file_sparse = output + "_sparse." + std::to_string(lastfile_sparse.real_colors) + "c";
 
-            printf("(II) Sorting final file (sparse) : %s\n", o_file_sparse.c_str());
-            CTimer timer_color_sort_sparse( true );
-
-            external_sort_sparse(
-                lastfile_sparse.name,
-                o_file_sparse,
-                tmp_dir,
-                filenames.size(),
-                ram_value_MB,
-                true,
-                verbose,
-                threads
-            );
-            
-            printf("(II) - Execution time : %1.2f seconds\n", timer_color_sort_sparse.get_time_sec());
-
+            if (get_file_size( lastfile_sparse.name ) > 0) {
+                external_sort_sparse(
+                    lastfile_sparse.name,
+                    o_file_sparse,
+                    tmp_dir,
+                    filenames.size(),
+                    ram_value_MB,
+                    true,
+                    verbose,
+                    threads
+                );
+            }
         }
-    }else{
-        printf("(EE) Something strange happened !!!\n");
-        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-        exit( EXIT_FAILURE );
+
+    const float elapsed_color_sort = timer_color_sort.get_time_sec();
+    if (verbose >= 2){
+        printf("[II] Post step 2 (external sorting) time : %1.2f seconds\n", elapsed_color_sort);
+        printf("\n");
     }
 
-
-    printf("(II)\n");
-    printf("(II) - Total execution time : %1.2f seconds\n", timer_full.get_time_sec());
+    }else{
+        printf("(EE) Something strange happened !!!\n");
+        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__); //skip sorting = bug
+        exit( EXIT_FAILURE );
+    }
 }
