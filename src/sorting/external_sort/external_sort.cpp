@@ -1,4 +1,5 @@
 #include "external_sort.hpp"
+#include "../../../lib/BreiZHMinimizer.hpp"
 
 #include "../../files/stream_reader_library.hpp"
 #include "../../files/stream_writer_library.hpp"
@@ -514,7 +515,7 @@ void external_sort( const std::string& infile,
 }
 
 
-#if 0
+#if 1
 int main(){
     std::string infile = "/home/vlevallo/tmp/test_bertrand/data_n0.3682c";
     std::string random_file = "/home/vlevallo/tmp/test_bertrand/random.10000c";
@@ -530,7 +531,88 @@ int main(){
     //external_sort(random_file, para_outfile, tmp_dir, 10000, ram_value, true, true, 8);
     //check_file_sorted(para_outfile, (10000 + 63) / 64 + 1, true);
 
-    external_sort_sparse(
+    /* merger_in(
+        "/home/vlevallo/tmp/test_bertrand/tmp/data_n0.3584c",
+        "/home/vlevallo/tmp/test_bertrand/tmp/data_n7.98c",
+        "/home/vlevallo/tmp/test_bertrand/tmp/data_n_final_oldschool.3682c",
+        3584,
+        98
+    ); */
+
+
+    /* merger_in(
+        "/home/vlevallo/tmp/test_bertrand/ecoli_index/tmp/data_n0.3584c",
+        "/home/vlevallo/tmp/test_bertrand/ecoli_index/tmp/data_n7.98c",
+        "/home/vlevallo/tmp/test_bertrand/ecoli_index/tmp/data_n_final2.3682c",
+        "/home/vlevallo/tmp/test_bertrand/ecoli_index/tmp/data_n_final_sparse2.3682c",
+        3584,
+        98
+    ); */
+    
+
+    { // print oldschool data_n_final
+        const std::string check_file = "/home/vlevallo/tmp/test_bertrand/tmp/data_n_final_oldschool.3682c";
+        const uint64_t n_colors = 3682; // inferred from filename "3682c"
+        const uint64_t n_uint_color = (n_colors + 63) / 64;
+        const uint64_t n_uint_per_element = 1 + n_uint_color;
+        const uint64_t dense_threshold = ((n_colors+63)/64 - 1) * 4 - 1;
+        const size_t to_check = 15;
+        size_t i = 0;
+
+        FILE* fcheck = fopen(check_file.c_str(), "rb");
+        if (!fcheck) {
+            std::cerr << "Cannot open file: " << check_file << std::endl;
+        } else {
+            std::vector<uint64_t> buf(n_uint_per_element);
+            while (fread(buf.data(), n_uint_per_element * sizeof(uint64_t), 1, fcheck)) {
+                uint64_t* elem = buf.data();
+                std::vector<uint64_t> colors;
+                
+                for (uint64_t c = 0; c < n_uint_color; ++c) {
+                    uint64_t word = elem[1 + c];
+                    while (word) {
+                        uint64_t b = word & -word;
+                        uint64_t bit_pos = __builtin_ctzll(word);
+                        uint64_t color_index = c * 64 + bit_pos;
+                        if (color_index < n_colors) {
+                            colors.push_back(color_index);
+                        } else {
+                            std::cerr << "(skipping out-of-bounds color " << color_index << ") ";
+                            exit(1);
+                        }
+                        word &= word - 1;
+                    }
+                }
+
+                if (colors.size() <= dense_threshold){
+                    if (i <= to_check && i >= to_check - 15){
+                        std::cout << "Element " << i << ": minimizer=" << elem[0] << "  colors=";
+                        for (size_t j = 0; j < colors.size(); ++j) {
+                            std::cout << colors[j];
+                            if (j + 1 < colors.size()) std::cout << ",";
+                        }
+                        std::cout << "\n";
+                    }
+                    
+                    i++;
+                    if (i >= to_check) break;
+                }
+                
+            }
+            fclose(fcheck);
+        }
+        std::cerr << "Done checking oldschool file.\n"; 
+    }
+
+    print_15_elements_before_n(
+        "/home/vlevallo/tmp/test_bertrand/ecoli_index/tmp/data_n_final_sparse.3682c",
+        16,
+        15
+    ); 
+
+
+
+    /* external_sort_sparse(
         tmp_dir + "/data_n_final_sparse.3682c",
         outfile,
         tmp_dir,
@@ -539,13 +621,24 @@ int main(){
         true,
         true,
         8
-    );
+    ); */
 
-    check_file_sorted_sparse(
-        outfile,
+    
+    check_file_correct_sparse(
+        //"/home/vlevallo/tmp/test_bertrand/ecoli_index/tmp/result_sparse.3682c",
+        "/home/vlevallo/tmp/test_bertrand/ecoli_index/tmp/data_n_final_sparse2.3682c",
+        3682,
         16,
         true
     );
+    
+    /* check_file_sorted_sparse(
+        "/home/vlevallo/tmp/test_bertrand/ecoli_index/tmp/result_sparse.3682c",
+        16,
+        true
+    );  */
+
+
 
 
     //print_first_n_elements(outfile, 10);
@@ -553,8 +646,3 @@ int main(){
     return 0;
 }   
 #endif
-
-
-
-/*14359968+14301344+14276240+14271824+14246368+14258064+14311408+14247232+14308160+14370096+13662320+14379536+14329296+14290592+14302592+14372336+14360432+14302576+14278240+14316992
-*/

@@ -55,8 +55,21 @@ bool check_file_sorted(
     bool verbose_flag = true
 );
 
+
+bool check_file_correct_sparse(
+    const std::string& filename,
+    uint64_t nb_colors,
+    uint64_t bits_per_color,
+    bool verbose_flag
+);
 bool check_file_sorted_sparse(
     const std::string& filename,
     uint64_t bits_per_color,
     bool verbose_flag = true
+);
+
+void print_15_elements_before_n(
+    const std::string& filename,
+    uint64_t bits_per_color,
+    uint64_t n
 );

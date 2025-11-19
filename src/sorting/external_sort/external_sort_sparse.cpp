@@ -54,6 +54,99 @@ static int fread_element(FILE* f, Element &out, uint64_t bits_per_color, uint64_
     return (1+n_color_words);
 }
 
+void print_15_elements_before_n(
+    const std::string& filename,
+    uint64_t bits_per_color,
+    uint64_t n
+) {
+    FILE* f = fopen(filename.c_str(), "rb");
+    if (!f) {
+        std::cerr << "Error: cannot open " << filename << " for reading.\n";
+        return;
+    }
+
+    uint64_t colors_per_word = 64 / bits_per_color;
+    uint64_t idx = 0;
+
+    for (uint64_t i = 0; i < n; ++i) {
+        Element e1;
+        int got = fread_element(f, e1, bits_per_color, colors_per_word);
+        if (got == 0) break;
+
+        if (i >= n - 15) {
+            uint64_t list_size = e1.payload[0] >> (64 - bits_per_color);
+
+            std::cout << "Sp.Element " << i << ": minimizer=" << e1.minimizer << "  colors=";
+            for (int c = 1; c < list_size+1; ++c) {
+                uint64_t word_idx = c / colors_per_word;
+                uint64_t bit_idx = c % colors_per_word;
+
+                uint64_t value = (e1.payload[word_idx] >> ((colors_per_word - 1 - bit_idx) * bits_per_color)) & ((1ULL << bits_per_color) - 1);
+                std::cout << value << ",";
+            }
+            std::cout << "\n";
+        }
+    }
+}
+
+bool check_file_correct_sparse(
+    const std::string& filename,
+    uint64_t nb_colors,
+    uint64_t bits_per_color,
+    bool verbose_flag
+) {
+    FILE* f = fopen(filename.c_str(), "rb");
+    if (!f) {
+        std::cerr << "Error: cannot open " << filename << " for reading.\n";
+        return false;
+    }
+
+    uint64_t colors_per_word = 64 / bits_per_color;
+    uint64_t threshold = ((nb_colors+63)/64 - 1) * colors_per_word - 1;
+    uint64_t idx = 0;
+
+    while (true) {
+        Element e1;
+        int got = fread_element(f, e1, bits_per_color, colors_per_word);
+        if (got == 0) break;
+
+        uint64_t list_size = e1.payload[0] >> (64 - bits_per_color);
+        if (list_size > threshold) {
+            std::cerr << "Error: element index " << idx << " has list_size " << list_size
+                      << " greater than nb_colors " << threshold << ".\n";
+            fclose(f);
+            return false;
+        }
+
+        bool first = true;
+        uint64_t prev_color = 0;
+        for (int c = 1; c < list_size+1; ++c) {
+            uint64_t word_idx = c / colors_per_word;
+            uint64_t bit_idx = c % colors_per_word;
+
+            uint64_t value = (e1.payload[word_idx] >> ((colors_per_word - 1 - bit_idx) * bits_per_color)) & ((1ULL << bits_per_color) - 1);
+
+            if (!first && (value < prev_color)) {
+                std::cerr << "Error: element index " << idx << " has non sorted colors (color " << c-1 << ": "
+                          << value << " <= previous color " << prev_color << ").\n";
+                fclose(f);
+                return false;
+            }
+            
+            first = false;
+        }
+
+        idx++;
+        
+    }
+
+    fclose(f);
+    if (verbose_flag) {
+        std::cerr << "File " << filename << " is correct  ("
+                  << idx << " elements checked).\n";
+    }
+    return true;
+}
 
 bool check_file_sorted_sparse(
     const std::string& filename,

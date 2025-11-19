@@ -9,8 +9,8 @@ void merge_level_n_p_t(
         const int level_1,
         const int level_2)
 {
-    const int n_u64_per_cols_1 = level_1 / 64; // En entrée de la fonction
-    const int n_u64_per_cols_2 = level_2 / 64; // En entrée de la fonction
+    const int n_u64_per_cols_1 = (level_1+63) / 64; // En entrée de la fonction
+    const int n_u64_per_cols_2 = (level_2+63) / 64; // En entrée de la fonction
 
     const uint64_t _iBuffA_ = (1 + n_u64_per_cols_1                  ) * 1024;
     const uint64_t _iBuffB_ = (1 +                   n_u64_per_cols_2) * 1024;

@@ -166,7 +166,7 @@ void merge_level_n_p_final(
                         uint64_t col_data = in_2[counterB + 1 + c];
                         while (col_data) {
                             unsigned int b = __builtin_ctzll(col_data);
-                            uint64_t color_value = c * 64 + b;
+                            uint64_t color_value = c * 64 + b + level_1;
 
                             uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
 
@@ -180,7 +180,7 @@ void merge_level_n_p_final(
                             // clear that bit
                             col_data &= col_data - 1;
                         }
-                    }            
+                    }     
                 } 
                 else { //encode w/ bitmap
                     dest[ndst++] = v1;
@@ -232,7 +232,7 @@ void merge_level_n_p_final(
                             // clear that bit
                             col_data &= col_data - 1;
                         }
-                    }                            
+                    }     
                 } 
                 else { //encode w/ bitmap
                     dest[ndst++] = v1;
@@ -268,7 +268,7 @@ void merge_level_n_p_final(
                         uint64_t col_data = in_2[counterB + 1 + c];
                         while (col_data) {
                             unsigned int b = __builtin_ctzll(col_data);
-                            uint64_t color_value = c * 64 + b;
+                            uint64_t color_value = c * 64 + b + level_1;
 
                             uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
 
@@ -282,7 +282,7 @@ void merge_level_n_p_final(
                             // clear that bit
                             col_data &= col_data - 1;
                         }
-                    }                      
+                    }        
                 } 
                 else { //encode w/ bitmap
                     dest[ndst++] = v2;
@@ -302,8 +302,6 @@ void merge_level_n_p_final(
             fdst->write(dest, sizeof(uint64_t), ndst);
             ndst = 0;
         }
-
-        
     }
 
     // remaining elements from file 2
@@ -339,7 +337,7 @@ void merge_level_n_p_final(
                     uint64_t col_data = in_2[counterB + 1 + c];
                     while (col_data) {
                         unsigned int b = __builtin_ctzll(col_data);
-                        uint64_t color_value = c * 64 + b;
+                        uint64_t color_value = c * 64 + b + level_1;
 
                         uint64_t offset = (granularity - (cnt & (granularity - 1)) - 1) * sparse_colors_bits;
 

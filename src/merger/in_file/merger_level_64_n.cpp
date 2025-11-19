@@ -8,7 +8,7 @@ void merge_level_64_n_t(
         const std::string& ifile_2,
         const std::string& o_file)
 {
-    const int n_u64_per_min = level / 64; // En entrée de la fonction
+    const int n_u64_per_min = (level+63) / 64; // En entrée de la fonction
 
     const int64_t _iBuff_ = (1 +     n_u64_per_min) * 1024;
     const int64_t _oBuff_ = (1 + 2 * n_u64_per_min) * 1024; // la sortie contient 2 x couleurs
