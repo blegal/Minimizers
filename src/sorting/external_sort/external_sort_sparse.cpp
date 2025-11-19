@@ -62,7 +62,7 @@ bool check_file_sorted_sparse(
 ) {
     FILE* f = fopen(filename.c_str(), "rb");
     if (!f) {
-        std::cerr << "Error: cannot open " << filename << " for reading.\n";
+        std::cout << "Error: cannot open " << filename << " for reading.\n";
         return false;
     }
 
@@ -80,14 +80,14 @@ bool check_file_sorted_sparse(
 
         // compare el and e2
         if (element_color_cmp(e2, el)) {
-            std::cerr << "File not sorted by color at element index " << idx + 1
+            std::cout << "File not sorted by color at element index " << idx + 1
                       << " (0-based). Previous color > current color.\n";
             if (verbose_flag) {
-                std::cerr << "Prev color: ";
-                for (size_t j = 0; j < el.payload.size(); ++j) std::cerr << el.payload[j] << " ";
-                std::cerr << "\nCurr color: ";
-                for (size_t j = 0; j < e2.payload.size(); ++j) std::cerr << e2.payload[j] << " ";
-                std::cerr << std::endl;
+                std::cout << "Prev color: ";
+                for (size_t j = 0; j < el.payload.size(); ++j) std::cout << el.payload[j] << " ";
+                std::cout << "\nCurr color: ";
+                for (size_t j = 0; j < e2.payload.size(); ++j) std::cout << e2.payload[j] << " ";
+                std::cout << std::endl;
             }
             fclose(f);
             return false;
@@ -98,7 +98,7 @@ bool check_file_sorted_sparse(
 
     fclose(f);
     if (verbose_flag) {
-        std::cerr << "File " << filename << " is correctly sorted by color ("
+        std::cout << "File " << filename << " is correctly sorted by color ("
                   << idx << " elements checked).\n";
     }
     return true;
@@ -144,7 +144,7 @@ std::vector<std::string> parallel_create_sparse_chunks(const std::string& infile
                                    const std::string& tmp_dir,
                                    uint64_t max_words_in_RAM,
                                    int bits_per_color,
-                                   bool verbose_flag,
+                                   int verbose,
                                    int num_threads)       
 {
     std::vector<std::string> chunk_files;
@@ -163,14 +163,12 @@ std::vector<std::string> parallel_create_sparse_chunks(const std::string& infile
         max_words_in_RAM = max_words_in_RAM / num_threads;
     }
     
-    
-
-    std::cerr << "max_words_in_RAM per thread: " << max_words_in_RAM << "\n";
+    if (verbose >= 3){
+        std::cout << "[III] max_words_in_RAM per thread: " << max_words_in_RAM << "\n";
+    }
 
     #pragma omp parallel num_threads(num_threads) shared(done, chunk_idx)
     {
-        int tid = omp_get_thread_num();
-
         while (true) {
             std::vector<Element> batch;
 
@@ -187,27 +185,21 @@ std::vector<std::string> parallel_create_sparse_chunks(const std::string& infile
 
             size_t idx = chunk_idx.fetch_add(1);
 
-            if (verbose_flag && tid == 0)
-                std::cout << "[Thread " << tid << "] Sorting chunk #" << idx
-                          << " (" << batch.size() << " elements)\n";
-
             std::sort(batch.begin(), batch.end(), element_color_cmp);
 
             std::string outname = tmp_dir + "/sparse_chunk_" + std::to_string(idx) + ".bin";
             write_sorted_chunk(batch, outname);
 
             chunk_files.push_back(outname);
-
-            if (verbose_flag)
-                std::cout << "[Thread " << tid << "] Wrote " << outname << "\n";
         }
     }
 
     omp_destroy_lock(&read_lock);
     fclose(fin);
 
-    if (verbose_flag)
-        std::cout << "All chunks written (" << chunk_idx << " total)\n";
+    if (verbose >= 3) {
+        std::cout << "[III] All chunks written (" << chunk_idx << " total)\n";
+    }
 
     return chunk_files;
 }
@@ -215,7 +207,7 @@ std::vector<std::string> parallel_create_sparse_chunks(const std::string& infile
 void nway_merge_sparse(const std::vector<std::string>& chunk_files,
                        const std::string& outfile,
                        int bits_per_color,
-                       bool verbose_flag,
+                       int verbose,
                        uint64_t ram_budget_bytes = 512ULL * 1024ULL * 1024ULL) // optional RAM budget
 {
     const uint64_t colors_per_word = 64 / bits_per_color;
@@ -226,8 +218,8 @@ void nway_merge_sparse(const std::vector<std::string>& chunk_files,
     const size_t total_buf_words = ram_budget_bytes / sizeof(uint64_t);
     const size_t buf_words  = total_buf_words / (n_files + 1);
 
-    if (verbose_flag) {
-        std::cout << "[nway_merge_sparse] RAM: " << ram_budget_bytes/(1024*1024)
+    if (verbose >= 3) {
+        std::cout << "[III] [nway_merge_sparse] RAM: " << ram_budget_bytes/(1024*1024)
                   << " MB, per-input buffer: " << buf_words
                   << " words, output buffer: " << buf_words << " words\n";
     }
@@ -358,8 +350,9 @@ void nway_merge_sparse(const std::vector<std::string>& chunk_files,
     for (auto f : handles)
         if (f) fclose(f);
 
-    if (verbose_flag)
-        std::cout << "Merged " << merge_count << " elements into " << outfile << "\n";
+    if (verbose >= 3) {
+        std::cout << "[III] Merged " << merge_count << " elements into " << outfile << "\n";
+    }
 }
 
 
@@ -370,7 +363,7 @@ void external_sort_sparse(const std::string& infile,
                           const uint64_t n_colors,
                           const uint64_t ram_value_MB,
                           const bool keep_tmp_files,
-                          const bool verbose_flag,
+                          const int verbose,
                           int n_threads)
 {
     uint64_t bits_per_color = std::ceil(std::log2(n_colors));
@@ -382,38 +375,42 @@ void external_sort_sparse(const std::string& infile,
     const uint64_t bytes_in_RAM = ram_value_MB * 1024ULL * 1024ULL;
     const uint64_t max_words_in_RAM = bytes_in_RAM / sizeof(uint64_t);
 
-    if (verbose_flag) {
-        std::cout << "sparse External sort parameters:\n";
-        std::cout << " - bits_per_color: " << bits_per_color << "\n";
-        std::cout << " - n_colors: " << n_colors << "\n";
-        std::cout << " - RAM limit: " << ram_value_MB << " MB (" << max_words_in_RAM << " words)\n";
-        std::cout << " - threads: " << n_threads << "\n";
+    if (verbose >= 3) {
+        std::cout << "[III] sparse External sort parameters:\n";
+        std::cout << "\t\t bits_per_color: " << bits_per_color << "\n";
+        std::cout << "\t\t n_colors: " << n_colors << "\n";
+        std::cout << "\t\t RAM limit: " << ram_value_MB << " MB (" << max_words_in_RAM << " words)\n";
+        std::cout << "\t\t threads: " << n_threads << "\n";
     }
 
     // Phase 1: Create sorted chunks in parallel
-    auto chunk_files = parallel_create_sparse_chunks(infile, tmp_dir, max_words_in_RAM, bits_per_color, verbose_flag, n_threads);
+    auto chunk_files = parallel_create_sparse_chunks(infile, tmp_dir, max_words_in_RAM, bits_per_color, verbose, n_threads);
 
 
-    if (verbose_flag)
-        std::cout << "Merging " << chunk_files.size() << " chunks...\n";
+    if (verbose >= 3) {
+        std::cout << "[III] Merging " << chunk_files.size() << " chunks...\n";
 
+    }
+        
     if (chunk_files.size() == 1) {
         // Single chunk, just rename
         std::filesystem::rename(chunk_files[0], outfile);
-        if (verbose_flag)
-            std::cout << "Only one chunk created, renamed to " << outfile << "\n";
+        if (verbose >= 3) {
+            std::cout << "[III] Only one chunk created, renamed to " << outfile << "\n";
+        }
+            
         return;
     }
 
     // Phase 2: Merge
-    nway_merge_sparse(chunk_files, outfile, bits_per_color, verbose_flag, bytes_in_RAM);
+    nway_merge_sparse(chunk_files, outfile, bits_per_color, verbose, bytes_in_RAM);
 
     // Cleanup temporary files if requested
     if (!keep_tmp_files) {
         for (const auto& f : chunk_files) std::filesystem::remove(f);
-        if (verbose_flag) std::cout << "Temporary files removed.\n";
+        if (verbose >= 3) std::cout << "[III] Temporary files removed.\n";
     }
 
-    if (verbose_flag)
-        std::cout << "External sort complete → " << outfile << "\n";
+    if (verbose >= 3)
+        std::cout << "[III] External sort complete → " << outfile << "\n";
 }

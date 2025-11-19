@@ -111,7 +111,7 @@ void merge_n_files_greater_than_64_colors(
                     // du processus de fusion...
                   //fclose         ( i_files[i]);
                     delete i_files[i];
-                    delete i_buffer[i];
+                    delete[] i_buffer[i];
                     i_files.erase  ( i_files.begin()   + i );
                     i_buffer.erase ( i_buffer.begin()  + i );
                     nElements.erase( nElements.begin() + i );

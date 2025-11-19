@@ -72,13 +72,13 @@ bool check_file_sorted(
     bool verbose_flag
 ) {
     if (n_uint_per_element < 2) {
-        std::cerr << "Error: n_uint_per_element must be >= 2 (minimizer + at least one color word).\n";
+        std::cout << "Error: n_uint_per_element must be >= 2 (minimizer + at least one color word).\n";
         return false;
     }
 
     FILE* f = fopen(filename.c_str(), "rb");
     if (!f) {
-        std::cerr << "Error: cannot open " << filename << " for reading.\n";
+        std::cout << "Error: cannot open " << filename << " for reading.\n";
         return false;
     }
 
@@ -109,14 +109,14 @@ bool check_file_sorted(
                                  color_ptr,
                                  color_bytes);
                 if (cmp > 0) { // prev_color > current_color  => not sorted
-                    std::cerr << "File not sorted by color at element index " << element_index
+                    std::cout << "File not sorted by color at element index " << element_index
                               << " (0-based). Previous color > current color.\n";
                     if (verbose_flag) {
-                        std::cerr << "Prev color: ";
-                        for (size_t j = 0; j < prev_color.size(); ++j) std::cerr << prev_color[j] << " ";
-                        std::cerr << "\nCurr color: ";
-                        for (size_t j = 0; j < (n_uint_per_element - 1); ++j) std::cerr << color_ptr[j] << " ";
-                        std::cerr << std::endl;
+                        std::cout << "Prev color: ";
+                        for (size_t j = 0; j < prev_color.size(); ++j) std::cout << prev_color[j] << " ";
+                        std::cout << "\nCurr color: ";
+                        for (size_t j = 0; j < (n_uint_per_element - 1); ++j) std::cout << color_ptr[j] << " ";
+                        std::cout << std::endl;
                     }
                     fclose(f);
                     return false;
@@ -133,7 +133,7 @@ bool check_file_sorted(
 
     fclose(f);
     if (verbose_flag) {
-        std::cerr << "File " << filename << " is correctly sorted by color ("
+        std::cout << "File " << filename << " is correctly sorted by color ("
                   << element_index << " elements checked).\n";
     }
     return true;
@@ -166,7 +166,7 @@ std::vector<std::string> parallel_create_chunks(const std::string& infile,
                                                 uint64_t max_elements_in_RAM,
                                                 uint64_t n_chunks,
                                                 uint64_t bytes_per_element,
-                                                bool verbose_flag,
+                                                int verbose,
                                                 int n_threads)
 {
     std::vector<std::string> chunknames(n_chunks);
@@ -175,8 +175,8 @@ std::vector<std::string> parallel_create_chunks(const std::string& infile,
     // Each thread will have its own local buffer and file access
     uint64_t elements_per_thread = max_elements_in_RAM / n_threads;
 
-    if (verbose_flag) {
-        std::cerr << "Launching parallel chunk creation with " << n_threads << " threads." << std::endl;
+    if (verbose >= 3) {
+        std::cout << "[III] Launching parallel chunk creation with " << n_threads << " threads." << std::endl;
     }
 
 #pragma omp parallel for num_threads(n_threads) schedule(dynamic)
@@ -221,19 +221,10 @@ std::vector<std::string> parallel_create_chunks(const std::string& infile,
             }
             fclose(fout);
 
-            /* if (verbose_flag) {
-                #pragma omp critical
-                {
-                    std::cerr << "Thread " << omp_get_thread_num()
-                              << " finished chunk " << chunk
-                              << " (" << got << " elements)." << std::endl;
-                }
-            } */
-
         } catch (const std::exception& e) {
             #pragma omp critical
             {
-                std::cerr << "Error in thread " << omp_get_thread_num()
+                std::cout << "Error in thread " << omp_get_thread_num()
                           << " for chunk " << chunk << ": " << e.what() << std::endl;
             }
         }
@@ -241,8 +232,8 @@ std::vector<std::string> parallel_create_chunks(const std::string& infile,
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    if (verbose_flag) {
-        std::cout << "Parallel chunks creation took: " << elapsed.count() << " seconds." << std::endl;
+    if (verbose >= 3) {
+        std::cout << "[III] Parallel chunks creation took: " << elapsed.count() << " seconds." << std::endl;
     }
 
     return chunknames;
@@ -252,7 +243,7 @@ void nway_merge(const std::vector<std::string>& chunknames,
                 const std::string& outfile,
                 uint64_t n_uint_per_element,
                 uint64_t max_elements_in_RAM,
-                bool verbose_flag) 
+                int verbose) 
 {
 
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
@@ -344,9 +335,9 @@ void nway_merge(const std::vector<std::string>& chunknames,
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    if (verbose_flag) {
-        std::cout << "N-way merge took: " << elapsed.count() << " seconds." << std::endl;
-        std::cerr << "N-way merge complete into: " << outfile << std::endl;
+    if (verbose >= 3) {
+        std::cout << "[III] N-way merge took: " << elapsed.count() << " seconds." << std::endl;
+        std::cout << "[III] N-way merge complete into: " << outfile << std::endl;
     }
 }
 
@@ -358,7 +349,7 @@ void multi_pass_nway_merge(
     uint64_t total_data_bytes,
     double access_time_s = 0.0001,   // SSD access time ~0.1 ms
     double transfer_rate_bytes_per_s = 500.0 * 1024 * 1024, // 500 MB/s
-    bool verbose_flag = true) 
+    int verbose = 0) 
 {
     if (chunknames.empty())
         throw std::runtime_error("multi_pass_nway_merge: empty chunk list");
@@ -397,8 +388,8 @@ void multi_pass_nway_merge(
 
         size_t n_groups = (n_chunks + fan_in - 1) / fan_in;
 
-        if (verbose_flag) {
-            std::cerr << "Pass " << pass_num << ": " << n_chunks << " chunks, "
+        if (verbose >= 3) {
+            std::cout << "[III] Pass " << pass_num << ": " << n_chunks << " chunks, "
                       << "buffer per chunk = " << buffer_size << " bytes, "
                       << "estimated access fraction = " << (total_access_time/io_time)
                       << ", fan-in = " << fan_in << ", groups = " << n_groups << "\n";
@@ -413,13 +404,13 @@ void multi_pass_nway_merge(
 
             tmp_files[g] = outfile + "_tmp_pass" + std::to_string(pass_num) + "_group" + std::to_string(g) + ".bin";
 
-            if (verbose_flag) {
-                std::cerr << "  Merging group " << g << " (" << group_chunks.size() << " chunks) -> "
+            if (verbose >= 3) {
+                std::cout << "[III] Merging group " << g << " (" << group_chunks.size() << " chunks) -> "
                           << tmp_files[g] << "\n";
             }
 
             // Single-pass merge for this group
-            nway_merge(group_chunks, tmp_files[g], n_uint_per_element, max_elements_in_RAM, verbose_flag);
+            nway_merge(group_chunks, tmp_files[g], n_uint_per_element, max_elements_in_RAM, verbose);
         }
 
         // Remove old chunk files
@@ -432,8 +423,8 @@ void multi_pass_nway_merge(
     }
 
     // Final merge (only one chunk remains after iterations, rename to outfile)
-    if (verbose_flag) {
-        std::cerr << "Final merge result -> " << outfile << "\n";
+    if (verbose >= 3) {
+        std::cout << "[III] Final merge result -> " << outfile << "\n";
     }
     if (!chunknames.empty() && chunknames[0] != outfile) {
         std::rename(chunknames[0].c_str(), outfile.c_str());
@@ -447,11 +438,11 @@ void external_sort( const std::string& infile,
                     const uint64_t n_colors,
                     const uint64_t ram_value_MB,
                     const bool keep_tmp_files,
-                    const bool verbose_flag,
+                    const int verbose,
                     int n_threads)
 {
-    if (verbose_flag) {
-        std::cerr << "Starting parallel external sort on file: " << infile << std::endl;
+    if (verbose >= 3) {
+        std::cout << "[III] Starting parallel external sort on file: " << infile << std::endl;
     }
 
     const uint64_t size_bytes         = get_file_size(infile);
@@ -470,11 +461,11 @@ void external_sort( const std::string& infile,
     }
     
 
-    if (verbose_flag) {
-        std::cout << "File size in bytes: " << size_bytes << std::endl;
-        std::cout << "# uint64_t elements: " << n_elements << std::endl;
-        std::cout << "Max elements per thread chunk: " << (max_elements_in_RAM / n_threads) << std::endl;
-        std::cout << "# chunks: " << n_chunks << std::endl;
+    if (verbose >= 3) {
+        std::cout << "[III] File size in bytes: " << size_bytes << std::endl;
+        std::cout << "[III] # uint64_t elements: " << n_elements << std::endl;
+        std::cout << "[III] Max elements per thread chunk: " << (max_elements_in_RAM / n_threads) << std::endl;
+        std::cout << "[III] # chunks: " << n_chunks << std::endl;
     }
 
     // Phase 1: parallel chunk creation
@@ -483,14 +474,14 @@ void external_sort( const std::string& infile,
                                              max_elements_in_RAM,
                                              n_chunks,
                                              bytes_per_element,
-                                             verbose_flag,
+                                             verbose,
                                              n_threads);
 
     if (n_chunks == 1) {
         // Single chunk, just rename
         std::filesystem::rename(chunknames[0], outfile);
-        if (verbose_flag)
-            std::cout << "Only one chunk created, renamed to " << outfile << "\n";
+        if (verbose >= 3)
+            std::cout << "[III] Only one chunk created, renamed to " << outfile << "\n";
         return;
     }
 
@@ -501,7 +492,7 @@ void external_sort( const std::string& infile,
                          size_bytes,
                          0.0001,               // access time ~0.1 ms
                          500.0 * 1024 * 1024,  // transfer rate ~500 MB/s
-                         verbose_flag);
+                         verbose);
 
 
     // Cleanup
@@ -553,8 +544,3 @@ int main(){
     return 0;
 }   
 #endif
-
-
-
-/*14359968+14301344+14276240+14271824+14246368+14258064+14311408+14247232+14308160+14370096+13662320+14379536+14329296+14290592+14302592+14372336+14360432+14302576+14278240+14316992
-*/

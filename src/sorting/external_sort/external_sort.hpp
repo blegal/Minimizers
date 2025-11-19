@@ -34,7 +34,7 @@ void external_sort (
     const uint64_t n_colors,
     const uint64_t ram_value_MB,
     const bool keep_tmp_files,
-    const bool verbose_flag,
+    const int verbose_flag,
     int n_threads
 );
 
@@ -45,7 +45,7 @@ void external_sort_sparse (
     const uint64_t n_colors,
     const uint64_t ram_value_MB,
     const bool keep_tmp_files,
-    const bool verbose_flag,
+    const int verbose_flag,
     int n_threads
 );
 

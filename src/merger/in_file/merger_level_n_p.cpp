@@ -157,7 +157,7 @@ void merge_level_n_p_t(
         //
         // On insere les elements restant dans le buffer de dest.
         //
-        for(int i = counterB; i < nElementsB; i += 1 + n_u64_per_cols_2)
+        for(uint64_t i = counterB; i < nElementsB; i += 1 + n_u64_per_cols_2)
         {
             dest[ndst++] = in_2[i];
             for(int c = 0; c < n_u64_per_cols_1; c +=1)
@@ -173,7 +173,7 @@ void merge_level_n_p_t(
         do{
             nElementsB = fin_2->read(in_2, sizeof(uint64_t), _iBuffB_);
 
-            for(int i = 0; i < nElementsB; i += 1 + n_u64_per_cols_2) {
+            for(uint64_t i = 0; i < nElementsB; i += 1 + n_u64_per_cols_2) {
 //                printf("+B adds: %16.16llX\n", in_2[i]);
                 dest[ndst++] = in_2[i];
                 for (int c = 0; c < n_u64_per_cols_1; c += 1)
@@ -192,7 +192,7 @@ void merge_level_n_p_t(
         //
         // On insere les elements restant dans le buffer de dest.
         //
-        for(int i = counterA; i < nElementsA; i += 1 + n_u64_per_cols_1)
+        for(uint64_t i = counterA; i < nElementsA; i += 1 + n_u64_per_cols_1)
         {
             // on ajoute notre minimizer dans la sortie
 //            printf("A adds: %16.16llX\n", in_1[i]);
@@ -213,7 +213,7 @@ void merge_level_n_p_t(
         do{
             nElementsA = fin_1->read(in_1, sizeof(uint64_t), _iBuffA_);
 
-            for(int i = 0; i < nElementsA; i += 1 + n_u64_per_cols_1) {
+            for(uint64_t i = 0; i < nElementsA; i += 1 + n_u64_per_cols_1) {
 //                printf("+A adds: %16.16llX\n", in_1[i]);
                 dest[ndst++] = in_1[i];
                 for (int c = 0; c < n_u64_per_cols_1; c += 1)
