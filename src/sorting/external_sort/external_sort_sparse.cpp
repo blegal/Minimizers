@@ -204,19 +204,22 @@ std::vector<std::string> parallel_create_sparse_chunks(const std::string& infile
     return chunk_files;
 }
 
+
 void nway_merge_sparse(const std::vector<std::string>& chunk_files,
                        const std::string& outfile,
                        int bits_per_color,
                        int verbose,
                        uint64_t ram_budget_bytes = 512ULL * 1024ULL * 1024ULL) // optional RAM budget
 {
-    const uint64_t colors_per_word = 64 / bits_per_color;
     const size_t n_files = chunk_files.size();
     if (n_files == 0) return;
 
-    // Divide RAM budget between input buffers and output buffer
+    const uint64_t colors_per_word = 64 / bits_per_color;
+    const int shift_amount = 64 - bits_per_color;
+
+    // 1. Memory Management
     const size_t total_buf_words = ram_budget_bytes / sizeof(uint64_t);
-    const size_t buf_words  = total_buf_words / (n_files + 1);
+    const size_t buf_words_per_file = total_buf_words / (n_files + 1); 
 
     if (verbose >= 3) {
         std::cout << "[III] [nway_merge_sparse] RAM: " << ram_budget_bytes/(1024*1024)
@@ -224,131 +227,143 @@ void nway_merge_sparse(const std::vector<std::string>& chunk_files,
                   << " words, output buffer: " << buf_words << " words\n";
     }
 
-    // open all input files
+    // 2. Open Input Handles
     std::vector<FILE*> handles(n_files, nullptr);
     for (size_t i = 0; i < n_files; ++i) {
         handles[i] = fopen(chunk_files[i].c_str(), "rb");
-        if (!handles[i])
+        if (!handles[i]) {
+            // Cleanup already opened
+            for (size_t k = 0; k < i; ++k) if(handles[k]) fclose(handles[k]);
             throw std::runtime_error("Cannot open chunk file: " + chunk_files[i]);
+        }
     }
 
+    // 3. Open Output Handle
     FILE* fout = fopen(outfile.c_str(), "wb");
-    if (!fout)
+    if (!fout) {
+        for (auto f : handles) if(f) fclose(f);
         throw std::runtime_error("Cannot open output file: " + outfile);
+    }
 
-    // Input buffers and indices
-    std::vector<std::vector<uint64_t>> in_bufs(n_files, std::vector<uint64_t>(buf_words));
-    std::vector<size_t> buf_pos(n_files, 0);
-    std::vector<size_t> buffer(n_files, 0);
+    // 4. Initialize Buffers
+    std::vector<std::vector<uint64_t>> in_bufs(n_files, std::vector<uint64_t>(buf_words_per_file));
+    std::vector<size_t> buf_pos(n_files, 0);      // Current cursor in buffer
+    std::vector<size_t> buf_limit(n_files, 0);    // Valid data limit in buffer
     std::vector<bool> eof_reached(n_files, false);
 
-    auto refill = [&](size_t i) {
+    // --- Helper: Refill Buffer ---
+    auto refill = [&](size_t i) -> bool {
         if (eof_reached[i]) return false;
-        buffer[i] = fread(in_bufs[i].data(), sizeof(uint64_t), in_bufs[i].size(), handles[i]);
+        
+        size_t n_read = fread(in_bufs[i].data(), sizeof(uint64_t), in_bufs[i].size(), handles[i]);
         buf_pos[i] = 0;
-        if (buffer[i] == 0) { eof_reached[i] = true; return false; }
+        buf_limit[i] = n_read;
+        
+        if (n_read == 0) {
+            eof_reached[i] = true;
+            return false;
+        }
         return true;
     };
 
-    // Reads one full Element from a buffer (refilling as needed)
+    // --- Helper: Read One Element Safe ---
     auto read_element_buffered = [&](size_t i, Element& out) -> bool {
-        if (eof_reached[i] && buf_pos[i] >= buffer[i]) return false;
+        if (buf_pos[i] >= buf_limit[i]) {
+            if (!refill(i)) return false; // Real EOF, natural end of file
+        }
+        out.minimizer = in_bufs[i][buf_pos[i]++];
 
-        // ensure at least minimizer + second_word
-        if (buffer[i] - buf_pos[i] <= 1) {
-            if (buffer[i] - buf_pos[i] == 0){
-                if (!refill(i)) return false;
-            } else { //1 word left
-                out.minimizer = in_bufs[i][buf_pos[i]++];
-                refill(i);
-            }
-            
-        } else {
-            out.minimizer = in_bufs[i][buf_pos[i]++];
+        if (buf_pos[i] >= buf_limit[i]) {
+            if (!refill(i)) return false; // Error: File ended between minimizer and payload
         }
 
-        //here we sould have at least second_word or we already left
         uint64_t second_word = in_bufs[i][buf_pos[i]++];
-
-        uint64_t list_size = second_word >> (64 - bits_per_color);
+        uint64_t list_size = second_word >> shift_amount;
         size_t n_color_words = (list_size + colors_per_word) / colors_per_word;
-        size_t words_needed = n_color_words - 1;
 
         out.payload.resize(n_color_words);
         out.payload[0] = second_word;
 
-        if (buf_pos[i] + words_needed > buffer[i]){
-            uint64_t available = buffer[i] - buf_pos[i];
-            std::copy(in_bufs[i].begin() + buf_pos[i],
-                      in_bufs[i].begin() + buf_pos[i] + available,
-                      out.payload.begin() + 1);
+        if (n_color_words > 1) {
+            size_t words_needed = n_color_words - 1;
+            size_t words_collected = 0;
 
-            refill(i);
+            while (words_collected < words_needed) {
+                // Refill if buffer empty
+                if (buf_pos[i] >= buf_limit[i]) {
+                    if (!refill(i)) return false; // Error: File ended in middle of payload
+                }
 
-            words_needed -= available;
-            std::copy(in_bufs[i].begin() + buf_pos[i],
-                      in_bufs[i].begin() + buf_pos[i] + words_needed,
-                      out.payload.begin() + 1 + available);
-        } else {
-            std::copy(in_bufs[i].begin() + buf_pos[i],
-                      in_bufs[i].begin() + buf_pos[i] + words_needed,
-                      out.payload.begin() + 1);
+                size_t available = buf_limit[i] - buf_pos[i];
+                size_t to_copy = std::min(available, words_needed - words_collected);
+
+                std::copy(in_bufs[i].begin() + buf_pos[i],
+                          in_bufs[i].begin() + buf_pos[i] + to_copy,
+                          out.payload.begin() + 1 + words_collected);
+
+                buf_pos[i] += to_copy;
+                words_collected += to_copy;
+            }
         }
-
-        buf_pos[i] += words_needed;
 
         return true;
     };
 
-    // priority queue setup
+    // 5. Prime the Priority Queue
     std::priority_queue<FileElement, std::vector<FileElement>, CompareElement> pq;
     for (size_t i = 0; i < n_files; ++i) {
-        refill(i);
+        refill(i); // Initial fill
         Element el;
-        if (read_element_buffered(i, el))
+        if (read_element_buffered(i, el)) {
             pq.push({std::move(el), handles[i], i});
+        }
     }
 
-    // output buffer for batched writes
-    std::vector<uint64_t> out_buf;
-    uint64_t out_buf_pos = 0;
-    out_buf.resize(buf_words);
+    // 6. Output Buffer Setup
+    std::vector<uint64_t> out_buf(buf_words_per_file);
+    size_t out_pos = 0;
 
     auto flush_output = [&]() {
-        if (!out_buf.empty()) {
-            fwrite(out_buf.data(), sizeof(uint64_t), out_buf_pos, fout);
-            out_buf_pos = 0;
+        if (out_pos > 0) {
+            fwrite(out_buf.data(), sizeof(uint64_t), out_pos, fout);
+            out_pos = 0;
         }
     };
 
     size_t merge_count = 0;
 
-    // main merge loop
+    // 7. Main Loop
     while (!pq.empty()) {
         FileElement fe = pq.top();
         pq.pop();
 
-        if (fe.el.payload.size() + 1 + out_buf_pos > buf_words) {
+        // Calculate space needed: 1 word (minimizer) + N words (payload)
+        size_t needed = 1 + fe.el.payload.size();
+
+        if (out_pos + needed > out_buf.size()) {
             flush_output();
         }
 
-        out_buf[out_buf_pos++] = fe.el.minimizer;
-        std::copy(fe.el.payload.begin(), fe.el.payload.end(), out_buf.begin() + out_buf_pos);
-        out_buf_pos += fe.el.payload.size();
+        // Write Minimizer
+        out_buf[out_pos++] = fe.el.minimizer;
+        
+        // Write Payload (using fast copy)
+        std::copy(fe.el.payload.begin(), fe.el.payload.end(), out_buf.begin() + out_pos);
+        out_pos += fe.el.payload.size();
 
         merge_count++;
 
-        // get next element from same file
+        // Get next element from the same file
         Element next;
-        if (read_element_buffered(fe.file_idx, next))
+        if (read_element_buffered(fe.file_idx, next)) {
             pq.push({std::move(next), fe.file, fe.file_idx});
+        }
     }
 
+    // 8. Cleanup
     flush_output();
-
     fclose(fout);
-    for (auto f : handles)
-        if (f) fclose(f);
+    for (auto f : handles) if(f) fclose(f);
 
     if (verbose >= 3) {
         std::cout << "[III] Merged " << merge_count << " elements into " << outfile << "\n";
