@@ -223,8 +223,8 @@ void nway_merge_sparse(const std::vector<std::string>& chunk_files,
 
     if (verbose >= 3) {
         std::cout << "[III] [nway_merge_sparse] RAM: " << ram_budget_bytes/(1024*1024)
-                  << " MB, per-input buffer: " << buf_words
-                  << " words, output buffer: " << buf_words << " words\n";
+                  << " MB, per-input buffer: " << buf_words_per_file
+                  << " words, output buffer: " << buf_words_per_file << " words\n";
     }
 
     // 2. Open Input Handles
