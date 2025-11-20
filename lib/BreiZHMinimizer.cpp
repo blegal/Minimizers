@@ -555,7 +555,7 @@ void generate_minimizers(
             tmp_dir,
             filenames.size(),
             ram_value_MB,
-            true,
+            keep_merge_files,
             verbose,
             threads
         );
@@ -573,7 +573,7 @@ void generate_minimizers(
                     tmp_dir,
                     filenames.size(),
                     ram_value_MB,
-                    true,
+                    keep_merge_files,
                     verbose,
                     threads
                 );
