@@ -560,6 +560,11 @@ void generate_minimizers(
             threads
         );
 
+        if (!keep_merge_files){
+            std::remove( lastfile.name.c_str() );
+        }
+        
+
         
         if (!skip_final_merge){
 
@@ -577,6 +582,10 @@ void generate_minimizers(
                     verbose,
                     threads
                 );
+            }
+
+            if (!keep_merge_files){
+                std::remove( lastfile_sparse.name.c_str() );
             }
         }
 
