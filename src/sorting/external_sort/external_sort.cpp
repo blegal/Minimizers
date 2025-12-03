@@ -1,4 +1,6 @@
 #include "external_sort.hpp"
+#include "../../../lib/BreiZHMinimizer.hpp"
+#include "../../kmer_list/smer_deduplication.hpp"
 
 #include "../../files/stream_reader_library.hpp"
 #include "../../files/stream_writer_library.hpp"
@@ -521,7 +523,7 @@ int main(){
     //external_sort(random_file, para_outfile, tmp_dir, 10000, ram_value, true, true, 8);
     //check_file_sorted(para_outfile, (10000 + 63) / 64 + 1, true);
 
-    external_sort_sparse(
+    /* external_sort_sparse(
         tmp_dir + "/data_n_final_sparse.3682c",
         outfile,
         tmp_dir,
@@ -536,10 +538,11 @@ int main(){
         outfile,
         16,
         true
-    );
+    ); */
 
 
     //print_first_n_elements(outfile, 10);
+
 
     return 0;
 }   

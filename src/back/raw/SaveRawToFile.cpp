@@ -8,7 +8,7 @@
 //
 //
 //
-bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_hash, const int n_elements)
+bool SaveRawToFile(const std::string filename, const std::vector<uint64_t>& list_hash, const int n_elements)
 {
 #if 1
     stream_writer* o_file = stream_writer_library::allocate( filename );
@@ -38,7 +38,7 @@ bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_
 //
 //
 //
-    bool SaveRawToFile(const std::string filename, const std::vector<uint64_t> list_hash)
+    bool SaveRawToFile(const std::string filename, const std::vector<uint64_t>& list_hash)
     {
         SaveRawToFile(filename, list_hash, list_hash.size());
         return true;
