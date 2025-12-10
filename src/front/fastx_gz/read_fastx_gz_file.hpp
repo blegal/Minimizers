@@ -11,7 +11,7 @@
 class read_fastx_gz_file : public file_reader
 {
 private:
-    const int buff_size = 64 * 1024 * 1024;
+    const int buff_size = 2 * 1024 * 1024;
     char* buffer;
     int n_data   = 0;
     int c_ptr    = 0;

@@ -1,10 +1,11 @@
 #pragma once
 #include "../file_reader_ATCG_only.hpp"
+#include "lz4/lz4file.h"
 
-class read_fastx_gz_ATCG_only : public file_reader_ATCG_only
+class read_fastx_lz4_ATCG_only : public file_reader_ATCG_only
 {
     // Buffers
-    char* raw_buffer;      // Raw data from GZIP
+    char* raw_buffer;      // Raw data from LZ4
     char* clean_buffer;    // Sanitized ATCG data
     uint64_t raw_buffer_used;      
     uint64_t raw_capacity;
@@ -14,7 +15,7 @@ class read_fastx_gz_ATCG_only : public file_reader_ATCG_only
 
     
     // State
-    gzFile streaz;
+    LZ4_readFile_t* lz4fRead;
     FILE* stream;
     uint64_t overlap;         // Size of k-mer - 1
     uint64_t clean_count;     // Valid bytes in clean_buffer
@@ -25,8 +26,8 @@ class read_fastx_gz_ATCG_only : public file_reader_ATCG_only
 
 public:
     // Constructor now takes 'overlap' (k-1) to handle k-mer stitching
-    read_fastx_gz_ATCG_only(const std::string& filename, const uint64_t buff_size);
-    ~read_fastx_gz_ATCG_only();
+    read_fastx_lz4_ATCG_only(const std::string& filename, const uint64_t buff_size);
+    ~read_fastx_lz4_ATCG_only();
 
     /*
     // Fills the buffer with the next seq of pure ATCG up to 2MB capacity, needs to be repeatedly called

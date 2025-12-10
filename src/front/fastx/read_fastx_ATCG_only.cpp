@@ -1,261 +1,150 @@
 #include "read_fastx_ATCG_only.hpp"
-#include "../../tools/colors.hpp"
-#include <cstdint>
-#include <array>
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-read_fastx_ATCG_only::read_fastx_ATCG_only(const std::string filen)
+#include <cstring>
+#include <stdexcept>
+
+// =========================================================
+// Constructor
+// =========================================================
+read_fastx_ATCG_only::read_fastx_ATCG_only(const std::string& filename, const uint64_t buff_size) 
+    : raw_buffer_used(0), raw_idx(0), clean_idx(0), clean_count(0), parser_state(0), qual_skip_cnt(0)
 {
-    buffer = new char[buff_size];
-
-    f = fopen( filen.c_str(), "r" );
-    if( f == NULL )
-    {
-        error_section();
-        printf("(EE) File does not exist (%s))\n", filen.c_str());
-        printf("(EE) Error location : %s %d\n", __FILE__, __LINE__);
-        reset_section();
-        exit( EXIT_FAILURE );
-    }
-    n_data = fread(buffer, sizeof(char), buff_size, f);
-
-    no_more_load = ( n_data != buff_size ); //TODO: smaller file than buffer
-
-    //
-    // Les fichiers fasta sont normalement équipé d'une en-tete que l'on peut directement
-    // skipper...
-    //
-    if ((buffer[c_ptr] == '>') || (buffer[c_ptr] == '@'))
-    {
-        for(int i = c_ptr; i < n_data; i += 1) {
-            if (buffer[i] == '\n')
-            {
-                c_ptr = i + 1; // on se positionne sur le 1er caractere de la prochaine ligne
-                break;
-            }
-        }
-    }
-    // Fin de skip du premier commentaire
-
-}
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-read_fastx_ATCG_only::~read_fastx_ATCG_only()
-{
-    delete[] buffer;
-    fclose( f );
-}
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-bool read_fastx_ATCG_only::next_sequence(char* n_kmer)
-{
-    if( file_ended == true )
-    {
-        return false;
-    }
-
-    //
-    // On regarde si l'on a encore une entrée dans le buffer
-    //
-    int pos_nline = -1;
-    for(int i = c_ptr; i < n_data; i += 1)
-    {
-        if(buffer[i] == '\n')
-        {
-            pos_nline = i;
-            break;
-        }
-    }
-
-    if( pos_nline == -1 )
-    {
-        if( is_eof() == true )
-            return false;
-
-        if( reload() == true )
-        {
-            return next_sequence(n_kmer);
-        }else{
-            return false;
-        }
-    }
-
-
-    int cnt = 0;
-    while( buffer[c_ptr] != '\n' )
-    {
-        n_kmer[cnt++] = buffer[c_ptr++];
-    }
-    n_kmer[cnt] = 0;
-    c_ptr += 1; // on passe le retour à la ligne
-
-    n_lines += 1;
-
-    file_ended = (c_ptr == n_data) && (n_data != buff_size);
-
-    return true;
-}
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-std::tuple<int, bool> read_fastx_ATCG_only::next_sequence(char* n_kmer, int buffer_size, const bool _internal_)
-{
-    if( file_ended == true || is_eof())
-    {
-        return {0, true}; // aucun octet n'est disponible
-    }
-
-    if (buffer[c_ptr] == '\n') {
-        c_ptr += 1; //case buffer ended on newline (would else fall into non-DNA case) and after quality line jump
-        if (c_ptr >= n_data){ //check buffer empty ?
-            file_ended = !reload();
-            if (file_ended) return {0, _internal_};
-        }
-    }
+    // Initialize capacities
+    // raw_capacity is small (4KB) for frequent reads
+    // clean_capacity is large (2MB) to hold sanitized data for the minimizer
+    raw_capacity   = 4096;
+    clean_capacity = buff_size; 
     
+    // Allocate buffers
+    raw_buffer   = new char[raw_capacity];
+    clean_buffer = new char[clean_capacity];
 
-    //last time left on header, find next sequence and recurse over it
-    if ((buffer[c_ptr] == '>') || (buffer[c_ptr] == '@') || (buffer[c_ptr] == '+'))
-    {
-        bool quality = (buffer[c_ptr] == '+');
-        c_ptr += 1;
-        //start looking for newline in remaining buffer
-        while (c_ptr < n_data) {
-            if (buffer[c_ptr] == '\n') {
-                c_ptr      += 1;
-                if (c_ptr >= n_data) reload(); //case buffer ended on header newline
-                if (quality){ //skip fastq quality line
-                    c_ptr += n_qualities;
-                    if (c_ptr >= n_data && !reload()){
-                        return {0, _internal_};
-                        //nothing after quality line
-                    }
-                    n_qualities = 0;
-                } 
-
-                return next_sequence(n_kmer, buffer_size, true);
-            }
-            c_ptr += 1;
-        }
-        //didnt find it yet ? reload buffer and start looking again
-        reload();
-        while (c_ptr < n_data) {
-            if (buffer[c_ptr] == '\n') {
-                c_ptr      += 1;
-                if (c_ptr >= n_data) reload(); //case buffer ended on header newline
-                if (quality){ //skip fastq quality line
-                    c_ptr += n_qualities;
-                    if (c_ptr >= n_data && !reload()){
-                        return {0, _internal_};
-                        //nothing after quality line
-                    }
-                    n_qualities = 0;
-                } 
-
-                return next_sequence(n_kmer, buffer_size, true);
-            }
-            c_ptr += 1;
-        }
+    // Open the file
+    stream = fopen(filename.c_str(), "r");
+    if (!stream) {
+        throw std::runtime_error("(EE) File does not exist: " + filename);
     }
+}
 
-    //last time left on N, go to next char and recurse over it
-    if (!(buffer[c_ptr] == 'A') && !(buffer[c_ptr] == 'C') && 
-        !(buffer[c_ptr] == 'G') && !(buffer[c_ptr] == 'T') && 
-        !(buffer[c_ptr] == 'a') && !(buffer[c_ptr] == 'c') && 
-        !(buffer[c_ptr] == 'g') && !(buffer[c_ptr] == 't') && 
-        !(buffer[c_ptr] == 'U') && !(buffer[c_ptr] == 'u')){
-            c_ptr      += 1; //TODO: look for first non intrus
-            n_qualities += 1; //'N' have qualities aswell
-            return next_sequence(n_kmer, buffer_size, true);
-    }
+// =========================================================
+// Destructor
+// =========================================================
+read_fastx_ATCG_only::~read_fastx_ATCG_only() {
+    if (raw_buffer) delete[] raw_buffer;
+    if (clean_buffer) delete[] clean_buffer;
+    
+    if (stream) fclose(stream);
+}
 
-    //classic loop, add nucleotides to seq until header or 'N'
-    int cnt = 0;
-    while (cnt < buffer_size){
-        if (c_ptr >= n_data){ //check buffer empty ?
-            file_ended = !reload();
-            if (file_ended) return {cnt, _internal_};
+
+// =========================================================
+// Load Next Chunk (The Engine)
+// =========================================================
+std::tuple<bool, bool> read_fastx_ATCG_only::load_next_chunk(char** out_ptr, uint64_t* out_size) {
+    bool found_eof = false;
+    bool found_end_of_seq = false; 
+    
+    clean_idx = 0;
+
+    // -----------------------------------------------------
+    // STEP 1: FILL LOOP
+    // -----------------------------------------------------
+    // Fill clean_buffer until it is almost full. 
+    // We leave a 4096 byte margin to safely flush the last raw buffer.
+    while (clean_idx < clean_capacity - 4096) { 
+        
+        // 2a. REFILL RAW BUFFER
+        // If we exhausted the raw buffer (or just started), read more from file.
+        if (raw_idx == raw_buffer_used || raw_idx == 0) { 
+            raw_buffer_used = fread(raw_buffer, 1, raw_capacity, stream);
+            raw_idx = 0;
+
+            if (raw_buffer_used == 0) {
+                found_eof = true;
+                break; // Stop filling if file ends
+            }
         }
         
-        //verify correct char
-        if (buffer[c_ptr] == 'A' || buffer[c_ptr] == 'C' || 
-            buffer[c_ptr] == 'G' || buffer[c_ptr] == 'T' || 
-            buffer[c_ptr] == 'a' || buffer[c_ptr] == 'c' || 
-            buffer[c_ptr] == 'g' || buffer[c_ptr] == 't' || 
-            buffer[c_ptr] == 'U' || buffer[c_ptr] == 'u'){
-            n_kmer[cnt++] = buffer[c_ptr++];
-            n_qualities += 1;
-        }
+        // -------------------------------------------------
+        // STEP 2: SANITIZATION (State Machine)
+        // -------------------------------------------------
+        // Parse raw bytes into clean ATCG sequences.
+        /* STATE DEFINITIONS:
+               0: HEADER (Skip everything until newline)
+               1: SEQ    (Read ATCG, look for newline or +)
+               2: PLUS   (Found '+', skip rest of line)
+               3: QUAL   (Skip as many chars as we read in SEQ)
+        */
 
-        //ignore newlines
-        else if (buffer[c_ptr] == '\n'){
-            c_ptr += 1;
-            continue;
-        }
+        while (raw_idx < raw_buffer_used) {
+            char c = raw_buffer[raw_idx++];
 
-        //found a header 
-        else if (buffer[c_ptr] == '>' || buffer[c_ptr] == '+' || buffer[c_ptr] == '@' || buffer[c_ptr] == '='){
-            return {cnt, _internal_};
+            if (parser_state == 0) { // HEADER (@ or >)
+                // Consume chars until newline sets us to SEQUENCE mode
+                if (c == '\n') {
+                    parser_state = 1; 
+                    qual_skip_cnt = 0;
+                }
+            }
+            else if (parser_state == 1) { // SEQUENCE (ATCG)
+                if (c == '\n') continue; // Ignore newlines inside sequence
 
-        //found an intruder, or eof
-        } else {
-            return {cnt, _internal_};
+                if (c == '+') { // FASTQ separator found
+                    parser_state = 2; // Move to PLUS state
+                    clean_count = clean_idx;
+                    *out_ptr  = clean_buffer;
+                    *out_size = clean_count;
+                    return std::make_tuple(false, true); // Signal End of Sequence
+                } 
+                else if (c == '>') { // FASTA separator found
+                    parser_state = 0; // Move to HEADER state for next seq
+                    clean_count = clean_idx;
+                    *out_ptr  = clean_buffer;
+                    *out_size = clean_count;
+                    return std::make_tuple(false, true); // Signal End of Sequence
+                }
+                else {
+                    char upper = c & 0xDF; // Fast Uppercase conversion
+                    
+                    if (upper == 'A' || upper == 'C' || upper == 'G' || upper == 'T') {
+                        clean_buffer[clean_idx++] = upper;
+                        qual_skip_cnt++; // Count bases to know how much QUAL to skip
+                    }
+                    else if (upper == 'U') {
+                        clean_buffer[clean_idx++] = 'T'; // Normalize RNA to DNA
+                        qual_skip_cnt++;
+                    }
+                    else { 
+                        // Non-nucleotide found (e.g. 'N'). 
+                        // Treat as End of Sequence to break the k-mer stream.
+                        qual_skip_cnt++;
+                        clean_count = clean_idx;
+                        *out_ptr  = clean_buffer;
+                        *out_size = clean_count;
+                        return std::make_tuple(false, true);
+                    }
+                }
+            }
+            else if (parser_state == 2) { // PLUS LINE (+)
+                if (c == '\n') {
+                    parser_state = 3; // End of plus line, start skipping Quality
+                }
+            }
+            else if (parser_state == 3) { // QUALITY SCORES
+                if (c == '\n') continue;
+                // Skip exactly as many quality chars as we read sequence bases
+                if (qual_skip_cnt > 0) qual_skip_cnt--;
+                
+                // Once done skipping, go back to HEADER for next read
+                if (qual_skip_cnt == 0) parser_state = 0;
+            }
         }
-        
     }
-    return {cnt, _internal_};
-}
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
 
-bool read_fastx_ATCG_only::reload(){
-    c_ptr        -= n_data; //skip reste of buffer in case of jump
-    n_data = fread(buffer, sizeof(char), buff_size, f);
-    if (n_data == 0) return false;
-    no_more_load = (n_data != buff_size);
-    return true;
+    // Finalize chunk
+    clean_count = clean_idx;
+    *out_ptr  = clean_buffer;
+    *out_size = clean_count;
+    
+    // Return tuple: <found_eof, found_end_of_seq>
+    return std::make_tuple(found_eof, found_end_of_seq);
 }
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-bool read_fastx_ATCG_only::is_eof()
-{
-    if( (no_more_load == true) && (c_ptr >= n_data) )
-        return true;
-    return false;
-}
-//
-//
-//
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//
