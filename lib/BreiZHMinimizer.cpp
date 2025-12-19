@@ -84,7 +84,7 @@ void generate_minimizers(
             // On mesure la taille des fichiers d'entrée
             //
             const file_stats i_file( filenames[i] );
-            const std::string t_file = tmp_dir + "/data_n" + to_number(i, (int)filenames.size()) + ".raw";
+            const std::string t_file = tmp_dir + "/data_n" + to_number(i, (int)filenames.size()) + ".raw.lz4";
             in_mbytes += i_file.size_mb;
 
             /////
@@ -171,7 +171,7 @@ void generate_minimizers(
             liste.push_back( l_files[ll + ff].name );   // at the input
 
         std::string t_file = tmp_dir + "/data_n" + to_number(ll/64, l_files.size()/64) + ".";
-        t_file            += std::to_string(max_files) + "c";
+        t_file            += std::to_string(max_files) + "c.lz4";
 
         merge_n_files_less_than_64_colors( liste, t_file);
 
@@ -270,7 +270,7 @@ void generate_minimizers(
             //
             std::string t_file   = tmp_dir + "/data_n";
             t_file += to_number(ll/merge_step, l_files.size()/merge_step) + ".";
-            t_file += std::to_string(final_real_color) + "c";
+            t_file += std::to_string(final_real_color) + "c.lz4";
 
             //
             // Creation of the filenames
@@ -409,7 +409,7 @@ void generate_minimizers(
             const CMergeFile i_file_2 = vrac_names[0]; // la plus petite couleur est le premier
                   CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
 
-            o_file.name = tmp_dir + "/data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c";
+            o_file.name = tmp_dir + "/data_n" + std::to_string(cnt++) + "." + std::to_string( o_file.real_colors ) + "c.lz4";
 
             merger_in(
                     i_file_1.name,
