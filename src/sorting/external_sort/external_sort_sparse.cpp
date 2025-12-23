@@ -333,7 +333,7 @@ void nway_merge_sparse(
     int verbose,
     uint64_t ram_budget_bytes
 ) {
-    size_t n_files = chunk_files.size();
+    int n_files = chunk_files.size();
     if (n_files == 0) return;
 
     if (verbose >= 3) std::cout << "[III] Merging " << n_files << " chunks.\n";
@@ -353,7 +353,7 @@ void nway_merge_sparse(
     // 2. Initialize Priority Queue
     std::priority_queue<MergeNode, std::vector<MergeNode>, std::greater<MergeNode>> pq;
 
-    for (size_t i = 0; i < n_files; ++i) {
+    for (int i = 0; i < n_files; ++i) {
         Element el;
         if (readers[i]->next(el)) {
             pq.push({std::move(el), i});
