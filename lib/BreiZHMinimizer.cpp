@@ -469,8 +469,8 @@ void generate_minimizers(
                 CMergeFile o_file  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
                 CMergeFile o_file_sparse  ( "", i_file_1, i_file_2 ); // la plus petite couleur est le premier
 
-        o_file.name = tmp_dir + "/data_n_final." + std::to_string( o_file.real_colors ) + "c";
-        o_file_sparse.name = tmp_dir + "/data_n_final_sparse." + std::to_string( o_file.real_colors ) + "c";
+        o_file.name = tmp_dir + "/data_n_final." + std::to_string( o_file.real_colors ) + "c.lz4";
+        o_file_sparse.name = tmp_dir + "/data_n_final_sparse." + std::to_string( o_file.real_colors ) + "c.lz4";
 
         merger_in(
                 i_file_1.name,
@@ -547,7 +547,7 @@ void generate_minimizers(
         
 
         const CMergeFile lastfile = vrac_names[0];
-        const std::string o_file = output + "." + std::to_string(lastfile.real_colors) + "c";
+        const std::string o_file = output + "." + std::to_string(lastfile.real_colors) + "c.lz4";
 
         external_sort(
             lastfile.name,
@@ -569,7 +569,7 @@ void generate_minimizers(
         if (!skip_final_merge){
 
             const CMergeFile lastfile_sparse = vrac_names[1];
-            const std::string o_file_sparse = output + "_sparse." + std::to_string(lastfile_sparse.real_colors) + "c";
+            const std::string o_file_sparse = output + "_sparse." + std::to_string(lastfile_sparse.real_colors) + "c.lz4";
 
             if (get_file_size( lastfile_sparse.name ) > 0) {
                 external_sort_sparse(
@@ -588,6 +588,8 @@ void generate_minimizers(
                 std::remove( lastfile_sparse.name.c_str() );
             }
         }
+
+    
 
     const float elapsed_color_sort = timer_color_sort.get_time_sec();
     if (verbose >= 2){

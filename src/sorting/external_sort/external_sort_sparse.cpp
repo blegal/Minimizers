@@ -1,386 +1,405 @@
 #include "external_sort.hpp"
-
 #include "../../files/stream_reader_library.hpp"
 #include "../../files/stream_writer_library.hpp"
 #include "../../../include/config.hpp"
 
+#include <algorithm>
+#include <vector>
+#include <queue>
+#include <cstring>
+#include <cmath>
+#include <filesystem>
+#include <iostream>
+#include <omp.h>
+#include <atomic>
+#include <memory>
+
+// =========================================================================
+// Data Structures
+// =========================================================================
 
 struct Element {
     uint64_t minimizer;
-    std::vector<uint64_t> payload; // includes list_size + colors
+    std::vector<uint64_t> payload; // [Header (contains size), ...Body...]
 };
 
-
-bool element_color_cmp(const Element& a, const Element& b) {
-    return a.payload < b.payload;
-}
-
-struct FileElement {
-    Element el;
-    FILE* file;
-    size_t file_idx;
-};
-
-// comparison for min-heap based on element_color_cmp
-struct CompareElement {
-    bool operator()(const FileElement& a, const FileElement& b) const {
-        return element_color_cmp(b.el, a.el); // min-heap
+// Comparator for sorting elements by payload (color sets)
+struct ElementCmp {
+    bool operator()(const Element& a, const Element& b) const {
+        return a.payload < b.payload;
     }
 };
 
+// =========================================================================
+// Buffered Page Reader
+// =========================================================================
 
+/**
+ * Wraps stream_reader to read large chunks of memory and parse variable-length
+ * elements efficiently. Handles buffer boundary truncation.
+ */
+class BufferedPageReader {
+public:
+    BufferedPageReader(const std::string& filename, uint64_t bits_per_color, size_t buffer_size_bytes = 1024 * 1024 * 8)
+        : _bits_per_color(bits_per_color),
+          _colors_per_word(64 / bits_per_color),
+          _pos(0),
+          _limit(0),
+          _eof_reached(false) 
+    {
+        // Use the library factory to allocate the specific reader (lz4/raw/etc)
+        _reader.reset(stream_reader_library::allocate(filename));
+        if (!_reader || !_reader->is_open()) {
+            throw std::runtime_error("Could not open file: " + filename);
+        }
 
+        // Allocate buffer (ensure multiple of uint64_t)
+        size_t num_words = std::max((size_t)1024, buffer_size_bytes / sizeof(uint64_t));
+        _buffer.resize(num_words);
 
-static int fread_element(FILE* f, Element &out, uint64_t bits_per_color, uint64_t colors_per_word) 
-{
-    uint64_t minimizer;
-    if (fread(&minimizer, sizeof(uint64_t), 1, f) != 1) return 0; // EOF
-
-    uint64_t second_word;
-    fread(&second_word, sizeof(uint64_t), 1, f);
-
-    // extract list_size from MSB bits
-    uint64_t list_size = second_word >> (64 - bits_per_color);
-    size_t n_color_words = (list_size + colors_per_word) / colors_per_word; //think about encoding list size aswwell
-
-    // payload = [second_word, possibly more words]
-    out.minimizer = minimizer;
-    out.payload.resize(n_color_words);
-    out.payload[0] = second_word;
-
-    if (n_color_words > 1){
-        fread(out.payload.data() + 1, sizeof(uint64_t), n_color_words - 1, f);
+        // Initial fill
+        refill();
     }
-    return (1+n_color_words);
-}
 
+    ~BufferedPageReader() {
+        if (_reader) _reader->close();
+    }
+
+    // Disable copy
+    BufferedPageReader(const BufferedPageReader&) = delete;
+    BufferedPageReader& operator=(const BufferedPageReader&) = delete;
+
+    /**
+     * Tries to parse the next element from the internal buffer.
+     * Returns false if EOF is reached.
+     */
+    bool next(Element& out) {
+        // 1. We need at least 2 words to start (Minimizer + Header)
+        if (!ensure_available(2)) {
+            return false;
+        }
+
+        // 2. Decode size from Header (2nd word in buffer relative to pos)
+        uint64_t header = _buffer[_pos + 1];
+        
+        // B MSB bits encode the list size
+        uint64_t list_size = header >> (64 - _bits_per_color);
+        
+        // Calculate total payload words (Header included in this count)
+        // Logic: (Size + Capacity_Per_Word) / Capacity_Per_Word
+        // Example: If Capacity=4. Size=1 -> 1 word. Size=4 -> 1 word. Size=5 -> 2 words.
+        size_t n_payload_words = (list_size + _colors_per_word) / _colors_per_word;
+        
+        // Total words for this element = Minimizer (1) + Payload (n)
+        size_t total_words_needed = 1 + n_payload_words;
+
+        // 3. Ensure the FULL element is in the buffer
+        if (!ensure_available(total_words_needed)) {
+             // If we can't get the full element, the file is likely truncated/corrupt
+             return false;
+        }
+
+        // 4. Extract Data
+        out.minimizer = _buffer[_pos++];
+
+        out.payload.resize(n_payload_words);
+        std::memcpy(out.payload.data(), &_buffer[_pos], n_payload_words * sizeof(uint64_t));
+        _pos += n_payload_words;
+
+        return true;
+    }
+
+    /**
+     * Reads elements until the batch limit (RAM usage) is reached.
+     * Used for creating chunks.
+     */
+    size_t fill_batch(std::vector<Element>& batch, size_t max_words) {
+        size_t words_read = 0;
+        Element el;
+        
+        // Reserve strictly necessary to avoid reallocations if possible
+        while (words_read < max_words) {
+            if (!next(el)) break;
+            words_read += (1 + el.payload.size());
+            batch.push_back(std::move(el));
+        }
+        return words_read;
+    }
+
+private:
+    std::unique_ptr<stream_reader> _reader;
+    const uint64_t _bits_per_color;
+    const uint64_t _colors_per_word;
+    
+    std::vector<uint64_t> _buffer;
+    size_t _pos;    // Current cursor index in _buffer
+    size_t _limit;  // Number of valid words currently in _buffer
+    bool _eof_reached;
+
+    /**
+     * Ensures `n` words are available starting at `_pos`.
+     * If not, moves remaining data to start of buffer and reads more from file.
+     */
+    bool ensure_available(size_t n) {
+        if (_pos + n <= _limit) {
+            return true; // Data is already there
+        }
+
+        if (_eof_reached) {
+            return false; // Cannot fetch more
+        }
+
+        // 1. Shift remaining data to the beginning
+        size_t remaining = _limit - _pos;
+        if (remaining > 0) {
+            std::memmove(_buffer.data(), &_buffer[_pos], remaining * sizeof(uint64_t));
+        }
+        
+        _pos = 0;
+        _limit = remaining;
+
+        // 2. Read new data to fill the rest of the buffer
+        size_t words_capacity = _buffer.size() - _limit;
+        
+        // stream_reader::read returns number of elements read
+        int words_read_count = _reader->read(
+            (void*)(_buffer.data() + _limit), 
+            sizeof(uint64_t), 
+            (int)words_capacity
+        );
+
+        if (words_read_count > 0) {
+            _limit += words_read_count;
+        }
+
+        // Check if we hit EOF (read fewer than requested)
+        if (words_read_count < (int)words_capacity || _reader->is_eof()) {
+            _eof_reached = true;
+        }
+
+        return _limit >= n;
+    }
+
+    void refill() {
+        _pos = 0;
+        _limit = 0;
+        _eof_reached = false;
+        ensure_available(1); // Force a read
+    }
+};
+
+// =========================================================================
+// Verification Logic
+// =========================================================================
 
 bool check_file_sorted_sparse(
     const std::string& filename,
     uint64_t bits_per_color,
     bool verbose_flag
 ) {
-    FILE* f = fopen(filename.c_str(), "rb");
-    if (!f) {
-        std::cout << "Error: cannot open " << filename << " for reading.\n";
+    uint64_t idx = 0;
+    try {
+        BufferedPageReader reader(filename, bits_per_color);
+        
+        Element prev;
+        if (!reader.next(prev)) {
+            if (verbose_flag) std::cout << "File is empty.\n";
+            return true;
+        }
+
+        
+        Element curr;
+
+        while (reader.next(curr)) {
+            // Check: prev > curr ?
+            if (prev.payload > curr.payload) {
+                std::cout << "File not sorted at index " << idx + 1 << "\n";
+                return false;
+            }
+            prev = std::move(curr);
+            idx++;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error checking file: " << e.what() << "\n";
         return false;
     }
 
-    uint64_t colors_per_word = 64 / bits_per_color;
-
-    Element el;
-    fread_element(f, el, bits_per_color, colors_per_word); // read first element
-
-    uint64_t idx = 0;
-
-    while (true) {
-        Element e2;
-        int got = fread_element(f, e2, bits_per_color, colors_per_word);
-        if (got == 0) break;
-
-        // compare el and e2
-        if (element_color_cmp(e2, el)) {
-            std::cout << "File not sorted by color at element index " << idx + 1
-                      << " (0-based). Previous color > current color.\n";
-            if (verbose_flag) {
-                std::cout << "Prev color: ";
-                for (size_t j = 0; j < el.payload.size(); ++j) std::cout << el.payload[j] << " ";
-                std::cout << "\nCurr color: ";
-                for (size_t j = 0; j < e2.payload.size(); ++j) std::cout << e2.payload[j] << " ";
-                std::cout << std::endl;
-            }
-            fclose(f);
-            return false;
-        }
-        el = std::move(e2);
-        idx++;
-    }
-
-    fclose(f);
     if (verbose_flag) {
-        std::cout << "File " << filename << " is correctly sorted by color ("
-                  << idx << " elements checked).\n";
+        std::cout << "File " << filename << " is correctly sorted (" << idx << " elements).\n";
     }
     return true;
 }
 
+// =========================================================================
+// Phase 1: Create Sorted Chunks
+// =========================================================================
 
-std::vector<Element> read_elements_batch(FILE* fin,
-                                         uint64_t max_words_in_RAM,
-                                         int bits_per_color)
-{
-    std::vector<Element> elements;
-
-    const int colors_per_word = 64 / bits_per_color;
-    uint64_t total_words = 0;
-
-    while (total_words < max_words_in_RAM) {
-        Element el;
-        int n_words = fread_element(fin, el, bits_per_color, colors_per_word);
-        if (n_words == 0) // EOF
-            break;
-
-        elements.push_back(std::move(el));
-        total_words += n_words;
+void write_chunk(const std::vector<Element>& batch, const std::string& filename) {
+    // Use library factory
+    std::unique_ptr<stream_writer> writer(stream_writer_library::allocate(filename));
+    if (!writer || !writer->is_open()) {
+        throw std::runtime_error("Cannot open output chunk: " + filename);
     }
-
-    return elements;
-}
-
-void write_sorted_chunk(const std::vector<Element>& batch, const std::string& filename) {
-    FILE* fout = fopen(filename.c_str(), "wb");
-    if (!fout)
-        throw std::runtime_error("Cannot open output file: " + filename);
 
     for (const auto& el : batch) {
-        fwrite(&el.minimizer, sizeof(uint64_t), 1, fout);
-        fwrite(el.payload.data(), sizeof(uint64_t), el.payload.size(), fout);
+        // Write Minimizer
+        writer->write((void*)&el.minimizer, sizeof(uint64_t), 1);
+        // Write Payload
+        writer->write((void*)el.payload.data(), sizeof(uint64_t), el.payload.size());
     }
-
-    fclose(fout);
+    writer->close();
 }
 
-std::vector<std::string> parallel_create_sparse_chunks(const std::string& infile,
-                                   const std::string& tmp_dir,
-                                   uint64_t max_words_in_RAM,
-                                   int bits_per_color,
-                                   int verbose,
-                                   int num_threads)       
-{
+std::vector<std::string> parallel_create_chunks(
+    const std::string& infile,
+    const std::string& tmp_dir,
+    uint64_t max_words_in_RAM,
+    int bits_per_color,
+    int verbose,
+    int num_threads
+) {
     std::vector<std::string> chunk_files;
-    FILE* fin = fopen(infile.c_str(), "rb");
-    if (!fin)
-        throw std::runtime_error("Cannot open input file " + infile);
-
+    
+    // Main reader shared among threads via lock
+    BufferedPageReader reader(infile, bits_per_color);
     omp_lock_t read_lock;
     omp_init_lock(&read_lock);
 
-    std::atomic<size_t> chunk_idx{0};
-    bool done = false; //security for multithreading
+    std::atomic<int> chunk_counter{0};
+    bool done = false;
 
-    // use multiple chunks (and thus threads) only if file is bigger than RAM
-    if (get_file_size(infile) / sizeof(uint64_t) > max_words_in_RAM){
-        max_words_in_RAM = max_words_in_RAM / num_threads;
-    }
-    
-    if (verbose >= 3){
-        std::cout << "[III] max_words_in_RAM per thread: " << max_words_in_RAM << "\n";
-    }
+    // Split RAM budget per thread roughly to avoid OOM
+    uint64_t ram_per_thread = std::max((uint64_t)2000, max_words_in_RAM / num_threads);
 
-    #pragma omp parallel num_threads(num_threads) shared(done, chunk_idx)
+    #pragma omp parallel num_threads(num_threads) shared(done, chunk_files)
     {
         while (true) {
             std::vector<Element> batch;
+            // Heuristic reservation
+            batch.reserve(ram_per_thread / 4); 
 
+            // --- Critical Section: Read Batch ---
             omp_set_lock(&read_lock);
-            if (!done) {
-                batch = read_elements_batch(fin,  max_words_in_RAM, bits_per_color);
-                if (batch.empty())
-                    done = true;
+            if (done) {
+                omp_unset_lock(&read_lock);
+                break;
+            }
+            
+            size_t words = reader.fill_batch(batch, ram_per_thread);
+            if (batch.empty()) {
+                done = true;
+                omp_unset_lock(&read_lock);
+                break;
             }
             omp_unset_lock(&read_lock);
+            // ------------------------------------
 
-            if (done || batch.empty())
-                break;
+            // --- Parallel Section: Sort & Write ---
+            std::sort(batch.begin(), batch.end(), ElementCmp());
 
-            size_t idx = chunk_idx.fetch_add(1);
+            int id = chunk_counter.fetch_add(1);
+            // Use .lz4 extension so the writer library detects compression
+            std::string outname = tmp_dir + "/sparse_chunk_" + std::to_string(id) + ".lz4";
+            
+            write_chunk(batch, outname);
 
-            std::sort(batch.begin(), batch.end(), element_color_cmp);
-
-            std::string outname = tmp_dir + "/sparse_chunk_" + std::to_string(idx) + ".bin";
-            write_sorted_chunk(batch, outname);
-
+            #pragma omp critical
             chunk_files.push_back(outname);
         }
     }
 
     omp_destroy_lock(&read_lock);
-    fclose(fin);
-
-    if (verbose >= 3) {
-        std::cout << "[III] All chunks written (" << chunk_idx << " total)\n";
-    }
-
     return chunk_files;
 }
 
+// =========================================================================
+// Phase 2: N-Way Merge
+// =========================================================================
 
-void nway_merge_sparse(const std::vector<std::string>& chunk_files,
-                       const std::string& outfile,
-                       int bits_per_color,
-                       int verbose,
-                       uint64_t ram_budget_bytes = 512ULL * 1024ULL * 1024ULL) // optional RAM budget
-{
-    const size_t n_files = chunk_files.size();
+struct MergeNode {
+    Element el;
+    int stream_idx;
+
+    // Min-heap: smallest element at top (operator > is used by priority_queue for min behavior)
+    bool operator>(const MergeNode& other) const {
+        return el.payload > other.el.payload;
+    }
+};
+
+void nway_merge_sparse(
+    const std::vector<std::string>& chunk_files,
+    const std::string& outfile,
+    int bits_per_color,
+    int verbose,
+    uint64_t ram_budget_bytes
+) {
+    size_t n_files = chunk_files.size();
     if (n_files == 0) return;
 
-    const uint64_t colors_per_word = 64 / bits_per_color;
-    const int shift_amount = 64 - bits_per_color;
+    if (verbose >= 3) std::cout << "[III] Merging " << n_files << " chunks.\n";
 
-    // 1. Memory Management
-    const size_t total_buf_words = ram_budget_bytes / sizeof(uint64_t);
-    const size_t buf_words_per_file = total_buf_words / (n_files + 1); 
+    // 1. Initialize Readers
+    // Divide RAM budget among input buffers (leaving some for output overhead)
+    size_t buffer_size_per_file = (ram_budget_bytes / (n_files + 1)); 
+    if (buffer_size_per_file < 4096) buffer_size_per_file = 4096; // 4KB min
 
-    if (verbose >= 3) {
-        std::cout << "[III] [nway_merge_sparse] RAM: " << ram_budget_bytes/(1024*1024)
-                  << " MB, per-input buffer: " << buf_words_per_file
-                  << " words, output buffer: " << buf_words_per_file << " words\n";
+    std::vector<std::unique_ptr<BufferedPageReader>> readers;
+    readers.reserve(n_files);
+
+    for (const auto& f : chunk_files) {
+        readers.push_back(std::make_unique<BufferedPageReader>(f, bits_per_color, buffer_size_per_file));
     }
 
-    // 2. Open Input Handles
-    std::vector<FILE*> handles(n_files, nullptr);
-    for (size_t i = 0; i < n_files; ++i) {
-        handles[i] = fopen(chunk_files[i].c_str(), "rb");
-        if (!handles[i]) {
-            // Cleanup already opened
-            for (size_t k = 0; k < i; ++k) if(handles[k]) fclose(handles[k]);
-            throw std::runtime_error("Cannot open chunk file: " + chunk_files[i]);
+    // 2. Initialize Priority Queue
+    std::priority_queue<MergeNode, std::vector<MergeNode>, std::greater<MergeNode>> pq;
+
+    for (int i = 0; i < n_files; ++i) {
+        Element el;
+        if (readers[i]->next(el)) {
+            pq.push({std::move(el), i});
         }
     }
 
-    // 3. Open Output Handle
-    FILE* fout = fopen(outfile.c_str(), "wb");
-    if (!fout) {
-        for (auto f : handles) if(f) fclose(f);
+    // 3. Output Writer
+    std::unique_ptr<stream_writer> writer(stream_writer_library::allocate(outfile));
+    if (!writer || !writer->is_open()) {
         throw std::runtime_error("Cannot open output file: " + outfile);
     }
 
-    // 4. Initialize Buffers
-    std::vector<std::vector<uint64_t>> in_bufs(n_files, std::vector<uint64_t>(buf_words_per_file));
-    std::vector<size_t> buf_pos(n_files, 0);      // Current cursor in buffer
-    std::vector<size_t> buf_limit(n_files, 0);    // Valid data limit in buffer
-    std::vector<bool> eof_reached(n_files, false);
-
-    // --- Helper: Refill Buffer ---
-    auto refill = [&](size_t i) -> bool {
-        if (eof_reached[i]) return false;
-        
-        size_t n_read = fread(in_bufs[i].data(), sizeof(uint64_t), in_bufs[i].size(), handles[i]);
-        buf_pos[i] = 0;
-        buf_limit[i] = n_read;
-        
-        if (n_read == 0) {
-            eof_reached[i] = true;
-            return false;
-        }
-        return true;
-    };
-
-    // --- Helper: Read One Element Safe ---
-    auto read_element_buffered = [&](size_t i, Element& out) -> bool {
-        if (buf_pos[i] >= buf_limit[i]) {
-            if (!refill(i)) return false; // Real EOF, natural end of file
-        }
-        out.minimizer = in_bufs[i][buf_pos[i]++];
-
-        if (buf_pos[i] >= buf_limit[i]) {
-            if (!refill(i)) return false; // Error: File ended between minimizer and payload
-        }
-
-        uint64_t second_word = in_bufs[i][buf_pos[i]++];
-        uint64_t list_size = second_word >> shift_amount;
-        size_t n_color_words = (list_size + colors_per_word) / colors_per_word;
-
-        out.payload.resize(n_color_words);
-        out.payload[0] = second_word;
-
-        if (n_color_words > 1) {
-            size_t words_needed = n_color_words - 1;
-            size_t words_collected = 0;
-
-            while (words_collected < words_needed) {
-                // Refill if buffer empty
-                if (buf_pos[i] >= buf_limit[i]) {
-                    if (!refill(i)) return false; // Error: File ended in middle of payload
-                }
-
-                size_t available = buf_limit[i] - buf_pos[i];
-                size_t to_copy = std::min(available, words_needed - words_collected);
-
-                std::copy(in_bufs[i].begin() + buf_pos[i],
-                          in_bufs[i].begin() + buf_pos[i] + to_copy,
-                          out.payload.begin() + 1 + words_collected);
-
-                buf_pos[i] += to_copy;
-                words_collected += to_copy;
-            }
-        }
-
-        return true;
-    };
-
-    // 5. Prime the Priority Queue
-    std::priority_queue<FileElement, std::vector<FileElement>, CompareElement> pq;
-    for (size_t i = 0; i < n_files; ++i) {
-        refill(i); // Initial fill
-        Element el;
-        if (read_element_buffered(i, el)) {
-            pq.push({std::move(el), handles[i], i});
-        }
-    }
-
-    // 6. Output Buffer Setup
-    std::vector<uint64_t> out_buf(buf_words_per_file);
-    size_t out_pos = 0;
-
-    auto flush_output = [&]() {
-        if (out_pos > 0) {
-            fwrite(out_buf.data(), sizeof(uint64_t), out_pos, fout);
-            out_pos = 0;
-        }
-    };
-
-    size_t merge_count = 0;
-
-    // 7. Main Loop
+    // 4. Merge Loop
     while (!pq.empty()) {
-        FileElement fe = pq.top();
+        // Get smallest
+        MergeNode node = pq.top();
         pq.pop();
 
-        // Calculate space needed: 1 word (minimizer) + N words (payload)
-        size_t needed = 1 + fe.el.payload.size();
+        // Write to output
+        writer->write((void*)&node.el.minimizer, sizeof(uint64_t), 1);
+        writer->write((void*)node.el.payload.data(), sizeof(uint64_t), node.el.payload.size());
 
-        if (out_pos + needed > out_buf.size()) {
-            flush_output();
-        }
-
-        // Write Minimizer
-        out_buf[out_pos++] = fe.el.minimizer;
-        
-        // Write Payload (using fast copy)
-        std::copy(fe.el.payload.begin(), fe.el.payload.end(), out_buf.begin() + out_pos);
-        out_pos += fe.el.payload.size();
-
-        merge_count++;
-
-        // Get next element from the same file
-        Element next;
-        if (read_element_buffered(fe.file_idx, next)) {
-            pq.push({std::move(next), fe.file, fe.file_idx});
+        // Refill from the specific stream that provided the element
+        if (readers[node.stream_idx]->next(node.el)) {
+            pq.push(std::move(node)); // Move back into PQ with new data
         }
     }
-
-    // 8. Cleanup
-    flush_output();
-    fclose(fout);
-    for (auto f : handles) if(f) fclose(f);
-
-    if (verbose >= 3) {
-        std::cout << "[III] Merged " << merge_count << " elements into " << outfile << "\n";
-    }
+    
+    writer->close();
 }
 
+// =========================================================================
+// Main Entry Point
+// =========================================================================
 
-// Full external sort orchestrator
-void external_sort_sparse(const std::string& infile,
-                          const std::string& outfile,
-                          const std::string& tmp_dir,
-                          const uint64_t n_colors,
-                          const uint64_t ram_value_MB,
-                          const bool keep_tmp_files,
-                          const int verbose,
-                          int n_threads)
-{
+void external_sort_sparse(
+    const std::string& infile,
+    const std::string& outfile,
+    const std::string& tmp_dir,
+    const uint64_t n_colors,
+    const uint64_t ram_value_MB,
+    const bool keep_tmp_files,
+    const int verbose,
+    int n_threads
+) {
+    // 1. Setup Parameters
     uint64_t bits_per_color = std::ceil(std::log2(n_colors));
     if (bits_per_color <= 8) bits_per_color = 8;
     else if (bits_per_color <= 16) bits_per_color = 16;
@@ -391,41 +410,32 @@ void external_sort_sparse(const std::string& infile,
     const uint64_t max_words_in_RAM = bytes_in_RAM / sizeof(uint64_t);
 
     if (verbose >= 3) {
-        std::cout << "[III] sparse External sort parameters:\n";
-        std::cout << "\t\t bits_per_color: " << bits_per_color << "\n";
-        std::cout << "\t\t n_colors: " << n_colors << "\n";
-        std::cout << "\t\t RAM limit: " << ram_value_MB << " MB (" << max_words_in_RAM << " words)\n";
-        std::cout << "\t\t threads: " << n_threads << "\n";
+        std::cout << "[III] Sparse External Sort:\n"
+                  << "      Bits/Color: " << bits_per_color << "\n"
+                  << "      RAM Limit: " << ram_value_MB << " MB\n"
+                  << "      Threads: " << n_threads << "\n";
     }
 
-    // Phase 1: Create sorted chunks in parallel
-    auto chunk_files = parallel_create_sparse_chunks(infile, tmp_dir, max_words_in_RAM, bits_per_color, verbose, n_threads);
+    // 2. Phase 1: Create Sorted Chunks
+    // The reader will handle LZ4 decompression automatically based on file extension
+    auto chunk_files = parallel_create_chunks(infile, tmp_dir, max_words_in_RAM, bits_per_color, verbose, n_threads);
 
-
-    if (verbose >= 3) {
-        std::cout << "[III] Merging " << chunk_files.size() << " chunks...\n";
-
-    }
-        
-    if (chunk_files.size() == 1) {
-        // Single chunk, just rename
+    // 3. Phase 2: Merge or Rename
+    if (chunk_files.empty()) {
+        // Input was empty, create empty output
+        std::unique_ptr<stream_writer> w(stream_writer_library::allocate(outfile));
+        w->close();
+    } else if (chunk_files.size() == 1) {
         std::filesystem::rename(chunk_files[0], outfile);
-        if (verbose >= 3) {
-            std::cout << "[III] Only one chunk created, renamed to " << outfile << "\n";
-        }
-            
-        return;
+        if (verbose >= 3) std::cout << "[III] Single chunk renamed to output.\n";
+    } else {
+        nway_merge_sparse(chunk_files, outfile, bits_per_color, verbose, bytes_in_RAM);
     }
 
-    // Phase 2: Merge
-    nway_merge_sparse(chunk_files, outfile, bits_per_color, verbose, bytes_in_RAM);
-
-    // Cleanup temporary files if requested
+    // 4. Cleanup
     if (!keep_tmp_files) {
-        for (const auto& f : chunk_files) std::filesystem::remove(f);
-        if (verbose >= 3) std::cout << "[III] Temporary files removed.\n";
+        for (const auto& f : chunk_files) {
+            std::filesystem::remove(f);
+        }
     }
-
-    if (verbose >= 3)
-        std::cout << "[III] External sort complete → " << outfile << "\n";
 }
