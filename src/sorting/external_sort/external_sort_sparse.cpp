@@ -285,7 +285,7 @@ std::vector<std::string> parallel_create_chunks(
                 break;
             }
             
-            size_t words = reader.fill_batch(batch, ram_per_thread);
+            reader.fill_batch(batch, ram_per_thread);
             if (batch.empty()) {
                 done = true;
                 omp_unset_lock(&read_lock);
@@ -353,7 +353,7 @@ void nway_merge_sparse(
     // 2. Initialize Priority Queue
     std::priority_queue<MergeNode, std::vector<MergeNode>, std::greater<MergeNode>> pq;
 
-    for (int i = 0; i < n_files; ++i) {
+    for (size_t i = 0; i < n_files; ++i) {
         Element el;
         if (readers[i]->next(el)) {
             pq.push({std::move(el), i});
