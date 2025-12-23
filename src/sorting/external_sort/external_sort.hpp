@@ -56,7 +56,7 @@ bool check_file_sorted(
 );
 
 bool check_file_sorted_sparse(
-    const std::string& filename,
-    uint64_t bits_per_color,
-    bool verbose_flag = true
+    const std::string& filename, 
+    uint64_t n_colors, 
+    bool verbose = true
 );
