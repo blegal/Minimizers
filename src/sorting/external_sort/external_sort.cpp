@@ -151,7 +151,7 @@ std::vector<std::string> create_chunks_parallel(const std::string& infile,
     SafeQueue<Job> queue(n_workers);
 
     if (verbose >= 3) {
-        std::cout << "[III] Producer-Consumer Config:\n"
+        std::cerr << "[III] Producer-Consumer Config:\n"
                   << "      Workers: " << n_workers << "\n"
                   << "      Elems/Chunk: " << elements_per_chunk << "\n"
                   << "      Extension: " << output_extension << "\n";
@@ -270,23 +270,44 @@ void nway_merge(const std::vector<std::string>& chunknames,
     size_t n_chunks = chunknames.size();
     if (n_chunks == 0) return;
 
-    // Allocate RAM: Input Buffers + 1 Output Buffer
+    // 1. Calculate Buffer Sizes
     uint64_t bytes_per_elem_raw = n_uint_per_element * sizeof(uint64_t);
+    
+    // Divide RAM by (n_chunks inputs + 1 output)
     uint64_t buf_elems = (max_ram_bytes / bytes_per_elem_raw) / (n_chunks + 1);
     
-    if (buf_elems < 16) buf_elems = 16; // Minimum sanity check
+    // --- CRITICAL FIX: CAP BUFFER SIZE ---
+    // The underlying read/write functions use 'int', limiting I/O to ~2GB per call.
+    // We cap the buffer at 1GB (1024^3 bytes) to be safe and prevent overflow.
+    const uint64_t MAX_IO_BYTES = 1024ULL * 1024ULL * 1024ULL; // 1GB
+    
+    if (buf_elems * bytes_per_elem_raw > MAX_IO_BYTES) {
+        buf_elems = MAX_IO_BYTES / bytes_per_elem_raw;
+        // (Optional) Log this if you want to verify the fix
+        // if (verbose >= 3) std::cout << "[III] Merge buffers capped to 1GB to prevent IO overflow.\n";
+    }
+
+    // Safety floor
+    if (buf_elems < 16) buf_elems = 16; 
 
     std::vector<uint64_t> outbuf(buf_elems * n_uint_per_element);
     std::vector<ChunkEntry> chunks(n_chunks);
 
-    // Init Readers
+    // 2. Initialize Readers (Safe)
     for (size_t i = 0; i < n_chunks; i++) {
         chunks[i].buffer.resize(buf_elems * n_uint_per_element);
         chunks[i].reader = stream_reader_library::allocate(chunknames[i]);
         if (!chunks[i].reader || !chunks[i].reader->is_open())
             throw std::runtime_error("Cannot open chunk: " + chunknames[i]);
             
-        chunks[i].count = chunks[i].reader->read(chunks[i].buffer.data(), bytes_per_elem_raw, buf_elems);
+        // Because buf_elems is capped, this cast is now safe
+        int got = chunks[i].reader->read(chunks[i].buffer.data(), bytes_per_elem_raw, (int)buf_elems);
+        
+        if (got <= 0) {
+            chunks[i].count = 0; 
+        } else {
+            chunks[i].count = static_cast<size_t>(got);
+        }
         chunks[i].pos = 0;
     }
 
@@ -296,7 +317,7 @@ void nway_merge(const std::vector<std::string>& chunknames,
         throw std::runtime_error("Cannot open output: " + outfile);
     }
 
-    // Min-Heap (Using 'Greater' comparator so smallest is at top/popped first)
+    // 3. Initialize Min-Heap
     std::vector<std::pair<uint64_t*, size_t>> heap;
     ElementCmpGreater cmp(n_uint_per_element);
 
@@ -308,45 +329,59 @@ void nway_merge(const std::vector<std::string>& chunknames,
 
     size_t outcount = 0;
 
+    // 4. Merge Loop
     while (!heap.empty()) {
         std::pop_heap(heap.begin(), heap.end(), cmp);
         auto [ptr, idx] = heap.back();
         heap.pop_back();
 
-        // Copy to output buffer
+        // Copy to output
         std::memcpy(&outbuf[outcount * n_uint_per_element], ptr, bytes_per_elem_raw);
         outcount++;
 
+        // Flush Output if full
         if (outcount == buf_elems) {
-            writer->write(outbuf.data(), bytes_per_elem_raw, buf_elems);
+            // Safe write because outcount <= buf_elems (which is capped)
+            writer->write(outbuf.data(), bytes_per_elem_raw, (int)outcount);
             outcount = 0;
         }
 
-        // Advance & Refill
+        // Advance Reader
         chunks[idx].pos++;
+        
+        // Refill if needed
         if (chunks[idx].pos == chunks[idx].count) {
-            chunks[idx].count = chunks[idx].reader->read(chunks[idx].buffer.data(), bytes_per_elem_raw, buf_elems);
-            chunks[idx].pos = 0;
+            int got = chunks[idx].reader->read(chunks[idx].buffer.data(), bytes_per_elem_raw, (int)buf_elems);
+            
+            if (got > 0) {
+                chunks[idx].count = static_cast<size_t>(got);
+                chunks[idx].pos = 0;
+            } else {
+                chunks[idx].count = 0; // EOF
+            }
         }
 
-        if (chunks[idx].count > 0) {
+        // Push back to heap if valid
+        if (chunks[idx].pos < chunks[idx].count) {
             heap.push_back({ chunks[idx].buffer.data() + chunks[idx].pos * n_uint_per_element, idx });
             std::push_heap(heap.begin(), heap.end(), cmp);
         } else {
-            // Chunk exhausted, close explicitly
-            delete chunks[idx].reader;
-            chunks[idx].reader = nullptr;
+            // Close exhausted chunk
+            if (chunks[idx].reader) {
+                delete chunks[idx].reader;
+                chunks[idx].reader = nullptr;
+            }
         }
     }
 
+    // 5. Final Flush
     if (outcount > 0) {
-        writer->write(outbuf.data(), bytes_per_elem_raw, outcount);
+        writer->write(outbuf.data(), bytes_per_elem_raw, (int)outcount);
     }
 
     writer->close();
     delete writer;
 
-    // Final Cleanup
     for(size_t i=0; i<n_chunks; i++) if(chunks[i].reader) delete chunks[i].reader;
 }
 
@@ -381,7 +416,7 @@ void multi_pass_nway_merge(std::vector<std::string> chunknames,
             std::string tmp_out = outfile + ".tmp.pass" + std::to_string(pass) + ".group" + std::to_string(g) + ext;
             
             if (verbose >= 3) {
-                 std::cout << "[III] Merge Pass " << pass << ", Group " << g 
+                 std::cerr << "[III] Merge Pass " << pass << ", Group " << g 
                            << " (" << group.size() << " files) -> " << tmp_out << "\n";
             }
 
@@ -416,7 +451,7 @@ void external_sort(const std::string& infile,
     std::string out_ext = get_extension(outfile);
 
     if (verbose >= 3) {
-        std::cout << "[III] Starting External Sort on: " << infile << "\n"
+        std::cerr << "[III] Starting External Sort on: " << infile << "\n"
                   << "      Output Extension: " << out_ext << "\n";
     }
 
@@ -455,7 +490,7 @@ bool check_file_sorted(const std::string& filename, uint64_t n_colors, bool verb
     size_t payload_bytes = (n_uint_per_element - 1) * sizeof(uint64_t);
 
     if (verbose) {
-        std::cout << "[Check] Verifying file: " << filename << "\n"
+        std::cerr << "[Check] Verifying file: " << filename << "\n"
                   << "        Uints/Elem: " << n_uint_per_element << " (" << bytes_per_element << " bytes)\n";
     }
 
@@ -531,7 +566,7 @@ bool check_file_sorted(const std::string& filename, uint64_t n_colors, bool verb
     delete reader;
 
     if (verbose) {
-        std::cout << "[Check] Success! " << processed_count << " elements are sorted.\n";
+        std::cerr << "[Check] Success! " << processed_count << " elements are sorted.\n";
     }
     return true;
 }
