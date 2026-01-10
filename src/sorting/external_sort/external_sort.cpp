@@ -142,9 +142,17 @@ std::vector<std::string> create_chunks_parallel(const std::string& infile,
     uint64_t bytes_per_element_ram = bytes_per_element_raw + sizeof(uint64_t*); 
 
     // Division: (Active Workers + Queue Slots + Producer Buffer)
-    // We size chunks so that even if queues are full, we stay under RAM limit.
     uint64_t elements_per_chunk = max_ram_bytes / (bytes_per_element_ram * (2 * n_workers + 1));
     
+    // --- CRITICAL FIX START: Cap Chunk Size to 1GB ---
+    // Prevent integer overflow in stream_reader::read (which uses int for size)
+    const uint64_t MAX_IO_BYTES = 1024ULL * 1024ULL * 1024ULL; // 1GB
+    if (elements_per_chunk * bytes_per_element_raw > MAX_IO_BYTES) {
+        elements_per_chunk = MAX_IO_BYTES / bytes_per_element_raw;
+        if (verbose >= 3) std::cerr << "[III] Chunk size capped to 1GB to prevent IO overflow.\n";
+    }
+    // --- CRITICAL FIX END ---
+
     // Safety lower bound
     if (elements_per_chunk < 1000) elements_per_chunk = 1000;
 
@@ -160,7 +168,7 @@ std::vector<std::string> create_chunks_parallel(const std::string& infile,
     // --- WORKER THREAD FUNCTION ---
     auto worker_task = [&]() {
         Job job;
-        std::vector<uint64_t*> ptrs; // Avoid reallocating vector container
+        std::vector<uint64_t*> ptrs; 
         ElementCmpLess cmp(n_uint_per_element);
         
         while (queue.pop(job)) {
@@ -172,7 +180,7 @@ std::vector<std::string> create_chunks_parallel(const std::string& infile,
                 ptrs[i] = &job.data[i * n_uint_per_element];
             }
 
-            // 2. Sort (Standard Sort A < B)
+            // 2. Sort
             std::sort(ptrs.begin(), ptrs.end(), cmp);
 
             // 3. Write
@@ -180,7 +188,6 @@ std::vector<std::string> create_chunks_parallel(const std::string& infile,
             stream_writer* writer = stream_writer_library::allocate(fname);
             
             if(writer && writer->is_open()) {
-                // Optimization: Staging buffer to minimize vtable calls
                 const size_t STAGE_COUNT = 4096; 
                 std::vector<uint64_t> stage_buf;
                 stage_buf.reserve(STAGE_COUNT * n_uint_per_element);
@@ -193,7 +200,6 @@ std::vector<std::string> create_chunks_parallel(const std::string& infile,
                         stage_buf.clear();
                     }
                 }
-                // Flush remaining
                 if (!stage_buf.empty()) {
                      writer->write(stage_buf.data(), sizeof(uint64_t) * n_uint_per_element, stage_buf.size() / n_uint_per_element);
                 }
@@ -233,6 +239,7 @@ std::vector<std::string> create_chunks_parallel(const std::string& infile,
         job.data.resize(elements_per_chunk * n_uint_per_element);
         job.id = chunk_id++;
 
+        // Because elements_per_chunk is now capped, this read is safe from overflow
         int got = reader->read(job.data.data(), sizeof(uint64_t) * n_uint_per_element, elements_per_chunk);
         
         if (got <= 0) break; // EOF
